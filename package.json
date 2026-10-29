@@ -11,7 +11,8 @@
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
-    "knip": "knip"
+    "knip": "knip",
+    "pii": "bash scripts/pii-scan.sh"
   },
   "dependencies": {
     "cn": "^0.4.0",
