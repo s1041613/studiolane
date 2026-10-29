@@ -1,0 +1,15 @@
+.env*
+!.env.example
+node_modules/
+.next/
+/.nm-stack/
+/.nm-dev.pid
+e2e/.auth/
+.orchestrate/
+.worktrees/
+.worker/
+.vercel
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/

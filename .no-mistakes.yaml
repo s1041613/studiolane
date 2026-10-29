@@ -1,0 +1,85 @@
+commands:
+  lint: pnpm lint
+  build: pnpm build
+  test: pnpm vitest run --changed origin/main
+
+test:
+  # Runbook injected into the Test step's evidence and repair prompts.
+  # Read only from the default branch.
+  instructions: |
+    Scope
+    - Validate only the scenarios this change touches. Aim for 3-5 scenarios,
+      not one per feature on the page.
+    - Take at most one screenshot per scenario, of the final state that proves it.
+
+    Local stack
+    - Supabase runs locally. Check it with `npx supabase status`; start it with
+      `npx supabase start` only if it is not running. Never point at a remote project.
+    - Export its credentials before running the app or Playwright:
+        eval "$(npx supabase status -o env)"
+        export SUPABASE_URL=$API_URL SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY \
+          SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY DATABASE_URL=$DB_URL
+
+    Driving the app
+    - Prefer the existing Playwright specs in e2e/ over hand-driving a browser.
+      Run only the specs related to the change, for example:
+        npx playwright test e2e/<spec>.spec.ts --project=setup --project=chromium
+      Playwright starts its own dev server on port 3000 and signs in through
+      e2e/auth.setup.ts, so do not start a dev server yourself when using it.
+    - Specs named *.write.spec.ts change data and only run in the `writes`
+      project, which depends on chromium, firefox and webkit:
+        E2E_WRITES=1 npx playwright test e2e/<spec>.write.spec.ts --project=setup --project=writes
+    - If you must drive a browser by hand, first run the Supabase exports above
+      (they override .env.local, which may point at production) and run
+      `--project=setup` once so the e2e accounts exist. Then start
+      `ADMIN_EMAILS=e2e-admin@test.local pnpm dev --port 3100 > /dev/null 2>&1 & echo $! > .nm-dev.pid`
+      and open
+      http://localhost:3100. Never use 127.0.0.1: Next 16 blocks it and the page
+      never hydrates. Sign in with the accounts in e2e/accounts.ts.
+
+    Unit tests
+    - For a focused check, run `npx vitest run <changed test files>` instead of
+      the whole suite.
+
+    Shared database drift
+    - The local Supabase (project_id "studiolane", ports 543xx) is shared by every
+      branch. If the test command fails in vitest.global-setup.ts with
+      MigrationMissingLocalError, another branch's migration is in it. Never
+      reset, repair or migrate the shared database. Validate this run on a
+      disposable stack instead.
+    - At most 2 disposable stacks may run at once. Count them first:
+        docker ps --format '{{.Names}}' | grep -c '^supabase_db_studiolane-nm-'
+      If 2 are already running, do not start another: report the affected
+      scenarios as untested and name the limit as the reason.
+    - Name the stack after the branch shown in this prompt's Context (the Test
+      worktree is detached, so git cannot tell you). Use slot 8 (ports
+      583xx, inspector 8283) unless its ports are taken, else slot 9 (593xx, 8293):
+        BR="<branch from Context>"; SLOT=8   # or 9
+        NAME=studiolane-nm-$(printf %s "$BR" | tr "/_" "--" | tr "A-Z" "a-z" | tr -cd "a-z0-9-" | cut -c1-40)
+        TMP="$PWD/.nm-stack"; mkdir -p "$TMP"; cp -R supabase "$TMP/"
+        sed -i '' -e "s/^project_id = .*/project_id = \"$NAME\"/" \
+          -e "s/= 543\([0-9][0-9]\)$/= 5${SLOT}3\1/" \
+          -e "s/inspector_port = 8083/inspector_port = 82${SLOT}3/" "$TMP/supabase/config.toml"
+        npx supabase start --workdir "$TMP"
+        eval "$(npx supabase status --workdir "$TMP" -o env)"
+      Then export the credentials as in "Local stack" and run the app and
+      Playwright against it.
+    - The test command (and `pnpm test`) always targets the shared database, so do not run it here.
+      Apply migrations and run vitest against the disposable stack without the
+      shared global setup, through a temporary config you delete afterwards:
+        npx supabase migration up --workdir "$TMP"
+        export TEST_DATABASE_URL=$DB_URL TEST_SUPABASE_URL=$API_URL \
+          TEST_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY \
+          TEST_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY
+        printf '%s\n' 'import base from "./vitest.config.mts";' \
+          'export default { ...base, test: { ...base.test, globalSetup: [] } };' \
+          > vitest.nm.config.mts
+        npx vitest run --config vitest.nm.config.mts <test files>; rm vitest.nm.config.mts
+    - When you finish, whether validation passed or failed, stop and remove the
+      disposable stack and its directory. If you started a dev server, stop it
+      too. If the sandbox denies removing the directory, leave it and say so in
+      your report; the worktree cleanup removes it later:
+        npx supabase stop --workdir "$TMP" --no-backup; rm -rf "$TMP"
+        kill "$(cat .nm-dev.pid)" 2>/dev/null; rm -f .nm-dev.pid
+      Confirm this run's stack is gone before you report; this must print 0:
+        docker ps --format '{{.Names}}' | grep -c "^supabase_db_$NAME$"
