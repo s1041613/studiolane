@@ -17,12 +17,13 @@ fixture data in this repository is fictional.
 
 ## Current scope
 
-This repository is at the skeleton stage: project configuration only
+This repository is at the skeleton stage: project configuration
 (package manager, Next.js, TypeScript, ESLint, Tailwind/PostCSS, shadcn,
-Drizzle, Vitest, Playwright, local Supabase config). There is no `src/`
-application code yet — `pnpm test` passes with zero test files, and
-`pnpm lint` / `pnpm tsc --noEmit` pass against an otherwise empty project.
-Features land in later PRs.
+Drizzle, Vitest, Playwright, local Supabase config) plus a minimal `src/`:
+the app shell (icon rail / mobile bar, nav items), a placeholder home page,
+shared UI primitives (page-failure, error-code), and the shared `lib/`
+(calendar dates, click guard, date range, result, settle, utils). There is
+no data fetching, auth, or feature code yet. Features land in later PRs.
 
 ## Working here
 

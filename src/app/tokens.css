@@ -1,0 +1,125 @@
+/* Design tokens copied verbatim from docs/design-system/tokens.css (sections 1-12).
+   Update by re-copying that block; the shadcn mapping lives in globals.css. */
+
+:root {
+  /* ---------- 1. 色彩：中性 ---------- */
+  --eb-color-page:            #DCE2E4;            /* 頁面底色 */
+  --eb-color-surface:         rgb(255 255 255 / .66); /* 卡片 */
+  --eb-color-surface-solid:   #F3F5F6;            /* 卡片的不透明版（sticky 列、需要蓋住內容時） */
+  --eb-color-surface-border:  rgb(255 255 255 / .90);
+  --eb-color-inset:           #EEF2F3;            /* 卡片內的區塊 */
+  --eb-color-inset-border:    #DCE3E5;
+  --eb-color-control:         #FFFFFF;            /* 輸入框、選項 */
+  --eb-color-control-border:  #E1E7E9;
+  --eb-color-control-border-hover: #B9C4C7;
+  --eb-color-selected:        #C7D0D2;            /* 所有「選中」 */
+  --eb-color-icon-btn:        #CDD5D8;            /* 只有圖示的按鈕 */
+  --eb-color-icon-btn-hover:  #C3CCCF;
+  --eb-color-icon-btn-active: #B7C2C6;            /* 左欄目前所在頁 */
+  --eb-color-row-action:      #E3E8E9;            /* 列動作按鈕、彈窗右上 ✕ */
+  --eb-color-overlay:         rgb(220 226 228 / .55); /* 彈窗遮罩（再加 4px 模糊） */
+  --eb-color-track:           rgb(255 255 255 / .50); /* 分段切換的軌道 */
+
+  --eb-color-divider:         rgb(32 40 42 / .07);  /* 卡片內的細分隔 */
+  --eb-color-divider-strong:  #D9E0E2;              /* 表格列分隔 */
+  --eb-color-divider-header:  #CFD7DA;              /* 表頭下緣 */
+  --eb-color-dashed:          #B9C3C6;              /* 已過去的資料（虛線框） */
+  --eb-color-dashed-soft:     #C9D1D3;              /* 尚未可填的欄位提示 */
+
+  /* ---------- 2. 色彩：文字 ---------- */
+  --eb-text-primary:     #202020;
+  --eb-text-secondary:   #3E4749;   /* 數字卡標題、表格內一般欄位 */
+  --eb-text-label:       #2A3032;   /* 表單欄位名稱 */
+  --eb-text-muted:       #68737A;   /* 說明、表頭 */
+  --eb-text-placeholder: #7F898B;
+  --eb-text-past:        #55605F;   /* 已過去資料的主文字 */
+  --eb-text-past-muted:  #6F7A7C;
+  --eb-text-required:    #D14A1E;   /* 必填的 * */
+
+  /* ---------- 3. 色彩：強調（萊姆）---------- */
+  --eb-lime:        #F3FFAC;   /* 只給主按鈕、首頁第一張數字卡光暈、logo 點、頭像 */
+  --eb-lime-strong: #DDEB7E;
+  --eb-lime-dot:    #C9DB4E;   /* logo 點、指標小圓點 */
+
+  /* ---------- 4. 色彩：狀態（只用文字或小圓點，不做色塊）---------- */
+  --eb-success:      #0EBE82;
+  --eb-success-text: #2F7A5E;  /* 已付款 */
+  --eb-info:         #2BA2C3;
+  --eb-info-text:    #3D7383;
+  --eb-danger:       #ED4714;
+  --eb-danger-text:  #B4471F;  /* 未付款、錯誤訊息 */
+  --eb-warn-text:    #C2410C;  /* 撞單 */
+  --eb-warn-dot:     #E07A55;
+  --eb-danger-bg:    rgb(237 71 20 / .07); /* 只用在錯誤訊息條 */
+
+  /* ---------- 5. 色彩：行事曆 ---------- */
+  --eb-cal-available: linear-gradient(180deg, rgb(243 255 172 / .85), rgb(243 255 172 / .45)); /* 可租、可預約、指定日期開放（萊姆） */
+  --eb-cal-available-border: #DDEB7E;
+  --eb-cal-oneday-border: #8E9DA1; /* 指定日期的規則（虛線框） */
+  --eb-cal-panel:     #F4F7F7;   /* 日期選擇器的面板 */
+  --eb-cal-today-border: #9FAEB2; /* 日期選擇器的「今天」內框 */
+  --eb-cal-blocked:   repeating-linear-gradient(135deg, #D8DFE1 0 6px, #E1E7E8 6px 12px);
+  --eb-cal-class-bg:  #DCE6E8;   /* 常態課 */
+  --eb-cal-class-bar: #8FA9AE;
+  --eb-cal-class-text:#2E4A50;
+  --eb-cal-special:   #8B5CF6;   /* 特別課（左側色條） */
+  --eb-cal-special-bg: repeating-linear-gradient(135deg, #EDE6FD 0 6px, #F5F1FE 6px 12px); /* 特別課（紫色斜線） */
+
+  /* ---------- 6. 字體 ---------- */
+  --eb-font-sans: "Outfit", "Noto Sans TC", system-ui, sans-serif;
+  --eb-weight-light:   300;  /* 只給 KPI 大數字 */
+  --eb-weight-regular: 400;
+  --eb-weight-medium:  500;
+
+  --eb-text-display: 28px;   /* 頁面標題、首頁日期 */
+  --eb-text-kpi:     32px;   /* 數字卡的數字 */
+  --eb-text-title:   15px;   /* 卡片標題、列表主名稱 */
+  --eb-text-body:    14px;   /* 一般內容、欄位名稱 */
+  --eb-text-small:   13px;   /* 說明、次要資訊 */
+  --eb-text-caption: 12px;   /* 表頭、標籤、提示 */
+  --eb-leading-tight: 1.25;
+  --eb-leading-normal: 1.5;
+
+  /* ---------- 7. 圓角（只有這四種）---------- */
+  --eb-radius-l:   20px;  /* 卡片、彈窗、下拉面板 */
+  --eb-radius-m:   12px;  /* 40px 以上的可點元件、卡內區塊、軌道 */
+  --eb-radius-s:    8px;  /* 36px 以下的元件、軌道內方塊、日曆格 */
+  --eb-radius-tag:  6px;  /* 文字小標籤 */
+
+  /* ---------- 8. 間距（4px 基準）---------- */
+  --eb-space-1:  4px;
+  --eb-space-2:  8px;
+  --eb-space-3: 12px;
+  --eb-space-4: 16px;
+  --eb-space-5: 20px;
+  --eb-space-6: 24px;
+
+  --eb-pad-card:  20px;  /* 卡片內距 */
+  --eb-pad-row:   16px;  /* 列表每一筆的內距（四邊相同） */
+  --eb-gap-card:  16px;  /* 卡片與卡片 */
+  --eb-gap-row:    8px;  /* 卡片式列表，筆與筆 */
+
+  /* ---------- 9. 尺寸 ---------- */
+  --eb-h-control:    44px;  /* 輸入框、下拉、選項 */
+  --eb-h-control-sm: 32px;  /* 表格內按鈕、時間欄、跨日 */
+  --eb-h-button:     42px;  /* 主按鈕 */
+  --eb-size-icon-btn: 40px; /* 日期前後鍵 */
+  --eb-size-rail-item: 46px;
+  --eb-rail-width: 60px;
+  --eb-content-offset: 84px; /* 內容區起點（左欄寬 + 間距） */
+
+  /* ---------- 10. 陰影：只給浮在畫面上的東西 ---------- */
+  --eb-shadow-none: none;
+  --eb-shadow-popover: 0 12px 32px rgb(32 32 32 / .10);
+  --eb-shadow-dialog:  0 20px 50px rgb(32 32 32 / .08);
+
+  /* ---------- 11. 主按鈕：柔光漸層 ---------- */
+  --eb-primary-gradient: linear-gradient(105deg, #DDE4E6 0%, #EEF3E4 28%, #F6FBCF 52%, #F2F8D8 70%, #E4EAEA 100%);
+  --eb-primary-border:   rgb(255 255 255 / .85);
+  --eb-primary-highlight: inset 0 1px 0 rgb(255 255 255 / .8);
+
+  /* ---------- 12. 動態 ---------- */
+  --eb-ease: cubic-bezier(.2, .7, .2, 1);
+  --eb-dur-fast: 150ms;   /* hover 底色 */
+  --eb-dur-slow: 350ms;   /* 主按鈕漸層移動 */
+}
