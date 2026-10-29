@@ -1,5 +1,3 @@
-no_ci: true
-
 commands:
   lint: pnpm lint
   build: pnpm build
@@ -44,7 +42,7 @@ test:
       the whole suite.
 
     Shared database drift
-    - The local Supabase (project_id "studiolane", ports 543xx) is shared by every
+    - The local Supabase (project_id "studiolane", ports 544xx) is shared by every
       branch. If the test command fails in vitest.global-setup.ts with
       MigrationMissingLocalError, another branch's migration is in it. Never
       reset, repair or migrate the shared database. Validate this run on a
@@ -60,7 +58,7 @@ test:
         NAME=studiolane-nm-$(printf %s "$BR" | tr "/_" "--" | tr "A-Z" "a-z" | tr -cd "a-z0-9-" | cut -c1-40)
         TMP="$PWD/.nm-stack"; mkdir -p "$TMP"; cp -R supabase "$TMP/"
         sed -i '' -e "s/^project_id = .*/project_id = \"$NAME\"/" \
-          -e "s/= 543\([0-9][0-9]\)$/= 5${SLOT}3\1/" \
+          -e "s/= 544\([0-9][0-9]\)$/= 5${SLOT}3\1/" \
           -e "s/inspector_port = 8083/inspector_port = 82${SLOT}3/" "$TMP/supabase/config.toml"
         npx supabase start --workdir "$TMP"
         eval "$(npx supabase status --workdir "$TMP" -o env)"
