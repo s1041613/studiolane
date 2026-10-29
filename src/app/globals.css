@@ -1,0 +1,148 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+/* shadcn is a devDependency: build with devDependencies installed, not `pnpm install --prod`. */
+@import "shadcn/tailwind.css";
+@import "./tokens.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-outfit), var(--font-noto-tc), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-outfit), var(--font-noto-tc), system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --color-surface: var(--eb-color-surface);
+  --color-surface-solid: var(--eb-color-surface-solid);
+  --color-surface-border: var(--eb-color-surface-border);
+  --color-inset: var(--eb-color-inset);
+  --color-inset-border: var(--eb-color-inset-border);
+  --color-control: var(--eb-color-control);
+  --color-control-border: var(--eb-color-control-border);
+  --color-control-border-hover: var(--eb-color-control-border-hover);
+  --color-selected: var(--eb-color-selected);
+  --color-icon-btn: var(--eb-color-icon-btn);
+  --color-icon-btn-hover: var(--eb-color-icon-btn-hover);
+  --color-icon-btn-active: var(--eb-color-icon-btn-active);
+  --color-divider: var(--eb-color-divider);
+  --color-divider-strong: var(--eb-color-divider-strong);
+  --color-divider-header: var(--eb-color-divider-header);
+  --color-past-border: var(--eb-color-dashed);
+  --color-pending-border: var(--eb-color-dashed-soft);
+  --color-dialog: var(--eb-color-surface-solid);
+  --color-dialog-overlay: var(--eb-color-overlay);
+  --color-calendar-panel: var(--eb-cal-panel);
+  --color-calendar-today: var(--eb-cal-today-border);
+  --color-row-action: var(--eb-color-row-action);
+  --color-required: var(--eb-text-required);
+
+  --color-text-secondary: var(--eb-text-secondary);
+  --color-text-label: var(--eb-text-label);
+  --color-placeholder: var(--eb-text-placeholder);
+  --color-past: var(--eb-text-past);
+  --color-past-muted: var(--eb-text-past-muted);
+
+  --color-lime: var(--eb-lime);
+  --color-lime-strong: var(--eb-lime-strong);
+  --color-lime-dot: var(--eb-lime-dot);
+
+  /* Status is text color only; danger-bg is the one allowed status block. */
+  --color-success: var(--eb-success-text);
+  --color-info: var(--eb-info-text);
+  --color-danger: var(--eb-danger-text);
+  --color-warn: var(--eb-warn-text);
+  --color-warn-dot: var(--eb-warn-dot);
+  --color-danger-bg: var(--eb-danger-bg);
+
+  --color-cal-available-border: var(--eb-cal-available-border);
+  --color-cal-oneday-border: var(--eb-cal-oneday-border);
+  --color-cal-class: var(--eb-cal-class-bg);
+  --color-cal-class-bar: var(--eb-cal-class-bar);
+  --color-cal-class-text: var(--eb-cal-class-text);
+  --color-cal-special: var(--eb-cal-special);
+}
+
+:root {
+  --background: var(--eb-color-page);
+  --foreground: var(--eb-text-primary);
+  --card: var(--eb-color-surface);
+  --card-foreground: var(--eb-text-primary);
+  --popover: var(--eb-color-control);
+  --popover-foreground: var(--eb-text-primary);
+  --primary: var(--eb-text-primary);
+  --primary-foreground: var(--eb-color-control);
+  --secondary: var(--eb-color-inset);
+  --secondary-foreground: var(--eb-text-primary);
+  --muted: var(--eb-color-inset);
+  --muted-foreground: var(--eb-text-muted);
+  --accent: var(--eb-color-selected);
+  --accent-foreground: var(--eb-text-primary);
+  --destructive: var(--eb-danger-text);
+  --border: var(--eb-color-control-border);
+  --input: var(--eb-color-control-border);
+  --ring: var(--eb-text-primary);
+  --chart-1: var(--eb-color-selected);
+  --chart-2: var(--eb-cal-class-bar);
+  --chart-3: var(--eb-text-muted);
+  --chart-4: var(--eb-text-secondary);
+  --chart-5: var(--eb-text-primary);
+  /* 0.75rem = 12px; rounded-2xl ≈ card (L), rounded-lg = M, rounded-md ≈ S, rounded-sm ≈ tag. */
+  --radius: 0.75rem;
+  --sidebar: var(--eb-color-page);
+  --sidebar-foreground: var(--eb-text-primary);
+  --sidebar-primary: var(--eb-text-primary);
+  --sidebar-primary-foreground: var(--eb-color-control);
+  --sidebar-accent: var(--eb-color-icon-btn-active);
+  --sidebar-accent-foreground: var(--eb-text-primary);
+  --sidebar-border: var(--eb-color-divider-strong);
+  --sidebar-ring: var(--eb-text-primary);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
