@@ -2,8 +2,10 @@
 !.env.example
 node_modules/
 .next/
+next-env.d.ts
 /.nm-stack/
 /.nm-dev.pid
+/.nm-pii/
 e2e/.auth/
 .orchestrate/
 .worktrees/
@@ -15,3 +17,5 @@ playwright-report/
 test-results/
 __pycache__/
 *.pyc
+supabase/.branches/
+supabase/.temp/
