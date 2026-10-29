@@ -1,3 +1,5 @@
+no_ci: true
+
 commands:
   lint: pnpm lint
   build: pnpm build
