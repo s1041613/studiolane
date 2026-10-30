@@ -29,8 +29,9 @@ environment variables set separately for the Preview and Production
 environments in the project settings.
 
 Migrations run via `.github/workflows/db-push.yml`, which executes
-`supabase db push` against the hosted project on every push to `main`. It
-needs the GitHub Actions secrets `SUPABASE_ACCESS_TOKEN`,
+`supabase db push` against the hosted project when a push to `main` touches
+`supabase/migrations/` (it skips linking and pushing while that directory is
+empty). It needs the GitHub Actions secrets `SUPABASE_ACCESS_TOKEN`,
 `SUPABASE_DB_PASSWORD`, and `SUPABASE_PROJECT_REF`.
 
 Notes:
