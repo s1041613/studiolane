@@ -24,8 +24,9 @@ the app shell (icon rail / mobile bar, nav items), a placeholder home page,
 shared UI primitives (page-failure, error-code), and the shared `lib/`
 (calendar dates, click guard, date range, result, settle, utils), the server
 error boundary (`src/server/boundary`) and failure screens. Auth is a stub that always returns a demo admin, and
-audited writes are a no-op seam. There is no data fetching, real auth, or
-feature code yet. Features land in later PRs.
+audited writes are a no-op seam. The data layer (migration, seed, Drizzle
+schema, repositories, domain logic) exists; see `docs/data-model/`. There is
+no real auth or feature UI yet. Features land in later PRs.
 
 ## Working here
 
@@ -34,4 +35,5 @@ feature code yet. Features land in later PRs.
 - Local Supabase project id is `studiolane`; ports are shifted to the
   544xx range (see `supabase/config.toml`) so this stack can run next to
   another local Supabase stack without colliding.
-- No `supabase/seed.sql` and no migrations yet.
+- Schema lives in `supabase/migrations/`; `supabase/seed.sql` holds
+  fictional seed data only.
