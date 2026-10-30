@@ -19,6 +19,13 @@ export default defineConfig({
   test: {
     passWithNoTests: true,
     setupFiles: ["./vitest-setup-dom.ts"],
-    exclude,
+    projects: [
+      { extends: true, test: { name: "unit", exclude: [...exclude, "**/*.db.test.ts"] } },
+      // *.db.test.ts need a migrated Postgres, so they run only when
+      // TEST_DATABASE_URL points at one. Files share that database and run in order.
+      ...(process.env.TEST_DATABASE_URL
+        ? [{ extends: true, test: { name: "db", include: ["**/*.db.test.ts"], exclude, fileParallelism: false } }]
+        : []),
+    ],
   },
 });
