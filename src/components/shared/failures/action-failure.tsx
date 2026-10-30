@@ -1,12 +1,18 @@
 import { cn } from "cn";
 import type { Failure, FieldErrorMap, Problem } from "@/lib/result";
+import type { RentalSummary } from "@/server/types/home";
 import { ErrorCode } from "@/components/ui/error-code";
+import { AffectedRentals } from "@/components/shared/rentals/affected-rentals";
 
-type FailureBlockers = { details?: readonly string[] };
+export type FailureBlockers = { details?: readonly string[]; conflicts?: readonly RentalSummary[] };
 
 type ShownReactions = { fields: FieldErrorMap; blockers: FailureBlockers };
 
-type ShownFailure = Failure<ShownReactions> | Problem<ShownReactions>;
+// Everything ActionFailure can show: a failure from settle() (errorId is null
+// when the request never reached the server), or a refusal the screen worked
+// out before calling the server (e.g. 停用's impact check), which has no
+// errorId at all. Neither of the last two shows 錯誤代碼.
+export type ShownFailure = Failure<ShownReactions> | Problem<ShownReactions>;
 
 type ActionFailureProps = {
   failure: ShownFailure;
@@ -55,13 +61,17 @@ export function ActionFailure({ failure, variant = "banner", className }: Action
 }
 
 function BlockerLists({ blockers }: { blockers: FailureBlockers }) {
-  const { details = [] } = blockers;
-  if (details.length === 0) return null;
+  const { details = [], conflicts = [] } = blockers;
   return (
-    <ul className="list-disc space-y-0.5 pl-5">
-      {details.map((line) => (
-        <li key={line}>{line}</li>
-      ))}
-    </ul>
+    <>
+      {details.length > 0 && (
+        <ul className="list-disc space-y-0.5 pl-5">
+          {details.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
+      <AffectedRentals rentals={conflicts} />
+    </>
   );
 }
