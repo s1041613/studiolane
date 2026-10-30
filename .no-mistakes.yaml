@@ -12,6 +12,14 @@ test:
       not one per feature on the page.
     - Take at most one screenshot per scenario, of the final state that proves it.
 
+    Scratch files
+    - Never create files, directories or git repos inside the worktree: a
+      `git init` or `git clone` in here breaks the document step's
+      `git add -A`. Create one scratch dir up front and put every scratch
+      file, directory and git repo under it:
+        SCRATCH=$(mktemp -d "${TMPDIR:-/tmp}/studiolane-nm-XXXXXX")
+      Remove it at the end, pass or fail: `rm -rf "$SCRATCH"`.
+
     Local stack
     - Supabase runs locally. Check it with `npx supabase status`; start it with
       `npx supabase start` only if it is not running. Never point at a remote project.
@@ -32,7 +40,7 @@ test:
     - If you must drive a browser by hand, first run the Supabase exports above
       (they override .env.local, which may point at production) and run
       `--project=setup` once so the e2e accounts exist. Then start
-      `ADMIN_EMAILS=e2e-admin@test.local pnpm dev --port 3100 > /dev/null 2>&1 & echo $! > .nm-dev.pid`
+      `ADMIN_EMAILS=e2e-admin@test.local pnpm dev --port 3100 > /dev/null 2>&1 & echo $! > "$SCRATCH/nm-dev.pid"`
       and open
       http://localhost:3100. Never use 127.0.0.1: Next 16 blocks it and the page
       never hydrates. Sign in with the accounts in e2e/accounts.ts.
@@ -56,7 +64,7 @@ test:
       583xx, inspector 8283) unless its ports are taken, else slot 9 (593xx, 8293):
         BR="<branch from Context>"; SLOT=8   # or 9
         NAME=studiolane-nm-$(printf %s "$BR" | tr "/_" "--" | tr "A-Z" "a-z" | tr -cd "a-z0-9-" | cut -c1-40)
-        TMP="$PWD/.nm-stack"; mkdir -p "$TMP"; cp -R supabase "$TMP/"
+        TMP="$SCRATCH/nm-stack"; mkdir -p "$TMP"; cp -R supabase "$TMP/"
         sed -i '' -e "s/^project_id = .*/project_id = \"$NAME\"/" \
           -e "s/= 544\([0-9][0-9]\)$/= 5${SLOT}3\1/" \
           -e "s/inspector_port = 8083/inspector_port = 82${SLOT}3/" "$TMP/supabase/config.toml"
@@ -66,7 +74,10 @@ test:
       Playwright against it.
     - The test command (and `pnpm test`) always targets the shared database, so do not run it here.
       Apply migrations and run vitest against the disposable stack without the
-      shared global setup, through a temporary config you delete afterwards:
+      shared global setup, through a temporary config you delete afterwards.
+      This config is the one exception to "Scratch files" above: it must live
+      in the worktree because it imports `./vitest.config.mts` by a relative
+      path; delete it right after use (already done below):
         npx supabase migration up --workdir "$TMP"
         export TEST_DATABASE_URL=$DB_URL TEST_SUPABASE_URL=$API_URL \
           TEST_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY \
@@ -75,11 +86,12 @@ test:
           'export default { ...base, test: { ...base.test, globalSetup: [] } };' \
           > vitest.nm.config.mts
         npx vitest run --config vitest.nm.config.mts <test files>; rm vitest.nm.config.mts
-    - When you finish, whether validation passed or failed, stop and remove the
-      disposable stack and its directory. If you started a dev server, stop it
-      too. If the sandbox denies removing the directory, leave it and say so in
-      your report; the worktree cleanup removes it later:
-        npx supabase stop --workdir "$TMP" --no-backup; rm -rf "$TMP"
-        kill "$(cat .nm-dev.pid)" 2>/dev/null; rm -f .nm-dev.pid
+    - When you finish, whether validation passed or failed, stop the stack,
+      kill any dev server you started, and remove the whole scratch dir. If
+      the sandbox denies removing it, leave it and say so in your report; the
+      worktree cleanup removes it later:
+        npx supabase stop --workdir "$TMP" --no-backup
+        kill "$(cat "$SCRATCH/nm-dev.pid")" 2>/dev/null
+        rm -rf "$SCRATCH"
       Confirm this run's stack is gone before you report; this must print 0:
         docker ps --format '{{.Names}}' | grep -c "^supabase_db_$NAME$"
