@@ -23,8 +23,7 @@ Drizzle, Vitest, Playwright, local Supabase config) plus a minimal `src/`:
 the app shell (icon rail / mobile bar, nav items), a placeholder home page,
 shared UI primitives (page-failure, error-code), and the shared `lib/`
 (calendar dates, click guard, date range, result, settle, utils), the server
-error boundary (`src/server/boundary`), failure screens, and a
-`/failure-demo` page. Auth is a stub that always returns a demo admin, and
+error boundary (`src/server/boundary`) and failure screens. Auth is a stub that always returns a demo admin, and
 audited writes are a no-op seam. There is no data fetching, real auth, or
 feature code yet. Features land in later PRs.
 
