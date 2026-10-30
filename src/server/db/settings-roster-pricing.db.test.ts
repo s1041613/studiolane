@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Client } from "pg";
 import { insertReturningId, rejectionOf, withRollback } from "@/server/db/test-db";
 
-// 0012 (roster) and 0013 (pricing_plans) rules from docs/settings/shared/04.
+// roster and pricing_plans rules from docs/settings/shared/04.
 // Roster T33; pricing T22, T26.
 
 function teacherPlan(db: Client, name: string): Promise<string> {

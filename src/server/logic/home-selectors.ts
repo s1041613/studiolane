@@ -32,9 +32,9 @@ export function isPast(rental: RentalSummary, now: Date): boolean {
   return now > new Date(rental.endsAt);
 }
 
-// D3: half-open interval overlap on the real startsAt/endsAt instants,
-// replacing the old same-`date`-string + string-time comparison that
-// missed a cross-midnight rental's spillover into the next day.
+// D3: half-open interval overlap on the real startsAt/endsAt instants, so a
+// cross-midnight rental's spillover into the next day isn't missed (a
+// same-`date`-string + string-time comparison would miss it).
 function overlaps(a: RentalSummary, b: RentalSummary): boolean {
   return (
     a.room === b.room &&

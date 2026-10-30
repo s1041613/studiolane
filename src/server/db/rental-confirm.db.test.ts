@@ -6,9 +6,9 @@ import { TEST_DATABASE_URL } from "@/server/db/test-database-url";
 import { classifyDbError } from "@/server/boundary/db-errors";
 import { PaymentMethod, PaymentState, RentalStatus } from "@/server/types/home";
 
-// confirm_booking_with_cancellations (migration 0009) refuses with its own
-// sentence when a row changed meanwhile; the repository passes that on as a
-// refusal the person can read, and anything else as a classifiable error.
+// confirm_booking_with_cancellations refuses with its own sentence when a
+// row changed meanwhile; the repository passes that on as a refusal the
+// person can read, and anything else as a classifiable error.
 process.env.DATABASE_URL = TEST_DATABASE_URL;
 
 const { RentalRepository } = await import("@/server/repositories/rental-repository");

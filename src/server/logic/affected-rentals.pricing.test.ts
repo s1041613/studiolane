@@ -76,10 +76,10 @@ describe("unpaidRentalsForPlan", () => {
     expect(listed[13].date).toBe("2026-10-30");
   });
 
-  // 價格方案 I-04 / R19 (decided 2026-10-13 / 2026-10-20): a booking priced by
-  // its own role's 指定價格 or 折扣 doesn't owe the plan's rate, so a rate
-  // change can't affect it. private_lesson's teacher pricing (指定 0/0) comes
-  // from SAMPLE_PURPOSE_SETTINGS unchanged.
+  // 價格方案 I-04 / R19: a booking priced by its own role's 指定價格 or 折扣
+  // doesn't owe the plan's rate, so a rate change can't affect it.
+  // private_lesson's teacher pricing (指定 0/0) comes from
+  // SAMPLE_PURPOSE_SETTINGS unchanged.
   it("I-04 / T20: leaves out unpaid bookings whose role has its own pricing for the purpose", () => {
     const rentals = [
       rosterRental("lesson", "示範小雨", "2026-10-15", { purpose: "private_lesson", amount: 0 }),
@@ -129,10 +129,10 @@ describe("unpaidRentalsForPlan", () => {
     expect(unpaidRentalsForPlan(TEACHER_PLAN, rentals, ROSTER, purposes, NOW)).toEqual([]);
   });
 
-  // R20 known limitation (decided 2026-10-20): once a role is closed, its
-  // pricing is ignored (rolePricingFor → null), so the booking falls back to
-  // looking like plan-priced and gets listed even though its amount came
-  // from the old pricing, not the plan. Documented as current behaviour.
+  // R20 known limitation: once a role is closed, its pricing is ignored
+  // (rolePricingFor → null), so the booking falls back to looking like
+  // plan-priced and gets listed even though its amount came from the old
+  // pricing, not the plan. Documented as current behaviour.
   it("R20: closing the role that used to have its own pricing makes its old bookings reappear in the reminder", () => {
     const purposes: PurposeSetting[] = PURPOSES.map((setting) =>
       setting.purpose === "yoga"

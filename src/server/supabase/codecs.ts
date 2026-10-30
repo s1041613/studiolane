@@ -39,8 +39,7 @@ export function purposeFromLabel(label: string): PurposeCode | null {
 }
 
 // --- role (pricing_plans.role / roster.role) --------------------------------
-// R2 in the migration plan: this is the DB's "身分類型" (identity category),
-// previously a dead TS field (PricingPlan.category) never shown in any UI.
+// R2 in the migration plan: this is the DB's "身分類型" (identity category).
 
 // guest_teacher: outside teachers who cover classes; they are never offered
 // as booking renters.
@@ -111,8 +110,8 @@ export function paymentStateFromLabel(label: string): PaymentStateCode | null {
 }
 
 // --- payment_method ----------------------------------------------------------
-// Migration 0008 removed "free": a free booking has a null payment method and
-// payment_state = not_required instead.
+// A free booking has a null payment method; payment_state = not_required
+// marks that no payment is owed.
 
 export type PaymentMethodCode = "on_site" | "transfer";
 

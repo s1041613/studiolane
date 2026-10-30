@@ -189,7 +189,7 @@ describe("conflictInfo", () => {
     expect(conflictInfo(b, list)).toBe(2);
   });
 
-  // D3: same cross-midnight overlap regression as booking.test.ts/
+  // D3: same cross-midnight overlap case as booking.test.ts/
   // booking-rules.test.ts, verified here too since conflictInfo has its own
   // overlaps() implementation.
   it("flags a conflict between a cross-midnight rental and the next morning's booking (D3)", () => {

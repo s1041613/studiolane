@@ -7,8 +7,6 @@ import type { RentalRule } from "@/server/logic/booking-rules";
 import { schedulingRangeOn } from "@/server/logic/scheduling-range";
 import { addDays, isoWeekday } from "@/server/logic/date";
 
-// docs/rental-time-rules/04-db-design: migration 0019 (rental_rules.kind).
-
 function insertRule(db: PgClient, values: string): Promise<string | null> {
   return rejectionOf(db, `insert into rental_rules (kind, room, weekday, on_date, start_time, end_time, effect, reason) values ${values}`);
 }
@@ -47,9 +45,9 @@ describe("rental_rules.kind constraints (0019)", () => {
   });
 });
 
-// AC33 / 閘門 3: the seed's rules, read as 上課時段 and as the plain weekly
-// blocks named 營業時段 they used to be. 可以租 must not change on any day; 可以排課 loses only 平日白天,
-// which was never class time (decision D2).
+// AC33 / 閘門 3: the seed's rules, readable both as 上課時段 and as the plain
+// weekly blocks 營業時段. 可以租 must not change on any day; 可以排課 loses only
+// 平日白天, which was never class time (decision D2).
 type SeedRuleRow = {
   id: string;
   kind: RentalRule["kind"];

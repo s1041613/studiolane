@@ -58,8 +58,8 @@ describe("送出時的檢查", () => {
     });
   });
 
-  // S-3 rewritten (2026-10-13): 作品班、私課 are open to teachers now; what
-  // closes a purpose is archiving it on the purposes page.
+  // S-3: 作品班、私課 are open to teachers now; what closes a purpose is
+  // archiving it on the purposes page.
   it("S-3 / T10: 用途在表單打開後被停用 → 「這個用途已停用」", () => {
     const settings = SAMPLE_PURPOSE_SETTINGS.map((s) =>
       s.purpose === "private_lesson" ? { ...s, archivedAt: "2026-10-01T00:00:00Z" } : s,
@@ -104,7 +104,6 @@ describe("送出時的檢查", () => {
     expect(result).toMatchObject({ ok: false, fieldErrors: { purpose: "僅限 櫃檯" } });
   });
 
-  // Purpose-specific time rules were dropped on 2026-10-13 (S-5 retired).
   it("用途不再有專屬時段：有氧在平日下午也能約", () => {
     const aerobicsA = draft({ room: "A", purpose: "aerobics", slots: [SLOT] });
     expect(validateBookingDraft(aerobicsA, context())).toMatchObject({ ok: true });

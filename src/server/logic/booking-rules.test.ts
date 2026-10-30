@@ -148,10 +148,9 @@ describe("checkBooking against existing registered rentals", () => {
     expect(result.ok).toBe(true);
   });
 
-  // D3 regression: a registered rental that starts the previous night and
-  // spills into this morning (22:30-00:30) used to be invisible to this
-  // day's blockedRanges check, since the rental's `date` field pointed at
-  // the previous day. It must now block the overlapping morning slot.
+  // A registered rental that starts the previous night and spills into this
+  // morning (22:30-00:30) must still block the overlapping morning slot,
+  // even though the rental's `date` field points at the previous day.
   it("blocks a same-morning slot against a cross-midnight registered rental from the previous night (D3)", () => {
     const previousNight = makeRental({
       id: "previous-night",

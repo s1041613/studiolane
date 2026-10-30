@@ -41,8 +41,8 @@ describe("金額怎麼算", () => {
     });
   });
 
-  // M-1 rewritten (2026-10-13): 展演 is free through its 0／0 special price,
-  // and only teachers may book it (the validation rejects anyone else).
+  // M-1: 展演 is free through its 0／0 special price, and only teachers may
+  // book it (the validation rejects anyone else).
   it("M-1 / U10 / T09: 展演老師用特別價 0 元", () => {
     expect(quoteSlot({ renter: teacher, purpose: "performance", room: "A", slot: slot("10:00", "12:00") }, pricing)).toEqual({
       ok: true, hours: 2, amount: 0,
@@ -65,7 +65,7 @@ describe("金額怎麼算", () => {
     expect(quoteSlot({ renter: customer, purpose: "dance", room: "B", slot: slot("10:00", "12:00") }, ctx)).toMatchObject({ amount: 1200 });
   });
 
-  // M-2 rewritten (2026-10-13): no special price — the staff plan is 0／0.
+  // M-2: no special price — the staff plan is 0／0.
   it.each(["front_desk", "photography"] as const)("M-2 / U12 / T09: 櫃檯的 %s 照櫃檯價 0 元", (purpose) => {
     expect(quoteSlot({ renter: staff, purpose, room: "B", slot: slot("10:00", "12:00") }, pricing)).toEqual({
       ok: true, hours: 2, amount: 0,
@@ -104,8 +104,8 @@ describe("金額怎麼算", () => {
     expect(result.ok === false && result.reason).toContain("找不到價格方案");
   });
 
-  // S-7 rewritten: what skips the plan lookup is 指定價格, not a
-  // hard-coded free purpose.
+  // S-7: what skips the plan lookup is 指定價格, not a hard-coded free
+  // purpose.
   it("S-7: 指定價格的用途不用查價格方案", () => {
     const result = quoteSlot(
       { renter: teacher, purpose: "performance", room: "A", slot: slot("10:00", "11:00") },

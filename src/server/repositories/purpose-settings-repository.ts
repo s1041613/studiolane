@@ -88,7 +88,7 @@ export class PurposeSettingsRepository {
     }
   }
 
-  // purpose_settings rows are fixed (0014 B5): writes only ever update one of
+  // purpose_settings rows are fixed (B5): writes only ever update one of
   // them. Its row is locked first (select … for update), so a concurrent save
   // or archive of the same purpose waits here. Only then is archived_at
   // checked, so an archive committed meanwhile is seen (03 E08), and the

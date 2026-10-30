@@ -17,7 +17,7 @@ export type RosterEntry = {
   pricingPlanId: string;
   // Bare handle without "@" (roster_instagram_handle); "" when unknown.
   instagram: string;
-  // Soft delete (0012): set = 已停用. Pickers skip archived people; history
+  // Soft delete: set = 已停用. Pickers skip archived people; history
   // keeps showing them.
   archivedAt: string | null;
 };
@@ -30,7 +30,7 @@ export type PricingPlan = {
   appliesTo: string;
   roomARate: number;
   roomBRate: number;
-  // Soft delete (0013). Archived plans still price existing bookings (T20).
+  // Soft delete. Archived plans still price existing bookings (T20).
   archivedAt: string | null;
 };
 
@@ -40,7 +40,7 @@ export type PricingContext = {
 };
 
 // What quoting a booking reads: plans for most purposes, purpose_settings for
-// the ones with a special price (0014).
+// the ones with a special price.
 export type QuoteContext = PricingContext & {
   purposeSettings: PurposeSetting[];
 };
