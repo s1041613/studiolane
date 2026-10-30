@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { NETWORK_FAILURE } from "@/lib/settle";
-import { SectionFailure, dataOrEmpty } from "@/components/shared/failures/section-failure";
+import { FailedList, SectionFailure, dataOrEmpty } from "@/components/shared/failures/section-failure";
 
 const dbDown = { kind: "message", code: "UNAVAILABLE", message: "資料庫暫時連不上，請稍後再試一次", errorId: "a1b2c3d4" } as const;
 
@@ -42,5 +42,14 @@ describe("dataOrEmpty", () => {
   it("hands a board empty data plus the failure, so it can still draw its toolbar", () => {
     expect(dataOrEmpty({ ok: false, error: dbDown }, [])).toEqual({ data: [], failure: dbDown });
     expect(dataOrEmpty({ ok: true, data: [1] }, [])).toEqual({ data: [1], failure: null });
+  });
+
+  it("FailedList keeps a table's column heads above the failure", () => {
+    render(<FailedList message="人員名單暫時讀不到" failure={dbDown} head={<thead><tr><th>名字</th></tr></thead>} />);
+
+    const head = screen.getByRole("columnheader", { name: "名字" });
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("人員名單暫時讀不到");
+    expect(head.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
