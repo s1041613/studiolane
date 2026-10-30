@@ -77,6 +77,16 @@ describe("runAction", () => {
     expect(result).toMatchObject({ ok: false, error: { code: "INTERNAL", message: "暫時讀不到資料，請稍後再試一次" } });
   });
 
+  it("treats a coded error that is not a database error as unexpected", async () => {
+    const result = unseal(
+      await runAction(spec, async () => {
+        throw Object.assign(new Error("ENOENT: no such file or directory"), { code: "ENOENT" });
+      }),
+    );
+
+    expect(result).toMatchObject({ ok: false, error: { code: "INTERNAL", message: "系統發生未預期的錯誤，資料沒有改變" } });
+  });
+
   it("classifies a database error by its SQLSTATE", async () => {
     const pg = Object.assign(new Error("duplicate key value"), { code: "23505" });
     const result = unseal(
