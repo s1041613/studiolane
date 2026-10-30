@@ -7,6 +7,9 @@
     "src/server/logic/*.ts",
     "src/server/repositories/*.ts",
     "src/server/types/*.ts",
+    "src/components/settings/*.ts",
+    "src/components/shared/**/*.{ts,tsx}",
+    "src/components/ui/*.tsx"
   ],
   "ignoreBinaries": [
     "gitleaks"

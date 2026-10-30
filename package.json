@@ -16,6 +16,9 @@
     "pii:history": "gitleaks git --log-opts=\"${PII_BASE:-origin/main}..HEAD\" --config .gitleaks.toml -v --redact"
   },
   "dependencies": {
+    "@base-ui/react": "^1.9.0",
+    "class-variance-authority": "^0.7.1",
+    "cmdk": "^1.1.1",
     "cn": "^0.4.0",
     "drizzle-orm": "^0.45.4",
     "drizzle-zod": "^0.8.3",
