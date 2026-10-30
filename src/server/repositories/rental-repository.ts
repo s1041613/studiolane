@@ -164,7 +164,7 @@ export class RentalRepository {
     // RentalStatus enum values are already the DB's English codes
     // (src/server/types/home.ts), so this is a plain type assertion, not a
     // label-to-code lookup.
-    const code = status as unknown as RentalStatusCode;
+    const code = status as RentalStatusCode;
     await currentDb()
       .update(rentals)
       .set(note === undefined ? { status: code } : { status: code, note })
@@ -180,7 +180,7 @@ export class RentalRepository {
     cancellations: Array<{ id: string; note: string }>,
   ): Promise<void> {
     // RentalStatus enum values are the DB codes already.
-    const next = nextStatus as unknown as RentalStatusCode;
+    const next = nextStatus as RentalStatusCode;
     try {
       await currentDb().execute(
         sql`select confirm_booking_with_cancellations(${id}::uuid, ${next}::rental_status, ${JSON.stringify(cancellations)}::jsonb)`,

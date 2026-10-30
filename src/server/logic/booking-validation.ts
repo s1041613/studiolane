@@ -139,7 +139,8 @@ export function validateBookingDraft(
       errors[`slots.${index}`] = "這個時段已經過去了"; // S-9
       return;
     }
-    if (draft.renter && ctx.existingRentals.some((r) => isOwnOverlap(r, draft.renter!, draft.room, interval))) {
+    const draftRenter = draft.renter;
+    if (draftRenter && ctx.existingRentals.some((r) => isOwnOverlap(r, draftRenter, draft.room, interval))) {
       errors[`slots.${index}`] = "你已經預約過這個時段"; // S-8
       return;
     }

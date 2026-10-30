@@ -1,4 +1,3 @@
-import { toStartsEndsAt } from "@/server/supabase/codecs";
 import type { PurposeCode, RoleCode } from "@/server/supabase/codecs";
 
 export type IsoDate = string; // "2026-10-16"
@@ -41,7 +40,3 @@ export type BookingDraft = {
 export type CheckResult = { ok: true } | { ok: false; reason: string; ruleId?: string };
 
 export type TimeWindow = { start: HHmm; end: HHmm };
-
-// Re-exported for call sites that need to build a DateTimeInterval from a
-// slot's date/start/end/isCrossMidnight without importing codecs directly.
-export { toStartsEndsAt };

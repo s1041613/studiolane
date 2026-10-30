@@ -1,8 +1,6 @@
-// Phase 1 of the Supabase migration plan (.lavish/supabase-migration-plan.html):
-// isolated, unit-testable conversions between the DB's English enum codes /
+// Isolated, unit-testable conversions between the DB's English enum codes /
 // timestamptz columns and the application's Chinese-label / date+time-string
-// domain shapes. Nothing here talks to Supabase or touches a repository —
-// that wiring happens in Phase 3.
+// domain shapes. Nothing here talks to Supabase or touches a repository.
 
 // --- purpose ---------------------------------------------------------------
 
