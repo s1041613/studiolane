@@ -7,8 +7,7 @@ import { intervalsOverlap, toStartsEndsAt } from "@/server/supabase/codecs";
 // One row of rental_rules, shown as one line on a settings screen. A "block"
 // row marks time that is NOT rentable; getAvailableWindows computes the
 // complement. An "open" row only exists for one date and lifts that date's
-// weekly blocks. Rules apply to every purpose (purpose-specific rules were
-// dropped on 2026-10-13).
+// weekly blocks. Rules apply to every purpose.
 export type RuleEffect = "block" | "open";
 
 // docs/rental-time-rules: 上課時段 (class_hours, managed on the class schedule page)
@@ -102,9 +101,9 @@ export function ruleBlocksForDay(room: "A" | "B", date: IsoDate, rules: readonly
 // D3: registered rentals that overlap this calendar day's [00:00, 24:00)
 // window, converted from their real startsAt/endsAt instant to minutes
 // since that day's midnight. A rental starting the previous night (e.g.
-// 22:30) and spilling into this day (00:00-00:30) now shows up here —
-// comparing by `r.date === date` alone used to miss that spillover
-// entirely, since the rental's `date` was the previous day's.
+// 22:30) and spilling into this day (00:00-00:30) is included here too —
+// comparing by `r.date === date` alone would miss that spillover entirely,
+// since the rental's `date` is the previous day's.
 function registeredRentalRangesForDay(
   room: "A" | "B",
   date: IsoDate,

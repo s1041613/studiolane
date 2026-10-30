@@ -1,8 +1,8 @@
 // Shared test fixture builder for RentalSummary, used across
 // booking.test.ts, booking-rules.test.ts, home-selectors.test.ts, and
-// bookings.test.ts. Centralized so the five-plus call sites that used to
-// each hand-roll a makeRental() can't drift out of sync with the
-// RentalSummary shape (e.g. forgetting isCrossMidnight or a *Label field).
+// bookings.test.ts. Centralized so the five-plus call sites can't drift out
+// of sync with the RentalSummary shape (e.g. forgetting isCrossMidnight or
+// a *Label field).
 import { RentalStatus, PaymentMethod, PaymentState } from "@/server/types/home";
 import type { RentalSummary } from "@/server/types/home";
 import { toStartsEndsAt } from "@/server/supabase/codecs";
@@ -81,14 +81,14 @@ export const STAFF: RosterEntry = {
 // === pricing plans (價格方案) ===
 export const SAMPLE_PLANS: PricingPlan[] = [
   { id: "plan-teacher", category: "teacher", appliesTo: "", roomARate: 500, roomBRate: 250, archivedAt: null },
-  // 0013: staff use the rooms for free (櫃檯價 0／0).
+  // Staff use the rooms for free (櫃檯價 0／0).
   { id: "plan-staff", category: "staff", appliesTo: "", roomARate: 0, roomBRate: 0, archivedAt: null },
   { id: "plan-customer", category: "customer", appliesTo: "", roomARate: 1250, roomBRate: 600, archivedAt: null },
 ];
 
 // === purpose_settings (用途) ===
-// The table seeded by 0014, after the E-5 migration: teachers book
-// 展演／作品班／私課 free (paid elsewhere); everything else uses the plan.
+// Teachers book 展演／作品班／私課 free (paid elsewhere); everything else uses
+// the plan.
 export const SAMPLE_PURPOSE_SETTINGS: PurposeSetting[] = [
   { purpose: "dance", allowedRoles: ["teacher", "staff", "customer"], rolePricing: {}, archivedAt: null },
   { purpose: "aerobics", allowedRoles: ["teacher", "staff", "customer"], rolePricing: {}, archivedAt: null },

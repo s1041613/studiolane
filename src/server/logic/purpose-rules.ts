@@ -2,7 +2,7 @@ import type { Purpose } from "@/server/logic/booking";
 import { roleToLabel } from "@/server/supabase/codecs";
 import type { RoleCode } from "@/server/supabase/codecs";
 
-// Roles a purpose can be opened to; guest teachers never rent (0014 B1).
+// Roles a purpose can be opened to; guest teachers never rent (B1).
 export type BookingRole = Extract<RoleCode, "teacher" | "staff" | "customer">;
 
 export const BOOKING_ROLES: readonly BookingRole[] = ["teacher", "staff", "customer"];

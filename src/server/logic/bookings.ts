@@ -53,8 +53,8 @@ function withinDateRange(rental: RentalSummary, from?: string, to?: string): boo
   return touchedDays(rental).some((day) => (!from || day >= from) && (!to || day <= to));
 }
 
-// T-列表-6: 預約追蹤 opens on what still needs confirming (user decision
-// 2026-10-15: 待確認 only, no longer 待付款 too).
+// T-列表-6: 預約追蹤 opens on what still needs confirming (待確認 only, not
+// 待付款).
 export const DEFAULT_STATUS_FILTER: RentalStatus[] = [RentalStatus.Pending];
 
 export const ALL_STATUSES: RentalStatus[] = [
@@ -66,9 +66,9 @@ export const ALL_STATUSES: RentalStatus[] = [
   RentalStatus.Cancelled,
 ];
 
-// The filter bar's state. Filters live only on the page (user decision
-// 2026-10-15): nothing is remembered, and a reload starts from the default.
-// Edits stay a draft until 查詢 applies them.
+// The filter bar's state. Filters live only on the page: nothing is
+// remembered, and a reload starts from the default. Edits stay a draft
+// until 查詢 applies them.
 export interface BookingFilterDraft {
   q: string;
   pay: string;

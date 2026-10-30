@@ -16,7 +16,7 @@ function plan(db: Client, role: "teacher" | "staff", name: string): Promise<stri
 
 async function customerPlan(db: Client): Promise<string> {
   const { rows } = await db.query<{ id: string }>("select id from pricing_plans where role = 'customer'");
-  // There is only ever one customer plan (0005); reuse the seeded one.
+  // There is only ever one customer plan; reuse the seeded one.
   if (rows[0]) return rows[0].id;
   return insertReturningId(
     db,

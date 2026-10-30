@@ -1,11 +1,10 @@
 import type { Result } from "@/lib/result";
 
-// Phase 2 of the Supabase migration plan: these enums now hold the DB's
-// English codes (matching supabase/migrations/0003, 0004), not the Chinese
-// labels the UI shows. Call sites that only ever compare against an enum
-// member (e.g. `r.status === RentalStatus.Registered`) are unaffected by
-// this value change; anything that needs the Chinese label for display goes
-// through src/server/supabase/codecs.ts's *ToLabel functions.
+// These enums hold the DB's English codes, not the Chinese labels the UI
+// shows. Call sites that only ever compare against an enum member (e.g.
+// `r.status === RentalStatus.Registered`) are unaffected by that; anything
+// that needs the Chinese label for display goes through
+// src/server/supabase/codecs.ts's *ToLabel functions.
 export enum RentalStatus {
   Pending = "pending",
   AwaitingPayment = "awaiting_payment",
@@ -20,17 +19,17 @@ export enum PaymentMethod {
   Transfer = "transfer",
 }
 
-// NotRequired marks free bookings (migration 0008): their payment method is
-// null, and the DB enforces null method <=> not_required.
+// NotRequired marks free bookings: their payment method is null, and the DB
+// enforces null method <=> not_required.
 export enum PaymentState {
   Unpaid = "unpaid",
   Paid = "paid",
   NotRequired = "not_required",
 }
 
-// Replaces the separate roomA/roomB booleans (the DB's `room` column is a
-// single 'A' | 'B' value; two independent booleans never matched that and
-// let roomA===roomB===false or both-true slip past the type system).
+// The DB's `room` column is a single 'A' | 'B' value; two independent
+// roomA/roomB booleans would let roomA===roomB===false or both-true slip
+// past the type system.
 //
 // Carries both the DB code (`purpose`, `paymentMethod`) for domain
 // comparisons/codec round-tripping, and the derived Taipei-local display

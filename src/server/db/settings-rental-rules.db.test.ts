@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Client } from "pg";
 import { insertReturningId, rejectionOf, withRollback } from "@/server/db/test-db";
 
-// 0015 (rental_rules) rules from docs/settings/shared/04-db-design.html, 租借時段.
+// rental_rules rules from docs/settings/shared/04-db-design.html, 租借時段.
 // Rental rules T22–T24.
 
 // 2031-03-03 is a Monday (isodow 1).

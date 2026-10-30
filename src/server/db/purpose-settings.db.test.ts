@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { rejectionOf, withRollback } from "@/server/db/test-db";
 
-// 0014 (purpose_settings) rules from docs/settings/shared/04 (用途 B1–B6).
+// purpose_settings rules from docs/settings/shared/04 (用途 B1–B6).
 // Purposes T12, T14, T15; T13 (special rates) moved to purpose_role_pricing
 // (purpose-role-pricing.db.test.ts, E-5 T24).
 

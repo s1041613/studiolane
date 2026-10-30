@@ -30,7 +30,7 @@ export const purposeRolePricing = pgTable("purpose_role_pricing", {
   // B1: one row per purpose and role; guest teachers never rent.
   unique("purpose_role_pricing_purpose_role").on(table.purpose, table.role),
   check("purpose_role_pricing_role", sql`role = ANY (ARRAY['teacher'::role, 'staff'::role, 'customer'::role])`),
-  // B2 / B3: the columns of the other mode stay null. coalesce as in 0014:
+  // B2 / B3: the columns of the other mode stay null. coalesce:
   // `null between 0 and 99999` is null, which a check would let through.
   check("purpose_role_pricing_price", sql`(mode <> 'price'::purpose_pricing_mode) OR (COALESCE((((rate_a >= 0) AND (rate_a <= 99999)) AND ((rate_b >= 0) AND (rate_b <= 99999))), false) AND (pay_percent IS NULL))`),
   check("purpose_role_pricing_discount", sql`(mode <> 'discount'::purpose_pricing_mode) OR (COALESCE(((pay_percent >= 10) AND (pay_percent <= 99)), false) AND (rate_a IS NULL) AND (rate_b IS NULL))`),

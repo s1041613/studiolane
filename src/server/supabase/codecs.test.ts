@@ -129,8 +129,8 @@ describe("intervalsOverlap", () => {
 
   it("detects the cross-midnight conflict that date-string comparison used to miss (D3)", () => {
     // 10/16 22:30-00:30 (cross-midnight) vs 10/17 00:00-00:30 (same day):
-    // comparing by `date` field alone (0006-era logic) never caught this,
-    // because the first rental's `date` column was "2026-10-16".
+    // comparing by `date` field alone never catches this, because the first
+    // rental's `date` column is "2026-10-16".
     const previousNight = at("2026-10-16", "22:30", "00:30", true);
     const nextMorning = at("2026-10-17", "00:00", "00:30");
     expect(intervalsOverlap(previousNight, nextMorning)).toBe(true);
