@@ -61,7 +61,7 @@ test:
       scenarios as untested and name the limit as the reason.
     - Name the stack after the branch shown in this prompt's Context (the Test
       worktree is detached, so git cannot tell you). Use slot 8 (ports
-      583xx, inspector 8283) unless its ports are taken, else slot 9 (593xx, 8293):
+      583xx, inspector 8283), or slot 9 (593xx, 8293) per "Port conflicts" below:
         BR="<branch from Context>"; SLOT=8   # or 9
         NAME=studiolane-nm-$(printf %s "$BR" | tr "/_" "--" | tr "A-Z" "a-z" | tr -cd "a-z0-9-" | cut -c1-40)
         TMP="$SCRATCH/nm-stack"; mkdir -p "$TMP"; cp -R supabase "$TMP/"
@@ -95,3 +95,14 @@ test:
         rm -rf "$SCRATCH"
       Confirm this run's stack is gone before you report; this must print 0:
         docker ps --format '{{.Names}}' | grep -c "^supabase_db_$NAME$"
+
+    Port conflicts
+    - Before picking ports, list every local Supabase stack and its ports:
+      `docker ps --format '{{.Names}} {{.Ports}}'`. Other projects run their
+      own stacks on this machine, e.g. 543xx and 553xx.
+    - Pick a range nobody uses: the shared studiolane stack is 544xx; slot 8
+      (583xx, inspector 8283) and slot 9 (593xx, 8293) are disposable. Check
+      `lsof -nP -iTCP:<port> -sTCP:LISTEN` too, for non-docker listeners.
+    - If ports still collide on start, switch to the other slot; never stop
+      or reset another project's stack. You cannot write decisions.tsv, so
+      report the collision and the chosen range so the Lead can record it.
