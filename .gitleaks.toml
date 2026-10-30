@@ -1,0 +1,58 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "email-address"
+description = "Generic email address (potential PII)"
+regex = '''[A-Za-z0-9._%+-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}'''
+
+[rules.allowlist]
+description = "Fixture/test email domains, plus the Supabase CLI's own commented-out placeholder in supabase/config.toml"
+regexTarget = "match"
+regexes = [
+  '''(?i)@test\.local$''',
+  '''(?i)@example\.(?:com|org|net)$''',
+  '''(?i)^admin@email\.com$''',
+]
+
+[[rules]]
+id = "instagram-url"
+description = "Instagram profile or post URL (potential PII)"
+regex = '''(?i)(?:https?://)?(?:www\.)?instagram\.com/[A-Za-z0-9_.][\w./?=&%-]*'''
+
+[[rules]]
+id = "google-calendar-id"
+description = "Google Calendar ID (...@group.calendar.google.com) or a calendar.google.com/calendar link (potential PII)"
+regex = '''(?i)[A-Za-z0-9._%+-]+@group\.calendar\.google\.com|calendar\.google\.com/calendar[\w./?=&%-]*'''
+
+[[rules]]
+id = "tw-mobile-phone"
+description = "Taiwan mobile phone number, 09xx-xxx-xxx or +886 9xx form (potential PII)"
+regex = '''\b09\d{2}[-\s]\d{3}[-\s]\d{3}\b|\+886[-\s]?9(?:\d{2}[-\s]\d{3}[-\s]\d{3}|[-\s]\d{4}[-\s]\d{4})\b'''
+
+[[rules]]
+id = "tw-landline-phone"
+description = "Taiwan landline phone number, 0X-XXXX-XXXX or (0X) form (potential PII)"
+regex = '''\(0[2-9]\d?\)[-\s]?\d{3,4}[-\s]\d{4}\b|\b0[2-9]\d?[-\s]\d{3,4}[-\s]\d{4}\b'''
+
+[[rules]]
+id = "postgres-connection-string"
+description = "Postgres connection string with embedded user:password credentials"
+keywords = ["postgres://", "postgresql://"]
+regex = '''postgres(?:ql)?://[^:/\s@'"]+:[^@/\s'"]+@[^\s'"]+'''
+
+[allowlist]
+# `gitleaks dir` ignores .gitignore, so generated dirs are listed here.
+description = "Lockfiles and generated directories"
+paths = [
+  '''(?:^|/)pnpm-lock\.yaml$''',
+  '''(?:^|/)node_modules(?:/.*)?$''',
+  '''(?:^|/)\.next(?:/.*)?$''',
+  '''(?:^|/)\.vercel(?:/.*)?$''',
+  '''(?:^|/)coverage(?:/.*)?$''',
+  '''(?:^|/)playwright-report(?:/.*)?$''',
+  '''(?:^|/)test-results(?:/.*)?$''',
+  '''(?:^|/)\.worktrees(?:/.*)?$''',
+  '''(?:^|/)__pycache__(?:/.*)?$''',
+  '''\.tsbuildinfo$''',
+]

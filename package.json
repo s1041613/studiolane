@@ -12,7 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
     "knip": "knip",
-    "pii": "bash scripts/pii-scan.sh"
+    "pii": "gitleaks dir . --config .gitleaks.toml --redact && f=\"$HOME/.config/studiolane/gitleaks-names.toml\" && { [ ! -f \"$f\" ] || gitleaks dir . --config \"$f\" --redact; }",
+    "pii:history": "gitleaks git --log-opts=\"${PII_BASE:-origin/main}..HEAD\" --config .gitleaks.toml -v --redact"
   },
   "dependencies": {
     "cn": "^0.4.0",

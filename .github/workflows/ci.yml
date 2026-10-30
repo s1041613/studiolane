@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # pii:history scans the PR's commit range.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -28,8 +31,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: '8.30.1'
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          asset="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSLO "${base}/${asset}"
+          curl -sSLO "${base}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " ${asset}\$" "gitleaks_${GITLEAKS_VERSION}_checksums.txt" | sha256sum -c -
+          tar -xzf "$asset" gitleaks
+          chmod +x gitleaks
+          mkdir -p "$HOME/.local/bin"
+          mv gitleaks "$HOME/.local/bin/gitleaks"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          rm -f "$asset" "gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+
       - name: PII scan
         run: pnpm pii
+
+      - name: PII history scan (PR diff)
+        if: github.event_name == 'pull_request'
+        env:
+          PII_BASE: ${{ github.event.pull_request.base.sha }}
+        run: pnpm pii:history
 
       - name: Lint
         run: pnpm lint
