@@ -3,7 +3,10 @@
   "entry": [
     "src/lib/result.ts",
     "src/server/db/client.ts",
-    "src/server/drizzle/schema/*.ts"
+    "src/server/drizzle/schema/*.ts",
+    "src/server/logic/*.ts",
+    "src/server/repositories/*.ts",
+    "src/server/types/*.ts",
   ],
   "ignoreBinaries": [
     "gitleaks"
