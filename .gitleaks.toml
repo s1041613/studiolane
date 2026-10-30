@@ -43,7 +43,7 @@ regex = '''postgres(?:ql)?://[^:/\s@'"]+:[^@/\s'"]+@[^\s'"]+'''
 
 [allowlist]
 # `gitleaks dir` ignores .gitignore, so generated dirs are listed here.
-description = "Lockfiles and generated directories"
+description = "Lockfiles, generated directories, and .env* files (including .env.example)"
 paths = [
   '''(?:^|/)pnpm-lock\.yaml$''',
   '''(?:^|/)node_modules(?:/.*)?$''',
