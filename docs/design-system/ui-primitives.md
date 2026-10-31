@@ -249,8 +249,10 @@ share the same `NAV_ITEMS` list, which has three items today: `首頁` (home),
 
 `AppShell` also decides whether to show a page title. The `pageTitle`
 function reads the path to choose the title text. Only `/bookings/new` has
-its own fixed title, `預約教室` (book a room). Every page under `/settings`
-shows `設定` (settings). Every other path shows no title bar.[^nav-items]
+its own fixed title, `預約教室` (book a room). Every page under
+`/bookings/batch/` shows `預約明細` (booking detail). Every page under
+`/settings` shows `設定` (settings). Every other path shows no title
+bar.[^nav-items]
 
 [^button]: Button component
 [^action-button]: ActionButton component
