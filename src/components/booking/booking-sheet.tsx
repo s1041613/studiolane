@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { RoomPicker } from "@/components/booking/room-picker";
 import { MultiDatePicker } from "@/components/booking/multi-date-picker";
 import { SlotCard } from "@/components/booking/slot-card";
@@ -12,7 +13,6 @@ import { ConflictConfirmDialog } from "@/components/booking/conflict-confirm-dia
 import { Card } from "@/components/ui/card";
 import { Field, focusFirstError } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
-import { NoticeDialog } from "@/components/ui/notice-dialog";
 import { ActionFailure, type ShownFailure } from "@/components/shared/failures/action-failure";
 import { SectionFailure } from "@/components/shared/failures/section-failure";
 import type { Failure } from "@/lib/result";
@@ -82,9 +82,7 @@ export function BookingSheet({
   // Someone else's held, overlapping booking(s) — null while the dialog is
   // closed, the list to show while it's open.
   const [conflicts, setConflicts] = useState<BookingConflict[] | null>(null);
-  // How many rentals the last successful submit wrote; null while the
-  // success notice is closed.
-  const [successCount, setSuccessCount] = useState<number | null>(null);
+  const router = useRouter();
 
   const ctx = useMemo(
     () => ({
@@ -195,31 +193,14 @@ export function BookingSheet({
     focusFirstError(first ?? null);
   }
 
-  // Back to a blank form after the success notice's 確定; the page stays
-  // instead of navigating away.
-  function resetForm() {
-    setRenter(null);
-    setRoom(DEFAULT_ROOM);
-    setDates([]);
-    setSlots({});
-    setPurpose(DEFAULT_PURPOSE);
-    setClearedNote(null);
-    setPayment(DEFAULT_PAYMENT);
-    setNote("");
-    setShowErrors(false);
-    setServerErrors(null);
-    setSubmitError(null);
-    setConflicts(null);
-    setSuccessCount(null);
-  }
-
   // Shared by the first attempt (acknowledgedIds = []) and 仍要送出
   // (acknowledgedIds = the ids the conflict dialog just showed).
   async function trySubmit(acknowledgedIds: string[]) {
     const result = await settle(submitBooking(draft, acknowledgedIds));
     if (result.ok) {
       setConflicts(null);
-      setSuccessCount(result.data.rentalIds.length);
+      // S-完成-1: leave the form for this submission's details page.
+      router.push(`/bookings/batch/${result.data.batchId}`);
     } else if (result.error.kind === "fields") {
       setConflicts(null);
       setServerErrors({ draftKey, errors: result.error.fields });
@@ -357,13 +338,6 @@ export function BookingSheet({
         conflicts={conflicts ?? []}
         onCancel={() => setConflicts(null)}
         onConfirmAnyway={() => trySubmit((conflicts ?? []).map((c) => c.id))}
-      />
-
-      <NoticeDialog
-        open={successCount !== null}
-        onOpenChange={(open) => !open && resetForm()}
-        title="預約已送出"
-        description={`共 ${successCount ?? 0} 筆`}
       />
     </Card>
   );
