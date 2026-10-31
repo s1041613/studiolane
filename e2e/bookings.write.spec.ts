@@ -47,6 +47,7 @@ function isoDaysFromNow(days: number): string {
 const FREE_SLOT_DATE = isoDaysFromNow(100);
 const CONFLICT_DATE = isoDaysFromNow(107);
 const TAKEN_DATE = isoDaysFromNow(114);
+const LIST_DATE = isoDaysFromNow(121);
 const SLOT_START = "14:00";
 const SLOT_END = "15:00";
 
@@ -144,8 +145,8 @@ test("a free slot books through the form and the row lands in rentals", async ({
     await notice.getByRole("button", { name: "確定", exact: true }).click();
     await expect(notice).toBeHidden();
 
-    const { rows } = await db.query<{ room: string; starts_at: string; ends_at: string; status: string }>(
-      "select room, starts_at, ends_at, status from rentals where renter_name = $1",
+    const { rows } = await db.query<{ id: string; room: string; starts_at: string; ends_at: string; status: string }>(
+      "select id, room, starts_at, ends_at, status from rentals where renter_name = $1",
       [renterName],
     );
     expect(rows).toHaveLength(1);
@@ -153,6 +154,14 @@ test("a free slot books through the form and the row lands in rentals", async ({
     expect(rows[0].status).toBe("pending");
     expect(new Date(rows[0].starts_at).toISOString()).toBe(new Date(taipeiInstant(FREE_SLOT_DATE, SLOT_START)).toISOString());
     expect(new Date(rows[0].ends_at).toISOString()).toBe(new Date(taipeiInstant(FREE_SLOT_DATE, SLOT_END)).toISOString());
+
+    // E-46: the same rental shows up read-only on /bookings, still pending
+    // and with no rival overlapping it.
+    await page.goto("/bookings");
+    const bookedRow = page.locator(`[data-rent="${rows[0].id}"]`);
+    await expect(bookedRow).toBeVisible();
+    await expect(bookedRow).toContainText("待確認");
+    await expect(bookedRow).not.toContainText("撞單");
   } finally {
     await deleteRentalsNamed(db, renterName);
     await db.end();
@@ -201,6 +210,17 @@ test("an overlapping slot is blocked until 仍要送出, and 取消 writes nothi
     await expect(notice).toBeHidden();
 
     expect(await countRentalsNamed(db, renterName)).toBe(1);
+
+    // E-46: /bookings flags both sides of the acknowledged overlap as 撞單,
+    // but leaves an unrelated booking (the seeded 吳小狗, a different room
+    // at a different time) alone.
+    await page.goto("/bookings");
+    const rivalRow = page.locator("tr").filter({ hasText: rivalName });
+    const renterRow = page.locator("tr").filter({ hasText: renterName });
+    const noConflictRow = page.locator("tr").filter({ hasText: "吳小狗" });
+    await expect(rivalRow).toContainText("撞單");
+    await expect(renterRow).toContainText("撞單");
+    await expect(noConflictRow).not.toContainText("撞單");
   } finally {
     await db.query("delete from rentals where id = $1", [rivalId]);
     await deleteRentalsNamed(db, renterName);
@@ -236,6 +256,44 @@ test("a registered rival's slot is rejected as a field error, not the confirm di
   } finally {
     await db.query("delete from rentals where id = $1", [rivalId]);
     await deleteRentalsNamed(db, renterName);
+    await db.end();
+  }
+});
+
+// E-46: seeds one registered and one awaiting-payment rental directly; the
+// form only ever writes pending ones.
+test("the bookings list shows 已登記 and 待付款 as distinct statuses", async ({ page }) => {
+  const db = new Client({ connectionString: process.env.DATABASE_URL });
+  await db.connect();
+  const registeredName = `E2E列表已登記${STAMP}`;
+  const awaitingName = `E2E列表待付款${STAMP}`;
+
+  const { rows: registeredRows } = await db.query<{ id: string }>(
+    `insert into rentals (room, renter_type, renter_id, renter_name, purpose, starts_at, ends_at, status, payment_state, payment_method, amount)
+     values ('A', 'customer', null, $1, 'dance', $2, $3, 'registered', 'paid', 'transfer', 400)
+     returning id`,
+    [registeredName, taipeiInstant(LIST_DATE, "14:00"), taipeiInstant(LIST_DATE, "15:00")],
+  );
+  const { rows: awaitingRows } = await db.query<{ id: string }>(
+    `insert into rentals (room, renter_type, renter_id, renter_name, purpose, starts_at, ends_at, status, payment_state, payment_method, amount)
+     values ('B', 'customer', null, $1, 'dance', $2, $3, 'awaiting_payment', 'unpaid', 'transfer', 400)
+     returning id`,
+    [awaitingName, taipeiInstant(LIST_DATE, "16:00"), taipeiInstant(LIST_DATE, "17:00")],
+  );
+  const registeredId = registeredRows[0].id;
+  const awaitingId = awaitingRows[0].id;
+
+  try {
+    // LIST_DATE is further out than every other write-spec date, so both
+    // rows sort to the top of page 1.
+    await page.goto("/bookings");
+    const registeredRow = page.locator("tr").filter({ hasText: registeredName });
+    const awaitingRow = page.locator("tr").filter({ hasText: awaitingName });
+
+    await expect(registeredRow).toContainText("已登記");
+    await expect(awaitingRow).toContainText("待付款");
+  } finally {
+    await db.query("delete from rentals where id = any($1)", [[registeredId, awaitingId]]);
     await db.end();
   }
 });
