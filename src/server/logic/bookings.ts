@@ -90,6 +90,13 @@ export function bookingsUrlForDay(date: string): string {
   return `/bookings?${new URLSearchParams({ day: date }).toString()}`;
 }
 
+// E-51: the read-only list's filters, shaped like 預約追蹤's draft so the
+// date, status and payment filters can join later. Only q is read from the
+// URL for now; empty statuses means every status.
+export function bookingListFilters(q?: string): BookingFilterDraft {
+  return { q: q?.trim() ?? "", pay: "", statuses: [], from: "", to: "" };
+}
+
 // E-46: the read-only bookings list's one sort — newest first by date,
 // then start time, then submission, so the most recent activity leads
 // without any status grouping.

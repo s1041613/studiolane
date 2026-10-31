@@ -21,13 +21,16 @@ sources:
   - id: conflict
     resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/home-selectors.ts
     title: Conflict ranking
+  - id: search
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/bookings/booking-search.tsx
+    title: Booking search component
 ---
 
 # Overview
 
 The bookings list at `/bookings` shows every booking in the database.[^page]
-It is read-only. It has no filters and no edit, cancel, or confirm
-buttons.[^table] Staff use it to check that a booking made on
+It is read-only and has no edit, cancel, or confirm buttons; the only filter
+is by renter name.[^search] Staff use it to check that a booking made on
 [the new booking page](booking.md) was saved as expected.
 
 The page reads the rentals fresh on every request.[^page] If the read fails,
@@ -58,13 +61,30 @@ staff pressed 仍要送出 in the conflict dialog. Each such row gets a line
 撞單 · 第 N 位 under the renter's name. N is the row's place among the
 overlapping bookings, ordered by when they were made.[^conflict]
 
+# Search
+
+A search box above the table filters the list by renter name or rental ID.
+It matches part of the text, ignores case, and trims spaces.[^search][^sort] The query lives in the URL as
+`?q=`, submitted through a GET form so it's shareable and works without
+JavaScript.[^page][^search] Submitting an empty box clears the filter; a
+清除 link next to the box, shown only once a query is applied, clears it by
+going back to `/bookings`.[^search]
+
+Filtering never changes the conflict count: 撞單 · 第 N 位 is still ranked
+against every booking, not just the ones the current query matches.[^view]
+A query with no matches shows 找不到符合的預約 instead of the table;
+目前沒有預約 still wins when there are no bookings at all, regardless of
+the query.[^view]
+
 # Out of scope
 
-Filters, editing, cancelling, admin confirmation, and the batch detail page
-are not part of this page yet.
+Editing, cancelling, admin confirmation, and the batch detail page are not
+part of this page yet. Filtering by date, status, or payment is also still
+out of scope — only the renter-name search box above exists so far.
 
 [^page]: Bookings list page
 [^view]: Bookings view component
 [^table]: Booking table component
 [^sort]: Booking list logic
 [^conflict]: Conflict ranking
+[^search]: Booking search component
