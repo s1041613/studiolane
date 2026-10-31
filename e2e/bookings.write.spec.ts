@@ -48,6 +48,7 @@ const FREE_SLOT_DATE = isoDaysFromNow(100);
 const CONFLICT_DATE = isoDaysFromNow(107);
 const TAKEN_DATE = isoDaysFromNow(114);
 const LIST_DATE = isoDaysFromNow(121);
+const MULTI_DATES = [isoDaysFromNow(128), isoDaysFromNow(129), isoDaysFromNow(130)];
 const SLOT_START = "14:00";
 const SLOT_END = "15:00";
 
@@ -66,6 +67,16 @@ async function clickUntil(button: Locator, shown: Locator): Promise<void> {
     await button.click();
     await expect(shown).toBeVisible({ timeout: 1_000 });
   }).toPass({ timeout: 15_000 });
+}
+
+// E-47: a successful submit navigates to /bookings/batch/<batchId> instead
+// of showing a notice.
+const BATCH_URL_PATTERN = /\/bookings\/batch\/[0-9a-f-]{36}$/;
+
+// The batch table's rows, excluding the trailing 合計 (totals) row that
+// always closes it.
+function batchDataRows(page: Page): Locator {
+  return page.locator("table tbody tr").filter({ hasNotText: "合計" });
 }
 
 // PersonPicker (src/components/shared/people/person-picker.tsx) with
@@ -100,12 +111,45 @@ async function pickDate(page: Page, iso: string): Promise<void> {
   await page.keyboard.press("Escape");
 }
 
+// Same calendar as pickDate, but mode="multiple" keeps the popover open
+// across selections, so every date is clicked without reopening it. isos
+// must be given in ascending order so the displayed month only ever
+// advances forward.
+async function pickDates(page: Page, isos: string[]): Promise<void> {
+  const now = new Date();
+  const nextMonth = page.getByRole("button", { name: "Go to the Next Month", exact: true });
+
+  await page.getByRole("button", { name: "選擇日期", exact: true }).click();
+  await expect(nextMonth).toBeVisible();
+
+  let monthsShown = 0;
+  for (const iso of isos) {
+    const [year, month] = iso.split("-").map(Number);
+    const monthsAhead = (year - now.getFullYear()) * 12 + (month - 1 - now.getMonth());
+    for (; monthsShown < monthsAhead; monthsShown++) {
+      await nextMonth.click();
+    }
+    await page.locator(`[data-day="${iso}"]`).getByRole("button").click();
+  }
+  await page.keyboard.press("Escape");
+}
+
 // TimeCombobox (src/components/shared/schedule/time-combobox.tsx): click the
 // button named "開始"/"結束", type the time, Escape. Same pattern as
 // settings-rules.write.spec.ts's typeTime — base-ui's Popover opens fine on
 // a Playwright click in this project's @base-ui/react 1.9.
 async function fillTime(page: Page, label: "開始" | "結束", value: string): Promise<void> {
   await page.getByRole("button", { name: label, exact: true }).click();
+  await page.getByPlaceholder("輸入或選擇時間").fill(value);
+  await page.keyboard.press("Escape");
+  await expect(page.getByPlaceholder("輸入或選擇時間")).toHaveCount(0);
+}
+
+// Same as fillTime, scoped to one date's slot card: booking-sheet.tsx wraps
+// each SlotCard in data-field="slot-{index}", since more than one date
+// means more than one 開始/結束 button on the page at once.
+async function fillSlotTime(page: Page, index: number, label: "開始" | "結束", value: string): Promise<void> {
+  await page.locator(`[data-field="slot-${index}"]`).getByRole("button", { name: label, exact: true }).click();
   await page.getByPlaceholder("輸入或選擇時間").fill(value);
   await page.keyboard.press("Escape");
   await expect(page.getByPlaceholder("輸入或選擇時間")).toHaveCount(0);
@@ -140,10 +184,8 @@ test("a free slot books through the form and the row lands in rentals", async ({
     await fillBookingForm(page, renterName, FREE_SLOT_DATE);
     await page.getByRole("button", { name: "送出預約", exact: true }).click();
 
-    const notice = page.getByRole("alertdialog", { name: "預約已送出" });
-    await expect(notice).toBeVisible();
-    await notice.getByRole("button", { name: "確定", exact: true }).click();
-    await expect(notice).toBeHidden();
+    await expect(page).toHaveURL(BATCH_URL_PATTERN);
+    await expect(batchDataRows(page)).toHaveCount(1);
 
     const { rows } = await db.query<{ id: string; room: string; starts_at: string; ends_at: string; status: string }>(
       "select id, room, starts_at, ends_at, status from rentals where renter_name = $1",
@@ -162,6 +204,33 @@ test("a free slot books through the form and the row lands in rentals", async ({
     await expect(bookedRow).toBeVisible();
     await expect(bookedRow).toContainText("待確認");
     await expect(bookedRow).not.toContainText("撞單");
+  } finally {
+    await deleteRentalsNamed(db, renterName);
+    await db.end();
+  }
+});
+
+// E-49: a successful submit must never flash a red outline (aria-invalid).
+test("a three-date booking lands on the batch page with one row per date", async ({ page }) => {
+  const db = new Client({ connectionString: process.env.DATABASE_URL });
+  await db.connect();
+  const renterName = `E2E三天${STAMP}`;
+
+  try {
+    await page.goto("/bookings/new");
+    await pickNewCustomer(page, renterName);
+    await pickDates(page, MULTI_DATES);
+    for (let index = 0; index < MULTI_DATES.length; index++) {
+      await fillSlotTime(page, index, "開始", SLOT_START);
+      await fillSlotTime(page, index, "結束", SLOT_END);
+    }
+
+    await page.getByRole("button", { name: "送出預約", exact: true }).click();
+    await expect(page.locator('[aria-invalid="true"]')).toHaveCount(0);
+    await expect(page).toHaveURL(BATCH_URL_PATTERN);
+    await expect(batchDataRows(page)).toHaveCount(MULTI_DATES.length);
+
+    expect(await countRentalsNamed(db, renterName)).toBe(MULTI_DATES.length);
   } finally {
     await deleteRentalsNamed(db, renterName);
     await db.end();
@@ -204,10 +273,8 @@ test("an overlapping slot is blocked until 仍要送出, and 取消 writes nothi
     await conflictDialog.getByRole("button", { name: "仍要送出", exact: true }).click();
     await expect(conflictDialog).toBeHidden();
 
-    const notice = page.getByRole("alertdialog", { name: "預約已送出" });
-    await expect(notice).toBeVisible();
-    await notice.getByRole("button", { name: "確定", exact: true }).click();
-    await expect(notice).toBeHidden();
+    await expect(page).toHaveURL(BATCH_URL_PATTERN);
+    await expect(batchDataRows(page)).toHaveCount(1);
 
     expect(await countRentalsNamed(db, renterName)).toBe(1);
 
