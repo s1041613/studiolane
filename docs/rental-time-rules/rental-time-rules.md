@@ -7,43 +7,43 @@ status: draft
 generated: { by: claude-code/claude-sonnet-5, at: 2026-10-30T19:43:03Z }
 sources:
   - id: rules-page
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/app/settings/rules/page.tsx
+    resource: https://github.com/s1041613/studiolane/blob/main/src/app/settings/rules/page.tsx
     title: Rules page source
   - id: board
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/components/rental-rules/rental-rules-board.tsx
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/rental-rules/rental-rules-board.tsx
     title: Rental rules board component
   - id: dialog
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/components/shared/rules/rental-rule-dialog.tsx
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/shared/rules/rental-rule-dialog.tsx
     title: Rental rule dialog component
   - id: toggle
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/components/shared/rules/rule-toggle.tsx
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/shared/rules/rule-toggle.tsx
     title: Rule toggle component
   - id: actions
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/server/actions/rental-rules.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/actions/rental-rules.ts
     title: Rental rules server actions
   - id: writes
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/server/services/rule-writes.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/services/rule-writes.ts
     title: Rule write service
   - id: schema
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/server/logic/rule-draft-schema.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/rule-draft-schema.ts
     title: Rule draft schema
   - id: form
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/server/logic/rental-rule-form.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/rental-rule-form.ts
     title: Rental rule form logic
   - id: view-logic
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/server/logic/rental-rules.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/rental-rules.ts
     title: Rental rules view logic
   - id: impact
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/server/logic/rule-impact.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/rule-impact.ts
     title: Rule impact logic
   - id: booking-rules
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/server/logic/booking-rules.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/booking-rules.ts
     title: Booking rules logic
   - id: repo
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/src/server/repositories/rules-repository.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/repositories/rules-repository.ts
     title: Rules repository
   - id: migration
-    resource: https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/supabase/migrations/0001_init.sql
+    resource: https://github.com/s1041613/studiolane/blob/main/supabase/migrations/0001_init.sql
     title: Initial migration 0001_init.sql
 ---
 
@@ -54,7 +54,7 @@ It lives at `/settings/rules`. Everyone signed in can read the rules. Only staff
 with edit access to this page can change them.[^rules-page]
 
 The data behind this page is the `rental_rules` table. See
-[Data Model Overview](https://github.com/s1041613/studiolane/blob/56bd162d683ece705641818de4c7ed8244b5b3b7/docs/data-model/data-model.md)
+[Data Model Overview](https://github.com/s1041613/studiolane/blob/main/docs/data-model/data-model.md)
 for the full table shape.
 
 A rule row has a `kind`: `rental` or `class_hours`.[^booking-rules] This page only
