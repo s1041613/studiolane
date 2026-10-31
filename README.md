@@ -32,18 +32,23 @@ Steps below are about 10 minutes total, once the site is awake.
 
 1. **`/settings/rules`, about 2 minutes.** Click `新增` (add) and create a
    weekly rule: pick a room, pick `每週` (weekly), pick one or more
-   weekdays, set a start and end time, and write a reason, then `儲存`
-   (save). There is no hard delete, only deactivate and reactivate: click
-   `停用` (deactivate) on the row, confirm in the dialog that opens, then
-   click `啟用` (reactivate) and confirm again to bring it back. Click `編輯` (edit), change
-   the reason or time, and `儲存` again. Leave the rule active (enabled)
-   when you move on, since step 5 depends on it.
-2. **`/bookings/new`, about 3 minutes.** Pick an existing renter from the
-   roster, a room, a date, and a time slot, then a purpose and a payment
-   method, and submit. The page stays on the form and shows a `預約已送出`
+   weekdays, and write a reason. The `13:30` and `22:30` in the time fields
+   are placeholders, so pick a start and end time yourself. Then click
+   `儲存` (save). Switch to the `清單` (list) view: the row actions only
+   show there, as icon buttons. There is no hard delete, only deactivate
+   and reactivate. Click the deactivate icon on the row and confirm. The
+   rule disappears from the list. Turn on `顯示已停用` (show deactivated)
+   to see it again, then click its reactivate icon and confirm. After each
+   change, click an empty spot first to dismiss the notice at the top. The
+   list shifts up when it goes, so a direct click can land on the wrong row. Leave the rule active (enabled) when you
+   move on, since step 5 depends on it.
+2. **`/bookings/new`, about 3 minutes.** Pick a renter from the roster, or
+   type a new name to add an outside customer. Then pick a room, a date,
+   a time slot, a purpose, and a payment method, and submit. The page stays on the form and shows a `預約已送出`
    (booking submitted) notice with the count of bookings just written.
-   Click `確定` (OK) to clear the notice; the form resets for a new
-   booking. Note the exact room, date, and time you used, since the next
+   A red error may show behind the notice for a moment. That is a known
+   display bug; the booking was written. Click `確定` (OK) to clear the
+   notice; the form resets for a new booking. Note the exact room, date, and time you used, since the next
    two steps reuse them.
 3. **Same slot, different renter, about 2 minutes.** Still on
    `/bookings/new`, pick a different renter and submit the same room,
