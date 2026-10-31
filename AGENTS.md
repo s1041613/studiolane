@@ -27,8 +27,8 @@ error boundary (`src/server/boundary`) and failure screens. Auth is a stub that 
 audited writes are a no-op seam. The data layer (migration, seed, Drizzle
 schema, repositories, domain logic) exists; see `docs/data-model/`. The only
 feature UIs are the rental rules settings page (`/settings/rules`; see
-`docs/rental-time-rules/`) and the new-booking page (`/bookings/new`; see
-`docs/booking/`). There is no real auth yet. Other features land
+`docs/rental-time-rules/`), the new-booking page (`/bookings/new`), and the
+read-only bookings list (`/bookings`); see `docs/booking/`. There is no real auth yet. Other features land
 in later PRs.
 
 ## Working here
