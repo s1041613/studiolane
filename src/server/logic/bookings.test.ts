@@ -5,6 +5,7 @@ import {
   initialBookingFilters,
   nextStatusOnConfirm,
   selectBookingRows,
+  sortBookingsNewestFirst,
 } from "@/server/logic/bookings";
 import { RentalStatus, PaymentMethod } from "@/server/types/home";
 import { makeRental } from "@/server/logic/test-fixtures";
@@ -60,6 +61,39 @@ describe("selectBookingRows", () => {
       "postponed",
       "cancelled",
     ]);
+  });
+});
+
+describe("sortBookingsNewestFirst", () => {
+  it("orders by date descending", () => {
+    const items = [
+      makeRental({ id: "early", date: "2026-09-25" }),
+      makeRental({ id: "late", date: "2026-10-05" }),
+    ];
+    expect(sortBookingsNewestFirst(items).map((r) => r.id)).toEqual(["late", "early"]);
+  });
+
+  it("breaks a tied date by start time descending", () => {
+    const items = [
+      makeRental({ id: "morning", date: "2026-09-25", start: "08:00" }),
+      makeRental({ id: "evening", date: "2026-09-25", start: "18:00" }),
+    ];
+    expect(sortBookingsNewestFirst(items).map((r) => r.id)).toEqual(["evening", "morning"]);
+  });
+
+  it("breaks a tied date and start time by createdAt descending", () => {
+    const items = [
+      makeRental({ id: "first", date: "2026-09-25", start: "08:00", createdAt: "2026-09-01T00:00:00Z" }),
+      makeRental({ id: "second", date: "2026-09-25", start: "08:00", createdAt: "2026-09-02T00:00:00Z" }),
+    ];
+    expect(sortBookingsNewestFirst(items).map((r) => r.id)).toEqual(["second", "first"]);
+  });
+
+  it("does not mutate the input array", () => {
+    const items = [makeRental({ id: "a", date: "2026-09-25" }), makeRental({ id: "b", date: "2026-10-05" })];
+    const copy = [...items];
+    sortBookingsNewestFirst(items);
+    expect(items).toEqual(copy);
   });
 });
 
