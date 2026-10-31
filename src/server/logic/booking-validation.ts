@@ -150,7 +150,9 @@ export function validateBookingDraft(
       errors[`slots.${index}`] = "你已經預約過這個時段";
       return;
     }
-    const slotCheck = checkBooking(slot, draft.room, ctx);
+    // Other renters' held rentals, registered included, are conflicts for
+    // create_booking_batch to confirm, so only the rules can block here.
+    const slotCheck = checkBooking(slot, draft.room, { rules: ctx.rules, existingRentals: [] });
     if (!slotCheck.ok) {
       errors[`slots.${index}`] = slotCheck.reason;
       return;

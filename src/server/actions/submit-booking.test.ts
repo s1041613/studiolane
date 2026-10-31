@@ -125,22 +125,12 @@ describe("submitBooking", () => {
     });
   });
 
-  it("S-錯誤-5: 填表時是空的，送出前被別人登記走 → 回傳那張卡的錯誤，整批都不寫入", async () => {
+  it("別人已登記的時段重疊 → 不在表單擋，交給 create_booking_batch 判斷衝突", async () => {
     data.rentals = [
       makeRental({ room: "B", date: "2026-10-06", start: "14:30", end: "15:30", status: RentalStatus.Registered }),
     ];
-    const result = unseal(await submitBooking(draft));
-    expect(result).toEqual({
-      ok: false,
-      error: {
-        kind: "fields",
-        code: "INVALID_ARGUMENT",
-        message: "有 1 個地方需要修改",
-        fields: { "slots.0": "14:30–15:30 已有人預約" },
-        errorId: ERROR_ID,
-      },
-    });
-    expect(data.createBatch).not.toHaveBeenCalled();
+    await submitBooking(draft);
+    expect(data.createBatch).toHaveBeenCalledTimes(1);
   });
 
   it("U14: 客戶的預約帶展演直接呼叫 action → 「僅限 老師」，不寫入", async () => {

@@ -115,10 +115,10 @@ describe("送出時的檢查", () => {
     expect(validateBookingDraft(aerobicsA, context())).toMatchObject({ ok: true });
   });
 
-  it("S-6 / S-錯誤-5: 跟已登記的預約重疊 → 那張時段卡顯示「14:30–15:30 已有人預約」", () => {
+  it("別人已登記的預約重疊不擋，交給衝突確認", () => {
     const registered = makeRental({ room: "B", date: "2026-10-06", start: "14:30", end: "15:30", status: RentalStatus.Registered });
     const result = validateBookingDraft(draft({ slots: [{ ...SLOT, start: "14:00", end: "16:00" }] }), context({ existingRentals: [registered] }));
-    expect(result).toMatchObject({ ok: false, fieldErrors: { "slots.0": "14:30–15:30 已有人預約" } });
+    expect(result).toMatchObject({ ok: true });
   });
 
   it("S-6: 待確認的預約不擋", () => {
