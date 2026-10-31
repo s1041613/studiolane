@@ -36,3 +36,20 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: supabase db push
+
+      # Seed rental dates are relative to today, so reseeding would duplicate
+      # them. Only seed when the fixed reference tables are still empty.
+      - name: Seed empty database
+        if: hashFiles('supabase/migrations/**') != ''
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          reference_rows=$(supabase db query --linked -o csv \
+            "select (select count(*) from purpose_settings) + (select count(*) from pricing_plans)" | tail -n 1)
+          if [ "$reference_rows" = "0" ]; then
+            supabase db push --linked --include-seed
+            echo "Seeded: purpose_settings and pricing_plans were empty"
+          else
+            echo "Skipped seed: purpose_settings and pricing_plans hold $reference_rows rows"
+          fi
