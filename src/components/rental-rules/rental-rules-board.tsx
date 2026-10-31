@@ -56,7 +56,6 @@ function toTimelineDays(week: WeekDay[]): TimelineDay[] {
   return week.map((day) => ({ key: day.date, label: shortDate(day.date), items: day.entries.map(toTimelineItem) }));
 }
 
-// DESIGN.md §5.4: the legend is small swatches with a word each, not a sentence.
 function WeekLegend() {
   const swatch = "inline-block size-3 rounded-sm align-[-1px]";
   return (
@@ -79,7 +78,7 @@ function WeekLegend() {
 
 type OpenDialog = { key: number; mode: RuleDialogMode };
 
-// L20: canEdit false hides every edit control; the server refuses writes anyway.
+// canEdit false hides every edit control; the server refuses writes anyway.
 export function RentalRulesBoard({
   rules,
   today,
@@ -137,9 +136,7 @@ export function RentalRulesBoard({
           {notice}
         </div>
       )}
-      {failure && (
-        <ActionFailure failure={failure} />
-      )}
+      {failure && <ActionFailure failure={failure} />}
 
       <Card padding="none" fill>
         <Toolbar disabled={readFailure !== null}>
@@ -189,7 +186,6 @@ export function RentalRulesBoard({
               {listed.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">這週沒有租借時段</div>
               ) : (
-                // DESIGN.md §8.6: the list is a table like every other settings list.
                 <Table>
                   <TableHeader sticky>
                     <tr>
@@ -217,7 +213,6 @@ export function RentalRulesBoard({
                         </TableCell>
                         <TableCell align="actions">
                           {canEdit && (
-                            // Every row keeps the same two buttons (DESIGN.md §5.9).
                             <RowActions>
                               <RowAction
                                 action="edit"

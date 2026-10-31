@@ -5,7 +5,7 @@ import { createRules, previewArchiveImpact, previewRuleImpact, setRuleArchived, 
 import type { ArchiveImpact, RuleActionResult, RuleOverlapResult, RuleScope } from "@/server/services/rule-writes";
 
 // 租借規則 on the 租借時段 page. Every write refuses to leave an existing
-// booking in time that can't be rented (docs/rental-time-rules X2–X3).
+// booking in time that can't be rented.
 const SCOPE: RuleScope = {
   kind: "rental",
   page: "/settings/rules",

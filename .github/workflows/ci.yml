@@ -18,7 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # pii:history scans the PR's commit range.
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
@@ -92,8 +91,8 @@ jobs:
         run: pnpm exec playwright install chromium --with-deps
 
       # e2e runs against a throwaway local Supabase, never production, so CI
-      # needs no database secrets. supabase isn't a project dependency yet
-      # (AGENTS.md: skeleton stage), so this uses npx like a local run does.
+      # needs no database secrets; supabase isn't a project dependency yet,
+      # so this uses npx like a local run does.
       - name: Start local Supabase
         run: npx supabase start
 
@@ -105,7 +104,6 @@ jobs:
           echo "SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY" >> "$GITHUB_ENV"
           echo "DATABASE_URL=$DB_URL" >> "$GITHUB_ENV"
 
-      # The throwaway stack makes settings-rules.write.spec.ts safe to run here.
       - name: Run Playwright tests
         run: pnpm test:e2e
         env:

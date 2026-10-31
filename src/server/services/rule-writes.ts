@@ -23,7 +23,7 @@ import type { RentalSummary } from "@/server/types/home";
 // stays generic over `kind`; for now every write below only has to handle
 // kind "rental".
 
-// Bookings a change would leave in time that can't be rented (X1–X3).
+// Bookings a change would leave in time that can't be rented.
 export type RuleBlockers = { conflicts: RentalSummary[] };
 
 // Success carries the sentence the page shows.
@@ -51,7 +51,7 @@ function notFound(scope: RuleScope): string {
 }
 
 // Everything a change must not break, checked against fresh data on the
-// server: existing bookings (X1–X3).
+// server: existing bookings.
 async function guard(before: RentalRule[], after: RentalRule[], action: "存" | "停用" | "啟用"): Promise<RuleOutcome | null> {
   const conflicts = rentalsBrokenBy(before, after, await rentalRepo.listAll(), new Date());
   if (conflicts.length === 0) return null;
@@ -95,7 +95,6 @@ export async function createRules(scope: RuleScope, input: unknown): Promise<Rul
   });
 }
 
-// I-03: edits exactly one row (one weekday or one date) of this page's kind.
 export async function updateRule(scope: RuleScope, id: string, input: unknown): Promise<RuleActionResult> {
   return write(scope, "修改", async (updatedBy) => {
     const rules = await rulesRepo.listAll();
@@ -125,7 +124,6 @@ export async function setRuleArchived(scope: RuleScope, id: string, archive: boo
     const rules = await rulesRepo.listAll();
     const current = rules.find((r) => r.id === id && r.kind === scope.kind);
     if (!current) return fail("NOT_FOUND", notFound(scope));
-    // B4: reactivating must not create a duplicate of an active row.
     if (!archive && isDuplicateRule(current, rules, id)) return fail("ALREADY_EXISTS", DUPLICATE_RULE_MESSAGE);
 
     const archivedAt = archive ? new Date().toISOString() : null;
@@ -140,7 +138,7 @@ export async function setRuleArchived(scope: RuleScope, id: string, archive: boo
 
 export type ArchiveImpact = Sealed<{ rentals: RentalSummary[] }>;
 
-// I-05: before the 停用／啟用 confirmation, find out whether the change would
+// Before the 停用／啟用 confirmation, find out whether the change would
 // break bookings. If so the page shows a NoticeDialog with the list instead
 // of the confirmation. Read-only, so not wrapped in `write`.
 export async function previewArchiveImpact(scope: RuleScope, id: string, archive: boolean): Promise<ArchiveImpact> {

@@ -21,7 +21,6 @@ export function ruleLine(rule: RentalRule): string {
   return `${ruleDayLabel(rule)} ${rule.start}–${rule.end} ${rule.reason}`;
 }
 
-// What archiving or reactivating does to bookings (I-07).
 function confirmCopy(rule: RentalRule): { title: string; description: string; confirm: string } {
   if (rule.archivedAt !== null) {
     return {
@@ -39,14 +38,14 @@ function confirmCopy(rule: RentalRule): { title: string; description: string; co
 
 type Blocked = { title: string; failure: ShownFailure };
 
-// docs/rental-time-rules I-05: 停用／啟用 first asks the server whether the
-// change would break bookings. If it would, a NoticeDialog lists them with
-// only 確定; otherwise the usual confirmation.
+// 停用／啟用 first asks the server whether the change would break bookings.
+// If it would, a NoticeDialog lists them with only 確定; otherwise the
+// usual confirmation.
 export function useRuleToggle(onDone: (message: string) => void, onError: (failure: ToggleFailure) => void) {
   const [target, setTarget] = useState<RentalRule | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [blocked, setBlocked] = useState<Blocked | null>(null);
-  // K3: only the latest click counts, and row buttons stay locked while a
+  // Only the latest click counts, and row buttons stay locked while a
   // check is in flight so an older answer can't retarget the dialog.
   const [checking, setChecking] = useState(false);
   const latestAsk = useRef(0);
