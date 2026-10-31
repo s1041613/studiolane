@@ -125,9 +125,17 @@ function rawConflictToBookingConflict(row: RawConflictRow): BookingConflict {
   return { id: row.id, date, start, end, renterName: row.renter_name, status: ENUM_TO_DOMAIN_STATUS[row.status] };
 }
 
-type BatchFunctionResult = { status: "created" | "needs_confirm"; conflicts: RawConflictRow[] };
+type BatchFunctionResult =
+  | { status: "created"; conflicts: [] }
+  | { status: "needs_confirm"; conflicts: RawConflictRow[] }
+  | { status: "own_overlap"; own_overlap_ids: string[] };
 
-export type CreateBookingBatchResult = { status: "created" } | { status: "needs_confirm"; conflicts: BookingConflict[] };
+export type CreateBookingBatchResult =
+  | { status: "created" }
+  | { status: "needs_confirm"; conflicts: BookingConflict[] }
+  // ids of the new rows (NewRentalRow.id) that collided with the same
+  // renter's own held booking; nothing was inserted.
+  | { status: "own_overlap"; ids: string[] };
 
 function rentalRowToInsert(row: NewRentalRow): typeof rentals.$inferInsert {
   const { startsAt, endsAt } = toStartsEndsAt(row.date, row.start, row.end, row.isCrossMidnight);
@@ -249,8 +257,9 @@ export class RentalRepository {
     const result = await currentDb().execute<{ result: BatchFunctionResult }>(
       sql`select create_booking_batch(${JSON.stringify(payload)}::jsonb, ${`{${acknowledgedIds.join(",")}}`}::uuid[]) as result`,
     );
-    const { status, conflicts } = result.rows[0].result;
-    if (status === "created") return { status: "created" };
-    return { status: "needs_confirm", conflicts: conflicts.map(rawConflictToBookingConflict) };
+    const batchResult = result.rows[0].result;
+    if (batchResult.status === "created") return { status: "created" };
+    if (batchResult.status === "own_overlap") return { status: "own_overlap", ids: batchResult.own_overlap_ids };
+    return { status: "needs_confirm", conflicts: batchResult.conflicts.map(rawConflictToBookingConflict) };
   }
 }

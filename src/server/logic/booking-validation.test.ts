@@ -93,6 +93,12 @@ describe("送出時的檢查", () => {
     expect(result).toMatchObject({ ok: false, fieldErrors: { purpose: "僅限 櫃檯" } });
   });
 
+  it("S-4: id 合法但名字被偽造 → 用名單上的名字，不信前端送的名字", () => {
+    const forged: RenterSelection = { type: "roster", id: TEACHER.id, name: "偽造的名字", role: "teacher" };
+    const result = validateBookingDraft(draft({ renter: forged }), context());
+    expect(result).toMatchObject({ ok: true, renter: { id: TEACHER.id, name: TEACHER.name, role: "teacher" } });
+  });
+
   it("人員名單 R21: 租借人已停用 → 「這位人員已停用」", () => {
     const archived = { ...TEACHER, archivedAt: "2026-10-01T00:00:00Z" };
     const result = validateBookingDraft(draft(), context({ roster: [archived, STAFF] }));
@@ -173,6 +179,25 @@ describe("重複預約與已過去的時段", () => {
 
   it("S-9: 開始時間晚於現在可以訂", () => {
     const result = validateBookingDraft(draft(), context({ now: new Date("2026-10-06T14:59:00+08:00") }));
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe("同一次送出裡的時段卡互相重疊", () => {
+  it("兩張時段卡互相重疊 → 晚的那張卡顯示錯誤", () => {
+    const second: SlotDraft = { date: "2026-10-06", start: "16:00", end: "18:00", isCrossMidnight: false };
+    const result = validateBookingDraft(draft({ slots: [SLOT, second] }), context());
+    expect(result).toMatchObject({ ok: false, fieldErrors: { "slots.1": "這個時段跟上面選的時段重複了" } });
+  });
+
+  it("兩張時段卡日期時間完全一樣 → 晚的那張卡顯示錯誤", () => {
+    const result = validateBookingDraft(draft({ slots: [SLOT, { ...SLOT }] }), context());
+    expect(result).toMatchObject({ ok: false, fieldErrors: { "slots.1": "這個時段跟上面選的時段重複了" } });
+  });
+
+  it("不重疊的兩張時段卡都能通過", () => {
+    const second: SlotDraft = { date: "2026-10-07", start: "15:00", end: "17:00", isCrossMidnight: false };
+    const result = validateBookingDraft(draft({ slots: [SLOT, second] }), context());
     expect(result.ok).toBe(true);
   });
 });

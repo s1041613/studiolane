@@ -64,8 +64,8 @@ so the server never skips this step.[^submit-action]
 
 The checks cover:[^validation]
 
-- A renter is chosen. A roster renter's role comes from the roster row looked
-  up by id, not from whatever the form sent.
+- A renter is chosen. A roster renter's name and role come from the roster
+  row looked up by id, not from whatever the form sent.
 - At least one date is chosen.
 - A purpose is chosen, and it is one the renter's role may use.
 - A payment method is chosen, unless the price for this booking is zero.
@@ -77,6 +77,8 @@ The checks cover:[^validation]
   a Saturday from 14:00 to 16:00. A new booking for Dana that overlaps that
   time is rejected as a likely duplicate, before any check against other
   renters runs.
+- Slots in the same submit do not overlap each other. The later slot gets
+  the error.
 
 Every problem found is collected and shown at once, instead of stopping at
 the first one.[^validation]
@@ -134,6 +136,10 @@ the room is free.[^migration] The second submit waits for the first to
 finish, then checks again against whatever the first one actually wrote. A
 room's conflict check always sees the true, latest state of that room's
 bookings.
+
+The same holds for one renter. If the same renter submits the same slot
+twice at once, the second submit finds the first one inside the lock and
+gets the same duplicate error as above. Nothing is written for it.[^migration]
 
 Bookings in different rooms never wait on each other. The lock is keyed to
 one room at a time.[^migration]

@@ -5,8 +5,10 @@
 -- "Held" = status pending/awaiting_payment/registered, the same set
 -- booking-validation.ts calls STILL_HELD. Conflict = same room, an
 -- overlapping [starts_at, ends_at) interval, held, and a different renter.
--- The same renter's own overlap is caught earlier as a field error by
--- validateBookingDraft and never reaches this function.
+-- The same renter's own overlap is normally caught earlier as a field
+-- error by validateBookingDraft, but that check reads existingRentals
+-- before this lock is taken, so a second submit from the same renter can
+-- race past it; this function rechecks it as 'own_overlap' below.
 --
 -- The advisory lock is keyed on the room and held for the rest of the
 -- transaction (pg_advisory_xact_lock): two concurrent submits for the same
@@ -32,11 +34,26 @@ declare
   v_renter_type renter_type;
   v_renter_id uuid;
   v_renter_name text;
+  v_own_overlap_ids jsonb;
   v_conflicts jsonb;
   v_has_unacknowledged boolean;
 begin
   if jsonb_array_length(p_rows) = 0 then
     return jsonb_build_object('status', 'created', 'conflicts', '[]'::jsonb);
+  end if;
+
+  -- Rows in the same batch overlapping each other should never reach this
+  -- function — booking-validation rejects that in the form and again on
+  -- submit — so this is only a backstop against a caller bypassing it.
+  if exists (
+    select 1
+    from jsonb_array_elements(p_rows) with ordinality as a(value, ord)
+    join jsonb_array_elements(p_rows) with ordinality as b(value, ord)
+      on a.ord < b.ord
+    where tstzrange((a.value ->> 'starts_at')::timestamptz, (a.value ->> 'ends_at')::timestamptz, '[)')
+        && tstzrange((b.value ->> 'starts_at')::timestamptz, (b.value ->> 'ends_at')::timestamptz, '[)')
+  ) then
+    raise exception 'create_booking_batch: rows within the same batch overlap';
   end if;
 
   select (p_rows -> 0 ->> 'room')::room,
@@ -47,6 +64,28 @@ begin
 
   -- Keyed on the room: bookings in different rooms never contend.
   perform pg_advisory_xact_lock(hashtext('booking_room_' || v_room::text));
+
+  -- The same renter already holds (or awaits) one of these slots: the form
+  -- read existingRentals before this lock was taken, so a concurrent submit
+  -- from the same renter can slip past that check. Reported by the new
+  -- row's own id, so the caller can put the field error on the right slot;
+  -- nothing is written either way.
+  select coalesce(jsonb_agg(distinct (slot ->> 'id')::uuid), '[]'::jsonb)
+    into v_own_overlap_ids
+  from rentals r, jsonb_array_elements(p_rows) as slot
+  where r.room = v_room
+    and r.status in ('pending', 'awaiting_payment', 'registered')
+    and r.renter_type = v_renter_type
+    and (
+      (v_renter_type = 'roster' and r.renter_id = v_renter_id)
+      or (v_renter_type = 'customer' and r.renter_name = v_renter_name)
+    )
+    and tstzrange(r.starts_at, r.ends_at, '[)')
+        && tstzrange((slot ->> 'starts_at')::timestamptz, (slot ->> 'ends_at')::timestamptz, '[)');
+
+  if jsonb_array_length(v_own_overlap_ids) > 0 then
+    return jsonb_build_object('status', 'own_overlap', 'own_overlap_ids', v_own_overlap_ids);
+  end if;
 
   select
     coalesce(jsonb_agg(jsonb_build_object(

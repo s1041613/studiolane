@@ -139,6 +139,78 @@ describe("create_booking_batch", () => {
     expect(result).toEqual({ status: "created" });
   });
 
+  it("(f) 同一個人連續送出同一個空時段：第二次得到 own_overlap，插入 0 筆", async () => {
+    const date = "2032-07-06";
+    const first = newRow({ date, start: "10:00", end: "11:00", renterName: "測試租借人J" });
+    await repo.createBatch([first], []);
+
+    const second = newRow({ date, start: "10:00", end: "11:00", renterName: "測試租借人J" });
+    const result = await repo.createBatch([second], []);
+
+    expect(result).toEqual({ status: "own_overlap", ids: [second.id] });
+    const { rows } = await admin.query("select 1 from rentals where id = $1", [second.id]);
+    expect(rows).toHaveLength(0);
+  });
+
+  it("(g) 同一批自己的時段互相重疊 → 丟出例外，什麼都不寫（booking-validation 已經擋過一次，這裡是防呆）", async () => {
+    const overlapA = newRow({ date: "2032-07-08", start: "10:00", end: "11:00", renterName: "測試租借人L" });
+    const overlapB = newRow({ date: "2032-07-08", start: "10:30", end: "11:30", renterName: "測試租借人L" });
+
+    await expect(repo.createBatch([overlapA, overlapB], [])).rejects.toThrow();
+
+    const { rows } = await admin.query("select 1 from rentals where id = any($1::uuid[])", [[overlapA.id, overlapB.id]]);
+    expect(rows).toHaveLength(0);
+  });
+
+  it("(h) 兩個連線同時用同一個人送出同一個空時段：先到的那筆先寫入，後到的得到 own_overlap", async () => {
+    const date = "2032-07-09";
+    const clientA = new Client({ connectionString: TEST_DATABASE_URL });
+    const clientB = new Client({ connectionString: TEST_DATABASE_URL });
+    const firstId = randomUUID();
+    const secondId = randomUUID();
+    createdIds.push(firstId, secondId);
+
+    await clientA.connect();
+    await clientB.connect();
+    try {
+      await clientA.query("begin");
+      await clientB.query("begin");
+
+      // A's own transaction is still open: it has committed nothing, but
+      // its advisory lock on room A is held until it does.
+      const firstResult = await clientA.query("select create_booking_batch($1::jsonb, $2::uuid[]) as result", [
+        JSON.stringify([rawBatchRow({ id: firstId, date, start: "16:00", end: "17:00", renterName: "測試租借人M" })]),
+        [],
+      ]);
+      expect(firstResult.rows[0].result).toEqual({ status: "created", conflicts: [] });
+
+      const { rows: pidRows } = await clientB.query<{ pid: number }>("select pg_backend_pid() as pid");
+      const secondPromise = clientB.query("select create_booking_batch($1::jsonb, $2::uuid[]) as result", [
+        JSON.stringify([rawBatchRow({ id: secondId, date, start: "16:00", end: "17:00", renterName: "測試租借人M" })]),
+        [],
+      ]);
+
+      // Proves the lock actually serialises the two calls, not just that B
+      // happened to run after A: B is still blocked while A's transaction
+      // is open.
+      await waitUntilBlockedOnAdvisoryLock(admin, pidRows[0].pid);
+
+      await clientA.query("commit");
+
+      const secondResult = await secondPromise;
+      expect(secondResult.rows[0].result).toEqual({ status: "own_overlap", own_overlap_ids: [secondId] });
+      await clientB.query("commit");
+
+      const { rows } = await admin.query("select id, status from rentals where id = any($1::uuid[]) order by renter_name", [
+        [firstId, secondId],
+      ]);
+      expect(rows).toEqual([{ id: firstId, status: "pending" }]);
+    } finally {
+      await clientA.end();
+      await clientB.end();
+    }
+  });
+
   it("(e) 兩個連線同時送出同一個空時段：先到的那筆先寫入，鎖讓後到的等它交易結束才看到", async () => {
     const date = "2032-07-05";
     const clientA = new Client({ connectionString: TEST_DATABASE_URL });
