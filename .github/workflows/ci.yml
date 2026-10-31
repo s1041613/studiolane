@@ -73,6 +73,7 @@ jobs:
         run: pnpm test
 
   e2e:
+    name: e2e + database tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,9 +93,10 @@ jobs:
 
       # e2e runs against a throwaway local Supabase, never production, so CI
       # needs no database secrets; supabase isn't a project dependency yet,
-      # so this uses npx like a local run does.
+      # so this uses npx like a local run does. Only the services the tests
+      # need start.
       - name: Start local Supabase
-        run: npx supabase start
+        run: npx supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
       - name: Point the app at local Supabase
         run: |
@@ -103,6 +105,10 @@ jobs:
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
           echo "SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY" >> "$GITHUB_ENV"
           echo "DATABASE_URL=$DB_URL" >> "$GITHUB_ENV"
+          echo "TEST_DATABASE_URL=$DB_URL" >> "$GITHUB_ENV"
+
+      - name: Run database tests
+        run: pnpm exec vitest run --project db
 
       - name: Run Playwright tests
         run: pnpm test:e2e
