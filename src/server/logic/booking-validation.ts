@@ -11,17 +11,17 @@ import type { DateTimeInterval, RoleCode } from "@/server/supabase/codecs";
 
 export type BookingValidationContext = RuleContext &
   QuoteContext & {
-    // S-9: slots starting before this are rejected. Defaults to the current time.
+    // Slots starting before this are rejected; defaults to the current time.
     now?: Date;
   };
 
-// Exported so booking-conflicts.ts (E-41: other-renter conflict detection)
-// shares the same definition of "held" rather than redeclaring it.
+// Exported so booking-conflicts.ts can reuse the same definition of "held"
+// instead of redeclaring it.
 export const STILL_HELD = new Set<RentalStatus>([RentalStatus.Pending, RentalStatus.AwaitingPayment, RentalStatus.Registered]);
 
-// S-8: the same renter already holds (or is waiting on) an overlapping slot in
-// this room — almost always a duplicate submission. Roster renters are matched
-// by id; customers only have a typed name to go on.
+// True when the same renter already holds (or awaits) an overlapping slot —
+// almost always a duplicate submission. Roster renters match by id;
+// customers only have a typed name.
 function isOwnOverlap(
   rental: RentalSummary,
   renter: RenterSelection,
@@ -40,9 +40,8 @@ function isOwnOverlap(
   );
 }
 
-// Keyed by the form field each message belongs under. Slot errors are keyed
-// by the slot's index in draft.slots, flattened as `slots.0`, `slots.1`, ...
-// instead of a nested object — E-19: a field-error map is always single-level.
+// Keyed by field; slot errors use the slot's index flattened as `slots.0`,
+// `slots.1`, ... rather than a nested object.
 export type BookingFieldErrors = {
   renter?: string;
   dates?: string;
@@ -55,7 +54,7 @@ export type PricedSlot = { slot: SlotDraft; hours: number; amount: number };
 export type BookingValidationResult =
   | {
       ok: true;
-      // The renter with its role re-read from the roster, never the client's.
+      // Role is re-read from the roster, never trusted from the client.
       renter: RenterSelection;
       purpose: Purpose;
       paymentMethod: PaymentMethod | null;
@@ -64,7 +63,6 @@ export type BookingValidationResult =
     }
   | { ok: false; fieldErrors: BookingFieldErrors };
 
-// S-4: a roster renter's role comes from the roster row looked up by id.
 function resolveRenter(
   renter: RenterSelection,
   roster: PricingContext["roster"],
@@ -72,21 +70,20 @@ function resolveRenter(
   if (renter.type === "customer") return { ok: true, renter, role: "customer" };
   const entry = roster.find((r) => r.id === renter.id);
   if (!entry) return { ok: false, reason: "找不到租借人的人員資料" };
-  // Roster R21: archived while the form was open.
+  // Catches a roster entry archived after the form was opened.
   if (entry.archivedAt !== null) return { ok: false, reason: "這位人員已停用" };
   return { ok: true, renter: { ...renter, role: entry.role }, role: entry.role };
 }
 
-// S-1..S-7, run by the form before submitting and again by the server
-// against fresh data. Every problem is collected rather than stopping at the
-// first, so the form can outline all of them at once (S-錯誤-4).
+// Run by the form before submitting and again by the server against fresh
+// data. Every problem is collected rather than stopping at the first, so
+// the form can outline them all at once.
 export function validateBookingDraft(
   draft: BookingDraft,
   ctx: BookingValidationContext,
 ): BookingValidationResult {
   const errors: BookingFieldErrors = {};
 
-  // S-1 / S-4: renter
   let renter: RenterSelection | null = null;
   let role: RoleCode | null = null;
   if (!draft.renter) {
@@ -101,11 +98,10 @@ export function validateBookingDraft(
     }
   }
 
-  // S-1: dates
   if (draft.slots.length === 0) errors.dates = "請至少選一天";
 
-  // S-1 / S-3 / S-4 / 用途 B4: purpose, judged against purpose_settings.
-  // Archived is checked even before the renter is known.
+  // Purpose is judged against purpose_settings; archived is checked even
+  // before the renter is known.
   const { purpose } = draft;
   if (!purpose) {
     errors.purpose = "請選擇用途";
@@ -114,22 +110,20 @@ export function validateBookingDraft(
     if (!availability.ok) errors.purpose = availability.reason;
   }
   const usablePurpose = purpose && !errors.purpose ? purpose : null;
-  // A booking's renter, purpose and room are shared by every slot, so one
-  // hourly rate decides whether it needs paying at all: 0 → not_required.
+  // Renter, purpose and room are shared by every slot, so one hourly rate
+  // decides whether the whole booking needs paying: 0 → not_required.
   const rate =
     usablePurpose && renter ? hourlyRate({ renter, purpose: usablePurpose, room: draft.room }, ctx) : null;
   const isFree = rate?.ok === true && rate.rate === 0;
 
-  // S-1 / F-付款-3: payment, only once we know the booking is chargeable
   if (usablePurpose && role && !isFree && !draft.payment) {
     errors.payment = "請選擇付款方式";
   }
 
-  // S-1 / S-2 / S-5 / S-6 / S-7: each slot card
   const priced: PricedSlot[] = [];
   const now = ctx.now ?? new Date();
   draft.slots.forEach((slot, index) => {
-    // Format and start/end consistency first (S-2), so the checks below can
+    // Shape and start/end consistency checked first, so later checks can
     // rely on a well-formed interval.
     const shapeCheck = checkBooking(slot, draft.room, { rules: [], existingRentals: [] });
     if (!shapeCheck.ok) {
@@ -138,12 +132,12 @@ export function validateBookingDraft(
     }
     const interval = toStartsEndsAt(slot.date, slot.start, slot.end, slot.isCrossMidnight);
     if (interval.startsAt < now) {
-      errors[`slots.${index}`] = "這個時段已經過去了"; // S-9
+      errors[`slots.${index}`] = "這個時段已經過去了";
       return;
     }
     const draftRenter = draft.renter;
     if (draftRenter && ctx.existingRentals.some((r) => isOwnOverlap(r, draftRenter, draft.room, interval))) {
-      errors[`slots.${index}`] = "你已經預約過這個時段"; // S-8
+      errors[`slots.${index}`] = "你已經預約過這個時段";
       return;
     }
     const slotCheck = checkBooking(slot, draft.room, ctx);
@@ -165,7 +159,6 @@ export function validateBookingDraft(
     return { ok: false, fieldErrors: errors };
   }
 
-  // S-寫入-1 / S-寫入-2
   return {
     ok: true,
     renter,
@@ -178,8 +171,7 @@ export function validateBookingDraft(
 
 export type ErrorField = "renter" | "dates" | `slot-${number}` | "purpose" | "payment";
 
-// S-錯誤-3: problem fields in on-screen order, so the form can scroll to the
-// first one.
+// Problem fields in on-screen order, so the form can scroll to the first one.
 export function orderedErrorFields(errors: BookingFieldErrors): ErrorField[] {
   const slotFields = Object.keys(errors)
     .filter((key) => /^slots\.\d+$/.test(key))

@@ -5,9 +5,9 @@ import { requirePageAccess } from "@/server/auth/require-staff";
 
 export default async function NewBookingPage() {
   await requirePageAccess("/bookings/new");
-  // Without a request-time API this page was prerendered at build time, so
-  // the form's free windows, greyed-out dates and roster were frozen at
-  // build time. Render per request so they reflect the current rentals.
+  // Without a request-time API this page prerenders at build time,
+  // freezing free windows, dates and roster; connection() forces per-request
+  // rendering so they reflect the current rentals.
   await connection();
   const data = await getBookingFormData();
 

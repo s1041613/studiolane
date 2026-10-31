@@ -1,18 +1,18 @@
--- E-41: writes every slot of one BookingDraft as rentals rows, all or
--- nothing, after re-checking for other renters' held conflicts inside the
--- room's own advisory lock.
+-- Writes every slot of one BookingDraft as rentals rows, all or nothing,
+-- after re-checking for other renters' held conflicts inside the room's
+-- own advisory lock.
 --
--- "Held" = status pending/awaiting_payment/registered, same set
+-- "Held" = status pending/awaiting_payment/registered, the same set
 -- booking-validation.ts calls STILL_HELD. Conflict = same room, an
--- overlapping [starts_at, ends_at) interval, held, and a DIFFERENT renter.
+-- overlapping [starts_at, ends_at) interval, held, and a different renter.
 -- The same renter's own overlap is caught earlier as a field error by
--- validateBookingDraft (S-8 / 情境7) and never reaches this function.
+-- validateBookingDraft and never reaches this function.
 --
 -- The advisory lock is keyed on the room and held for the rest of the
 -- transaction (pg_advisory_xact_lock): two concurrent submits for the same
--- room can't both see "nothing held yet" and both insert (情境6). The
--- second call blocks here until the first commits or rolls back, then
--- recomputes conflicts against what the first actually left behind.
+-- room can't both see "nothing held yet" and both insert. The second call
+-- blocks here until the first commits or rolls back, then recomputes
+-- conflicts against what the first actually left behind.
 --
 -- p_rows: a jsonb array, one object per slot, sharing room/renter (one
 -- BookingDraft always has exactly one of each):
@@ -20,10 +20,9 @@
 --    purpose, payment_state, note, payment_method, amount, created_at,
 --    starts_at, ends_at}
 -- p_acknowledged: rental ids the caller has already shown the person and
--- been told to submit anyway (情境3). If any conflict id is missing from
--- this list, nothing is written and the full, freshly-computed conflict
--- list comes back instead — which may include a conflict that appeared
--- after the person's dialog opened (情境5).
+-- been told to submit anyway. If any conflict id is missing from this
+-- list, nothing is written and the full, freshly-computed conflict list
+-- comes back instead.
 create function create_booking_batch(p_rows jsonb, p_acknowledged uuid[])
 returns jsonb
 language plpgsql

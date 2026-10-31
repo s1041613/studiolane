@@ -16,20 +16,20 @@ import type { RosterEntry } from "@/server/logic/pricing";
 import { namesakeHint, sameName } from "@/server/logic/roster";
 import { scoreRosterKeywords } from "@/components/shared/people/roster-search";
 
-// DESIGN.md §5.11 選人／選名單: one searchable combobox for 租借人、老師、
-// 代課老師 (and 原老師, where a picker is used — docs/design-system/DESIGN.md
-// :382). Every call site looks and behaves the same; the only difference is
-// whether typing a name that isn't listed may add it, controlled by `create`.
+// One searchable combobox shared by every person-picking field (租借人、
+// 老師、代課老師、原老師). Every call site looks and behaves the same; the
+// only difference is whether typing a name that isn't listed may add it,
+// controlled by `create`.
 export type PersonPick = { kind: "existing"; person: RosterEntry } | { kind: "new"; name: string };
 
-// Closed: only the listed people can be picked (課表's teacher field, K09 /
-// T31 — no 「新增」 row for an unknown name). Open: a typed name that isn't
-// listed offers to add it, worded by `label` (defaults to 新增「name」).
+// Closed: only the listed people can be picked — no 「新增」 row for an
+// unknown name. Open: a typed name that isn't listed offers to add it,
+// worded by `label` (defaults to 新增「name」).
 export type PersonPickerCreate = { kind: "closed" } | { kind: "open"; label?: (name: string) => string };
 
 // The name a 「新增」 row would add, or null when none is offered: nothing
-// typed, the name is already listed (case-insensitive, like the substitute
-// checks: "UU" is the listed "uu"), or `create` is closed.
+// typed, the name is already listed (case-insensitive — "UU" matches
+// listed "uu"), or `create` is closed.
 export function newPersonOffer(query: string, people: readonly RosterEntry[], create: PersonPickerCreate): string | null {
   const name = query.trim();
   if (create.kind === "closed" || !name || people.some((entry) => sameName(entry.name, name))) return null;
@@ -44,9 +44,9 @@ interface PersonPickerProps {
   create: PersonPickerCreate;
   onChange: (pick: PersonPick) => void;
   disabled?: boolean;
-  // "pending": dashed border, transparent, muted text (DESIGN.md's 不能改的
-  // 欄位) — a value that's locked, not merely disabled (e.g. 代課's 原老師
-  // once editing, same look NativeSelect/Input use for the same case).
+  // "pending": dashed border, transparent, muted text — a locked value,
+  // not merely disabled (e.g. 代課's 原老師 once editing; same look
+  // NativeSelect/Input use for that case).
   variant?: "default" | "pending";
 }
 

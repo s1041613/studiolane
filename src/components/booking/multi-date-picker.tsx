@@ -14,7 +14,7 @@ import type { IsoDate } from "@/server/logic/booking";
 interface MultiDatePickerProps {
   dates: IsoDate[];
   onChange: (dates: IsoDate[]) => void;
-  // F-日期-2/3: past dates and dates with no window in either room.
+  // Past dates, and dates with no window in either room.
   isDateDisabled: (date: IsoDate) => boolean;
   invalid?: boolean;
 }
@@ -26,8 +26,6 @@ export function MultiDatePicker({ dates, onChange, isDateDisabled, invalid }: Mu
   const [open, setOpen] = useState(false);
   const selected = dates.map(fromIso);
 
-  // DESIGN.md §8.2 日期: one input-height field, chosen dates on the left,
-  // the calendar trigger on the right.
   return (
     <div
       aria-invalid={invalid || undefined}

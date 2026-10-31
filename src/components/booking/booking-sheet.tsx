@@ -39,8 +39,8 @@ interface BookingSheetProps {
   initialPlans: PricingPlan[];
   initialRentals: RentalSummary[];
   initialPurposeSettings: PurposeSetting[];
-  // Why some of the data above could not be read: the form card turns red
-  // and says so at the top, but stays usable.
+  // Set when some of the data above couldn't be read; the form card turns
+  // red and says so, but stays usable.
   readFailure?: Failure | null;
 }
 
@@ -52,9 +52,9 @@ function isSlotFilled(slot: SlotDraft): boolean {
   return isValidHHmm(slot.start) && isValidHHmm(slot.end);
 }
 
-const DEFAULT_ROOM = "B"; // F-教室-2
-const DEFAULT_PURPOSE: Purpose = "dance"; // F-用途-8 default before any renter
-const DEFAULT_PAYMENT: PaymentChoice = "transfer"; // F-付款-1
+const DEFAULT_ROOM = "B";
+const DEFAULT_PURPOSE: Purpose = "dance";
+const DEFAULT_PAYMENT: PaymentChoice = "transfer";
 
 export function BookingSheet({
   initialRules,
@@ -72,16 +72,16 @@ export function BookingSheet({
   const [clearedNote, setClearedNote] = useState<string | null>(null);
   const [payment, setPayment] = useState<PaymentChoice>(DEFAULT_PAYMENT);
   const [note, setNote] = useState("");
-  // Once a submit has failed, errors are recomputed live so each outline
-  // disappears as soon as its field is fixed (S-錯誤-4).
+  // Once a submit has failed, errors recompute live so each outline clears
+  // as soon as its field is fixed.
   const [showErrors, setShowErrors] = useState(false);
-  // Errors only the server could see (fresher data, S-錯誤-5), tied to the
-  // exact draft they were reported for.
+  // Errors only the server could see (fresher data), tied to the exact
+  // draft they were reported for.
   const [serverErrors, setServerErrors] = useState<{ draftKey: string; errors: BookingFieldErrors } | null>(null);
-  // A server failure that isn't tied to a field (S-完成-7).
+  // A server failure that isn't tied to a field.
   const [submitError, setSubmitError] = useState<ShownFailure | null>(null);
-  // E-41 情境2/3/5: someone else's held, overlapping booking(s) — null while
-  // the dialog is closed, the list to show while it's open.
+  // Someone else's held, overlapping booking(s) — null while the dialog is
+  // closed, the list to show while it's open.
   const [conflicts, setConflicts] = useState<BookingConflict[] | null>(null);
   // How many rentals the last successful submit wrote; null while the
   // success notice is closed.
@@ -102,16 +102,16 @@ export function BookingSheet({
   const orderedSlots = dates.map((d) => slots[d]).filter((s): s is SlotDraft => s != null);
   const role = renter ? (renter.type === "roster" ? renter.role : "customer") : null;
 
-  // F-用途-1..4: judged only once there's a renter and every slot has times;
-  // what each role may pick comes from purpose_settings (用途 B4).
+  // Judged only once there's a renter and every slot has times; what each
+  // role may pick comes from purpose_settings.
   const purposeChoices: PurposeOption[] | null =
     role && orderedSlots.length > 0 && orderedSlots.every(isSlotFilled)
       ? purposeOptions(initialPurposeSettings, role)
       : null;
 
-  // F-用途-5: a chosen purpose that another change made unavailable is
-  // cleared, with the reason shown. Adjusting state during render (rather
-  // than in an effect) keeps the form from flashing the invalid choice.
+  // A chosen purpose that another change made unavailable is cleared, with
+  // the reason shown. Adjusting state during render (not in an effect)
+  // avoids flashing the invalid choice.
   const currentAvailability =
     purpose && purposeChoices ? purposeAvailability(purpose, role, initialPurposeSettings) : null;
   if (purpose && currentAvailability && !currentAvailability.ok) {
@@ -120,7 +120,6 @@ export function BookingSheet({
   }
 
   const chosenPurpose = purposeChoices ? purpose : null;
-  // 0 元 (special price or plan) → no payment needed (用途 U10, U12).
   const rate = renter && chosenPurpose ? hourlyRate({ renter, purpose: chosenPurpose, room }, ctx) : null;
   const isFree = rate?.ok === true && rate.rate === 0;
 
@@ -144,12 +143,11 @@ export function BookingSheet({
   // Flattened keys (`slots.0`, `slots.1`, ...) merge per-slot on their own —
   // no nested object to merge by hand.
   const errors: BookingFieldErrors = { ...remoteErrors, ...liveErrors };
-  // S-錯誤-2: the count follows the fixes live and the banner goes away at 0.
   const errorCount = orderedErrorFields(errors).length;
 
-  // Per-card status: time problems show as soon as anything is typed
-  // (F-時間-6/10), a start already in the past is flagged too (F-時間-9);
-  // the price shows once renter and purpose are known (F-時間-7).
+  // Per-card status: time problems show as soon as anything is typed, a
+  // past start is flagged too; the price shows once renter and purpose are
+  // known.
   const slotViews = orderedSlots.map((slot, index) => {
     const live = slot.start || slot.end ? checkBooking(slot, room, ctx) : null;
     const isPast =
@@ -166,7 +164,6 @@ export function BookingSheet({
   const totalHours = slotViews.reduce((sum, v) => sum + (v.quote?.hours ?? 0), 0);
   const totalAmount = slotViews.reduce((sum, v) => sum + (v.quote?.amount ?? 0), 0);
 
-  // Rate on the room buttons follows the renter's plan (F-教室-1/4).
   const plan =
     renter?.type === "roster"
       ? initialPlans.find((p) => p.id === initialRoster.find((r) => r.id === renter.id)?.pricingPlanId)
@@ -183,7 +180,6 @@ export function BookingSheet({
     setSlots((prev) => ({ ...prev, [date]: slot }));
   }
 
-  // F-用途-8: every renter change resets the purpose to that role's default.
   function chooseRenter(next: RenterSelection) {
     setRenter(next);
     setPurpose(defaultPurposeFor(next.type === "roster" ? next.role : "customer"));
@@ -195,14 +191,13 @@ export function BookingSheet({
     setClearedNote(null);
   }
 
-  // S-錯誤-3: bring the first problem into view.
   function focusFirstBookingError(fieldErrors: BookingFieldErrors) {
     const [first] = orderedErrorFields(fieldErrors);
     focusFirstError(first ?? null);
   }
 
-  // Back to a blank form, after the success notice's 確定 (gate G23 default
-  // A: this page is kept rather than navigating away).
+  // Back to a blank form after the success notice's 確定; the page stays
+  // instead of navigating away.
   function resetForm() {
     setRenter(null);
     setRoom(DEFAULT_ROOM);
@@ -220,7 +215,7 @@ export function BookingSheet({
   }
 
   // Shared by the first attempt (acknowledgedIds = []) and 仍要送出
-  // (acknowledgedIds = the ids the conflict dialog just showed, 情境3/5/6).
+  // (acknowledgedIds = the ids the conflict dialog just showed).
   async function trySubmit(acknowledgedIds: string[]) {
     const result = await settle(submitBooking(draft, acknowledgedIds));
     if (result.ok) {
@@ -230,7 +225,7 @@ export function BookingSheet({
       setServerErrors({ draftKey, errors: result.error.fields });
       focusFirstBookingError(result.error.fields);
     } else if (result.error.kind === "blockers") {
-      // 情境2: nothing was written. 情境5: a fresh conflict appeared while
+      // Nothing was written yet; a fresh conflict may have appeared while
       // the dialog was open — this replaces its list with the new one.
       setConflicts(result.error.blockers.conflicts);
     } else {

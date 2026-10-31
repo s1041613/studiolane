@@ -64,32 +64,30 @@ function rowToRental(row: RentalRow): RentalSummary {
   };
 }
 
-// One slot of a submitted BookingDraft, already checked and priced, ready to
-// become one row in `rentals`.
 export type NewRentalRow = {
-  date: string; // ISO yyyy-mm-dd, the slot's start date (Asia/Taipei)
-  start: string; // HH:mm
-  end: string; // HH:mm
+  date: string;
+  start: string;
+  end: string;
   isCrossMidnight: boolean;
   room: "A" | "B";
-  renterId: string | null; // roster.id; null for a customer booking (D5)
+  renterId: string | null;
   renterType: "roster" | "customer";
-  renterName: string; // roster display name, or the customer's typed name
-  purpose: string; // Purpose/PurposeCode
+  renterName: string;
+  purpose: string;
   note: string;
-  id: string; // uuid, unique per row
-  // S-寫入-1/2: null together with NotRequired for 0-cost bookings (the DB's
-  // rentals_payment_method_matches_state check enforces the pairing).
+  id: string;
+  // null pairs with NotRequired for 0-cost bookings; the DB's
+  // rentals_payment_method_matches_state check enforces that.
   paymentMethod: PaymentMethod | null;
   paymentState: PaymentState;
   amount: number;
-  batchId: string; // shared across every slot submitted together
-  createdAt: string; // ISO timestamp
-  handler: string; // who entered it: the signed-in staff member's name
+  batchId: string;
+  createdAt: string;
+  handler: string;
 };
 
-// create_booking_batch's input: one jsonb object per row, snake_case to
-// match the rentals columns the function's own INSERT reads them into.
+// create_booking_batch expects snake_case keys matching the rentals columns
+// its INSERT reads them into.
 function rentalRowToBatchJson(row: NewRentalRow) {
   const { startsAt, endsAt } = toStartsEndsAt(row.date, row.start, row.end, row.isCrossMidnight);
   return {
@@ -111,9 +109,9 @@ function rentalRowToBatchJson(row: NewRentalRow) {
   };
 }
 
-// create_booking_batch's conflicts come back as raw starts_at/ends_at
-// instants and the DB status code, the same shape listAll's rows have
-// before rowToRental derives the Taipei-local fields.
+// Raw shape create_booking_batch's conflicts come back in: snake_case
+// starts_at/ends_at instants and the DB status code, before rowToRental
+// derives the Taipei-local fields.
 type RawConflictRow = {
   id: string;
   starts_at: string;
@@ -145,7 +143,6 @@ function rentalRowToInsert(row: NewRentalRow): typeof rentals.$inferInsert {
     renterId: row.renterId,
     renterType: row.renterType,
     purpose: row.purpose as PurposeCode,
-    // PaymentState/PaymentMethod enum values are the DB codes already.
     paymentState: row.paymentState as PaymentStateCode,
     status: "pending",
     note: row.note,
@@ -156,14 +153,12 @@ function rentalRowToInsert(row: NewRentalRow): typeof rentals.$inferInsert {
   };
 }
 
-// Reads keep their prefix for the page; the rest is the classified text,
-// and the driver error stays on `cause`.
 function readFailure(prefix: string, error: unknown): Error {
   return new Error(`${prefix}：${classifyDbError(error).reason}`, { cause: error });
 }
 
-// The innermost error's own message: Drizzle wraps the driver's error, and a
-// plpgsql `raise exception` puts its sentence there.
+// Drizzle wraps the driver error, and a plpgsql `raise exception` puts its
+// message deep in the cause chain.
 function innermostMessage(error: unknown): string {
   let current = error;
   for (let depth = 0; depth < 10 && current instanceof Error && current.cause instanceof Error; depth++) {
@@ -182,8 +177,8 @@ export class RentalRepository {
     }
   }
 
-  // S-完成-5: the rows of one submission, re-read so the details page shows
-  // what was actually saved.
+  // Re-read so the details page shows what was actually saved, not just
+  // what was submitted.
   async listByBatch(batchId: string): Promise<RentalSummary[]> {
     try {
       const rows = await currentDb().select().from(rentals).where(eq(rentals.batchId, batchId));
@@ -202,12 +197,7 @@ export class RentalRepository {
     }
   }
 
-  // `note` replaces the whole note when given (postpone/cancel append the
-  // refund marker to the existing note before calling this).
   async updateStatus(id: string, status: RentalStatus, note?: string): Promise<void> {
-    // RentalStatus enum values are already the DB's English codes
-    // (src/server/types/home.ts), so this is a plain type assertion, not a
-    // label-to-code lookup.
     const code = status as RentalStatusCode;
     await currentDb()
       .update(rentals)
@@ -215,30 +205,28 @@ export class RentalRepository {
       .where(eq(rentals.id, id));
   }
 
-  // T-確認-4/8: cancels the rivals (each with its own, possibly
-  // refund-marked, note) and moves this booking on, all in one database
-  // function call: any failure leaves every row unchanged.
+  // Cancels the rivals (each with its own, possibly refund-marked, note)
+  // and moves this booking on in one database function call, so a failure
+  // leaves every row unchanged.
   async confirmWithCancellations(
     id: string,
     nextStatus: RentalStatus,
     cancellations: Array<{ id: string; note: string }>,
   ): Promise<void> {
-    // RentalStatus enum values are the DB codes already.
     const next = nextStatus as RentalStatusCode;
     try {
       await currentDb().execute(
         sql`select confirm_booking_with_cancellations(${id}::uuid, ${next}::rental_status, ${JSON.stringify(cancellations)}::jsonb)`,
       );
     } catch (error) {
-      // The function's own refusal (raise exception, P0001) is worded for
-      // the person; anything else is the boundary's to classify.
+      // P0001 is the function's own raise exception, worded for the
+      // person; anything else is the boundary's to classify.
       if (classifyDbError(error).code === "P0001") refuse("ABORTED", innermostMessage(error));
       throw error;
     }
   }
 
-  // D7: a single atomic update for the markBookingPaid transition, so
-  // status and payment_state can never land out of sync.
+  // One UPDATE so status and paymentState can never land out of sync.
   async markPaid(id: string): Promise<void> {
     await currentDb().update(rentals).set({ status: "registered", paymentState: "paid" }).where(eq(rentals.id, id));
   }
@@ -248,18 +236,16 @@ export class RentalRepository {
     await currentDb().insert(rentals).values(rows.map(rentalRowToInsert));
   }
 
-  // E-41: submitBooking's all-or-nothing write. create_booking_batch takes
-  // an advisory lock on the room, recomputes conflicts (other renter, held,
-  // overlapping) against acknowledgedIds, and either inserts every row or
-  // inserts none and returns the current full conflict list.
+  // submitBooking's all-or-nothing write: create_booking_batch takes an
+  // advisory lock on the room, recomputes conflicts against
+  // acknowledgedIds, and either inserts every row or none, returning the
+  // full conflict list.
   async createBatch(rows: NewRentalRow[], acknowledgedIds: readonly string[]): Promise<CreateBookingBatchResult> {
     if (!rows.length) return { status: "created" };
     const payload = rows.map(rentalRowToBatchJson);
-    // A JS array interpolated into drizzle's sql`` template expands into a
-    // parenthesized parameter list (for IN (...) use), not a single bound
-    // array — `()` on an empty list, which is invalid as `uuid[]`. A
-    // Postgres array literal string, bound as one parameter and cast, does
-    // what this needs.
+    // drizzle's sql`` expands an interpolated JS array into a parenthesized
+    // param list (invalid as uuid[] when empty), so bind a Postgres array
+    // literal string and cast instead.
     const result = await currentDb().execute<{ result: BatchFunctionResult }>(
       sql`select create_booking_batch(${JSON.stringify(payload)}::jsonb, ${`{${acknowledgedIds.join(",")}}`}::uuid[]) as result`,
     );

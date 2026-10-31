@@ -10,14 +10,14 @@ import { purposeToLabel } from "@/server/supabase/codecs";
 interface PurposePickerProps {
   purpose: Purpose | null;
   onChange: (purpose: Purpose) => void;
-  // null until every slot has its times (F-用途-1). Archived purposes are
-  // already left out (用途 U07).
+  // null until every slot has its times. Archived purposes are already
+  // left out.
   options: PurposeOption[] | null;
   invalid?: boolean;
 }
 
-// F-用途-2: purposes closed to this renter stay visible but greyed out, with
-// the reason written inline (no hover on phones, so no tooltip).
+// Purposes closed to this renter stay visible but greyed out, with the
+// reason written inline (no hover on phones, so no tooltip).
 export function PurposePicker({ purpose, onChange, options, invalid }: PurposePickerProps) {
   if (!options) {
     return <p className={`${controlVariants({ variant: "pending" })} flex items-center`}>請先填完每天的時間</p>;

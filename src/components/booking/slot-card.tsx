@@ -14,7 +14,7 @@ interface SlotCardProps {
   slot: SlotDraft;
   room: "A" | "B";
   ruleCtx: RuleContext;
-  // F-時間-0: set when a field this card depends on is still empty.
+  // Set when a field this card depends on is still empty.
   blockedBy: string | null;
   error: string | null;
   quote: { hours: number; amount: number } | null;
@@ -22,9 +22,8 @@ interface SlotCardProps {
   onRemove: () => void;
 }
 
-// F-時間-1..8. Windows subtract the rental rules and registered rentals.
+// Windows subtract the rental rules and registered rentals.
 export function SlotCard({ slot, room, ruleCtx, blockedBy, error, quote, onChange, onRemove }: SlotCardProps) {
-  // F-時間-9: today's windows start from now.
   const todayWindows = clipWindowsToNow(getAvailableWindows(room, slot.date, ruleCtx), slot.date, new Date());
   const noWindows = todayWindows.length === 0;
   const startCandidates = candidatesInWindows(todayWindows);
@@ -46,8 +45,6 @@ export function SlotCard({ slot, room, ruleCtx, blockedBy, error, quote, onChang
   const message = blockedBy ?? (noWindows ? "沒有可以預約的時段，請移除這天、改日期或換教室" : error);
   const isError = !blockedBy && (noWindows || error !== null);
 
-  // DESIGN.md §8.2 每天的時間: a header strip (bar + date + 移除) over the
-  // windows and time fields; an error sits in a red strip at the bottom.
   return (
     <div className={`${insetVariants({ padding: "none", invalid: isError })} overflow-hidden`}>
       <div className="flex items-center justify-between border-b border-inset-border bg-divider px-4 py-3">
@@ -98,7 +95,6 @@ export function SlotCard({ slot, room, ruleCtx, blockedBy, error, quote, onChang
                 placeholder="結束"
                 invalid={isError}
               />
-              {/* 開關方塊: no checkbox; pressed turns #C7D0D2. */}
               <Toggle
                 variant="outline"
                 size="sm"
