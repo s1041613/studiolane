@@ -72,7 +72,8 @@ There is no way yet in the UI to confirm a booking into that status, so a
 reviewer cannot reach this case from a clean demo. It is covered by tests
 instead.
 
-**Coming next:** a read-only bookings list (E-46).
+**Coming next:** the rest of the bookings list: date, status, and payment
+filters, plus editing, cancelling, and admin confirmation.
 
 ## Local development
 
