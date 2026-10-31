@@ -31,19 +31,19 @@ test:
     Driving the app
     - Prefer the existing Playwright specs in e2e/ over hand-driving a browser.
       Run only the specs related to the change, for example:
-        npx playwright test e2e/<spec>.spec.ts --project=setup --project=chromium
-      Playwright starts its own dev server on port 3000 and signs in through
-      e2e/auth.setup.ts, so do not start a dev server yourself when using it.
+        npx playwright test e2e/<spec>.spec.ts --project=chromium
+      Playwright starts its own dev server on port 3101 (E2E_PORT overrides
+      it), so do not start a dev server yourself when using it. Auth is a
+      stub that always returns a demo admin, so there is no sign-in step.
     - Specs named *.write.spec.ts change data and only run in the `writes`
-      project, which depends on chromium, firefox and webkit:
-        E2E_WRITES=1 npx playwright test e2e/<spec>.write.spec.ts --project=setup --project=writes
+      project, which depends on chromium:
+        E2E_WRITES=1 npx playwright test e2e/<spec>.write.spec.ts --project=chromium --project=writes
     - If you must drive a browser by hand, first run the Supabase exports above
-      (they override .env.local, which may point at production) and run
-      `--project=setup` once so the e2e accounts exist. Then start
-      `ADMIN_EMAILS=e2e-admin@test.local pnpm dev --port 3100 > /dev/null 2>&1 & echo $! > "$SCRATCH/nm-dev.pid"`
+      (they override .env.local, which may point at production). Then start
+      `pnpm dev --port 3100 > /dev/null 2>&1 & echo $! > "$SCRATCH/nm-dev.pid"`
       and open
       http://localhost:3100. Never use 127.0.0.1: Next 16 blocks it and the page
-      never hydrates. Sign in with the accounts in e2e/accounts.ts.
+      never hydrates.
 
     Unit tests
     - For a focused check, run `npx vitest run <changed test files>` instead of
