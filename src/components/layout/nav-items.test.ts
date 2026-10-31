@@ -37,6 +37,10 @@ describe("pageTitle", () => {
     expect(pageTitle("/bookings")).toBe("預約列表");
   });
 
+  it("names 預約明細 for any batch", () => {
+    expect(pageTitle("/bookings/batch/abc")).toBe("預約明細");
+  });
+
   it("titles every settings page 設定", () => {
     expect(pageTitle("/settings")).toBe("設定");
     expect(pageTitle("/settings/roster")).toBe("設定");
