@@ -206,8 +206,15 @@ describe("submitBooking: 情境2/3/5/6 — 撞單需要確認", () => {
   });
 
   it("情境3: acknowledgedIds 帶著看過的 id 重送，傳給 createBatch 讓資料庫判斷", async () => {
-    await submitBooking(draft, ["rival-1"]);
-    expect(data.createBatch.mock.calls[0][1]).toEqual(["rival-1"]);
+    const rivalId = "6f1c2a3b-4d5e-4f60-8a71-92b3c4d5e6f7";
+    await submitBooking(draft, [rivalId]);
+    expect(data.createBatch.mock.calls[0][1]).toEqual([rivalId]);
+  });
+
+  it("drops non-uuid acknowledgedIds before calling createBatch", async () => {
+    const rivalId = "6f1c2a3b-4d5e-4f60-8a71-92b3c4d5e6f7";
+    await submitBooking(draft, ["rival-1", "{a,b}", rivalId]);
+    expect(data.createBatch.mock.calls[0][1]).toEqual([rivalId]);
   });
 
   it("情境5/6: 即使帶了 acknowledgedIds，createBatch 仍可能回新的 needs_confirm（例如又多了一筆，或先到的人剛寫入）", async () => {
