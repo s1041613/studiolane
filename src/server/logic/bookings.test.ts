@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ALL_STATUSES,
   bookingsUrlForDay,
+  bookingListFilters,
   initialBookingFilters,
   nextStatusOnConfirm,
   selectBookingRows,
@@ -61,6 +62,16 @@ describe("selectBookingRows", () => {
       "postponed",
       "cancelled",
     ]);
+  });
+});
+
+describe("bookingListFilters", () => {
+  it("trims q and leaves every other filter off", () => {
+    expect(bookingListFilters("  林小雨  ")).toEqual({ q: "林小雨", pay: "", statuses: [], from: "", to: "" });
+  });
+
+  it("treats a missing q as no query", () => {
+    expect(bookingListFilters().q).toBe("");
   });
 });
 

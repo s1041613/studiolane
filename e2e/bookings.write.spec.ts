@@ -49,6 +49,7 @@ const CONFLICT_DATE = isoDaysFromNow(107);
 const TAKEN_DATE = isoDaysFromNow(114);
 const LIST_DATE = isoDaysFromNow(121);
 const MULTI_DATES = [isoDaysFromNow(128), isoDaysFromNow(129), isoDaysFromNow(130)];
+const TRACKING_DATE = isoDaysFromNow(135);
 const SLOT_START = "14:00";
 const SLOT_END = "15:00";
 
@@ -204,6 +205,31 @@ test("a free slot books through the form and the row lands in rentals", async ({
     await expect(bookedRow).toBeVisible();
     await expect(bookedRow).toContainText("待確認");
     await expect(bookedRow).not.toContainText("撞單");
+  } finally {
+    await deleteRentalsNamed(db, renterName);
+    await db.end();
+  }
+});
+
+// E-51: the batch page's 前往預約追蹤 opens /bookings?q=<renter>, and the
+// list then shows only that renter's bookings, not the seeded ones.
+test("前往預約追蹤 on the batch page lists only that renter", async ({ page }) => {
+  const db = new Client({ connectionString: process.env.DATABASE_URL });
+  await db.connect();
+  const renterName = `E2E追蹤${STAMP}`;
+
+  try {
+    await fillBookingForm(page, renterName, TRACKING_DATE);
+    await page.getByRole("button", { name: "送出預約", exact: true }).click();
+    await expect(page).toHaveURL(BATCH_URL_PATTERN);
+
+    await page.getByRole("link", { name: "前往預約追蹤" }).click();
+
+    await expect(page).toHaveURL(`/bookings?q=${encodeURIComponent(renterName)}`);
+    const table = page.getByRole("table", { name: "預約列表" });
+    await expect(table.getByText(renterName)).toBeVisible();
+    await expect(table.getByText("林小雨")).toHaveCount(0);
+    await expect(table.getByText("周小貓")).toHaveCount(0);
   } finally {
     await deleteRentalsNamed(db, renterName);
     await db.end();
