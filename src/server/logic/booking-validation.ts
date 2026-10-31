@@ -15,7 +15,9 @@ export type BookingValidationContext = RuleContext &
     now?: Date;
   };
 
-const STILL_HELD = new Set<RentalStatus>([RentalStatus.Pending, RentalStatus.AwaitingPayment, RentalStatus.Registered]);
+// Exported so booking-conflicts.ts (E-41: other-renter conflict detection)
+// shares the same definition of "held" rather than redeclaring it.
+export const STILL_HELD = new Set<RentalStatus>([RentalStatus.Pending, RentalStatus.AwaitingPayment, RentalStatus.Registered]);
 
 // S-8: the same renter already holds (or is waiting on) an overlapping slot in
 // this room — almost always a duplicate submission. Roster renters are matched
