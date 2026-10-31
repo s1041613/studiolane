@@ -30,6 +30,9 @@ sources:
   - id: sources-service
     resource: https://github.com/s1041613/studiolane/blob/main/src/server/services/booking-sources.ts
     title: Booking source data loader
+  - id: summary
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/booking-summary.ts
+    title: Batch summary logic
 ---
 
 # Overview
@@ -162,8 +165,17 @@ one room at a time.[^migration]
 
 # Success
 
-Once the batch is written, the form shows a notice with the number of
-bookings just created, then clears itself for the next one.[^sheet]
+Once the batch is written, the form navigates to `/bookings/batch/<batchId>`,
+a read-only page listing that batch.[^sheet] It shows the renter, room,
+purpose, payment method, and note, each shared by every rental in the batch,
+then a table with one row per date: date, time, hours, status, and amount.
+The status column is dropped and shown once at the top instead when every row
+shares the same status.[^summary] A totals row at the bottom adds up the
+hours and the amount. Two links follow: `再預約一筆` back to the new booking
+page, and `前往預約追蹤` to the bookings list filtered to this renter.
+
+The batch id in the URL means a refresh shows the same page, and pressing
+Back after submitting can't resubmit the form.[^sheet]
 
 # Confirming a booking later
 
@@ -187,3 +199,4 @@ bookings is separate work, not covered here.
 [^repo]: Rental repository
 [^migration]: create_booking_batch migration
 [^sources-service]: Booking source data loader
+[^summary]: Batch summary logic
