@@ -35,7 +35,7 @@ Steps below are about 10 minutes total, once the site is awake.
    weekdays, set a start and end time, and write a reason, then `儲存`
    (save). There is no hard delete, only deactivate and reactivate: click
    `停用` (deactivate) on the row, confirm in the dialog that opens, then
-   click `啟用` (reactivate) to bring it back. Click `編輯` (edit), change
+   click `啟用` (reactivate) and confirm again to bring it back. Click `編輯` (edit), change
    the reason or time, and `儲存` again. Leave the rule active (enabled)
    when you move on, since step 5 depends on it.
 2. **`/bookings/new`, about 3 minutes.** Pick an existing renter from the
