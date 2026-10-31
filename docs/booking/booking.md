@@ -172,7 +172,8 @@ then a table with one row per date: date, time, hours, status, and amount.
 The status column is dropped and shown once at the top instead when every row
 shares the same status.[^summary] A totals row at the bottom adds up the
 hours and the amount. Two links follow: `再預約一筆` back to the new booking
-page, and `前往預約追蹤` to the bookings list filtered to this renter.
+page, and `前往預約追蹤` to the bookings list (`/bookings?q=<renter>`; the list does not
+filter on `q` yet).
 
 The batch id in the URL means a refresh shows the same page, and pressing
 Back after submitting can't resubmit the form.[^sheet]
