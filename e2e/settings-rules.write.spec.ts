@@ -301,3 +301,81 @@ test("archiving a row doesn't shift the list under a pending 啟用 click", asyn
     await confirm(page, "停用這個租借規則？", "停用");
   }
 });
+
+test("success toast pauses while hovered and dismisses after the pointer leaves", async ({ page }) => {
+  const reason = `整合測試${STAMP}-hover`;
+  const rowText = `週日 06:00–07:00 ${reason}`;
+
+  await openRulesPage(page);
+  const createDialog = await openCreateDialog(page);
+  await setRooms(createDialog, ["B"]);
+  await setWeekdays(createDialog, [7]);
+  await typeTime(page, createDialog, "開始", "06:00");
+  await typeTime(page, createDialog, "結束", "07:00");
+  await createDialog.getByLabel("原因").fill(reason);
+  await createDialog.getByRole("button", { name: "儲存", exact: true }).click();
+  await expect(createDialog).toBeHidden();
+
+  const toast = page.getByRole("status").filter({ hasText: "已新增 1 筆租借規則" });
+  await expect(toast).toBeVisible();
+
+  // Hovering keeps it alive well past the normal ~4s auto-dismiss.
+  await toast.hover();
+  await page.waitForTimeout(4_500);
+  await expect(toast).toBeVisible();
+
+  // Leaving restarts the full 4s countdown, so it's gone 4.5s later.
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(4_500);
+  await expect(toast).toBeHidden();
+
+  await openRulesPage(page);
+  await page.getByRole("button", { name: "B", exact: true }).click();
+  const list = await openListView(page);
+  const archiveButton = list.getByRole("button", { name: `停用 ${rowText}` });
+  await clickUntil(archiveButton, page.getByRole("alertdialog"));
+  await confirm(page, "停用這個租借規則？", "停用");
+});
+
+test("archiving while offline shows the error toast, which stays until closed", async ({ page, context }) => {
+  const reason = `整合測試${STAMP}-斷線`;
+  const rowText = `週六 07:00–08:00 ${reason}`;
+
+  await openRulesPage(page);
+  const createDialog = await openCreateDialog(page);
+  await setRooms(createDialog, ["B"]);
+  await setWeekdays(createDialog, [6]);
+  await typeTime(page, createDialog, "開始", "07:00");
+  await typeTime(page, createDialog, "結束", "08:00");
+  await createDialog.getByLabel("原因").fill(reason);
+  await createDialog.getByRole("button", { name: "儲存", exact: true }).click();
+  await expect(createDialog).toBeHidden();
+  await expect(page.getByRole("status").filter({ hasText: "已新增 1 筆租借規則" })).toBeVisible();
+
+  await openRulesPage(page);
+  await page.getByRole("button", { name: "B", exact: true }).click();
+  const list = await openListView(page);
+  const archiveButton = list.getByRole("button", { name: `停用 ${rowText}` });
+  await expect(archiveButton).toBeVisible();
+
+  // Offline, so the impact check (archive's own pre-check) never reaches the
+  // server: it settles to the network failure, no errorId, no confirm dialog.
+  await context.setOffline(true);
+  await archiveButton.click();
+
+  const alert = page.getByRole("alert").filter({ hasText: "連線失敗，請再試一次" });
+  await expect(alert).toBeVisible();
+  await page.waitForTimeout(5_000);
+  await expect(alert).toBeVisible();
+
+  // The ✕ sits beside ActionFailure's own role="alert" box, not inside it
+  // (ActionFailure is unmodified), so it's looked up on its own.
+  await page.getByRole("button", { name: "關閉" }).click();
+  await expect(alert).toBeHidden();
+
+  await context.setOffline(false);
+
+  // Clean up now that the network is back.
+  await clickUntil(archiveButton, page.getByRole("alertdialog"));
+  await confirm(page, "停用這個租借規則？", "停用");
+});
