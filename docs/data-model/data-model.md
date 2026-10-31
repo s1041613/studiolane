@@ -14,13 +14,13 @@ sources:
     resource: https://github.com/s1041613/studiolane/blob/main/supabase/seed.sql
     title: Local demo seed seed.sql
   - id: drizzle-schema
-    resource: https://github.com/s1041613/studiolane/tree/d1006d2e51a0f33076428620477f412f0eeea742/src/server/drizzle/schema
+    resource: https://github.com/s1041613/studiolane/tree/main/src/server/drizzle/schema
     title: Drizzle schema folder
   - id: repositories
-    resource: https://github.com/s1041613/studiolane/tree/d1006d2e51a0f33076428620477f412f0eeea742/src/server/repositories
+    resource: https://github.com/s1041613/studiolane/tree/main/src/server/repositories
     title: Repositories folder
   - id: logic
-    resource: https://github.com/s1041613/studiolane/tree/d1006d2e51a0f33076428620477f412f0eeea742/src/server/logic
+    resource: https://github.com/s1041613/studiolane/tree/main/src/server/logic
     title: Domain logic folder
 ---
 
