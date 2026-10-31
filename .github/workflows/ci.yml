@@ -72,3 +72,49 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium --with-deps
+
+      # e2e runs against a throwaway local Supabase, never production, so CI
+      # needs no database secrets. supabase isn't a project dependency yet
+      # (AGENTS.md: skeleton stage), so this uses npx like a local run does.
+      - name: Start local Supabase
+        run: npx supabase start
+
+      - name: Point the app at local Supabase
+        run: |
+          eval "$(npx supabase status -o env)"
+          echo "SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY" >> "$GITHUB_ENV"
+          echo "DATABASE_URL=$DB_URL" >> "$GITHUB_ENV"
+
+      # The throwaway stack makes settings-rules.write.spec.ts safe to run here.
+      - name: Run Playwright tests
+        run: pnpm test:e2e
+        env:
+          E2E_WRITES: '1'
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
