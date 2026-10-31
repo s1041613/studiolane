@@ -15,9 +15,7 @@ export type BookingValidationContext = RuleContext &
     now?: Date;
   };
 
-// Exported so booking-conflicts.ts can reuse the same definition of "held"
-// instead of redeclaring it.
-export const STILL_HELD = new Set<RentalStatus>([RentalStatus.Pending, RentalStatus.AwaitingPayment, RentalStatus.Registered]);
+const STILL_HELD = new Set<RentalStatus>([RentalStatus.Pending, RentalStatus.AwaitingPayment, RentalStatus.Registered]);
 
 // True when the same renter already holds (or awaits) an overlapping slot —
 // almost always a duplicate submission. Roster renters match by id;
