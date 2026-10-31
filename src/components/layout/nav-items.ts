@@ -25,6 +25,7 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 export function pageTitle(pathname: string): string | null {
+  if (pathname.startsWith("/bookings/batch/")) return "預約明細";
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return "設定";
   return PAGE_TITLES[pathname] ?? null;
 }
