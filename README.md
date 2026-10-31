@@ -44,13 +44,12 @@ Steps below are about 10 minutes total, once the site is awake.
    move on, since step 5 depends on it.
 2. **`/bookings/new`, about 3 minutes.** Pick a renter from the roster, or
    type a new name to add an outside customer. Then pick a room, a date,
-   a time slot, a purpose, and a payment method, and submit. The page stays on the form and shows a `預約已送出`
-   (booking submitted) notice with the count of bookings just written.
-   A red error may show behind the notice for a moment. That is a known
-   display bug; the booking was written. Click `確定` (OK) to clear the
-   notice; the form resets for a new booking. Note the exact room, date, and time you used, since the next
-   two steps reuse them.
-3. **Same slot, different renter, about 2 minutes.** Still on
+   a time slot, a purpose, and a payment method, and submit. The page
+   moves to the read-only batch detail page (`/bookings/batch/<batchId>`)
+   for the booking just written. Note the exact room, date, and time you
+   used, since the next two steps reuse them, then click `再預約一筆` (book
+   another) to return to the form.
+3. **Same slot, different renter, about 2 minutes.** Back on
    `/bookings/new`, pick a different renter and submit the same room,
    date, and time as step 2. A `這個時段已有其他預約` (this slot already
    has another booking) dialog lists the conflict. Click `取消` (cancel):
@@ -73,8 +72,7 @@ There is no way yet in the UI to confirm a booking into that status, so a
 reviewer cannot reach this case from a clean demo. It is covered by tests
 instead.
 
-**Coming next:** a read-only bookings list (E-46) and a batch booking
-detail page (E-47).
+**Coming next:** a read-only bookings list (E-46).
 
 ## Local development
 
