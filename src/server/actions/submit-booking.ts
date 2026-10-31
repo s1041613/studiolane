@@ -25,6 +25,10 @@ export type SubmitBookingResult = Sealed<
 >;
 
 const NEEDS_CONFIRM_MESSAGE = "這個時段跟別人的預約撞到了，請確認是否仍要送出";
+// Same field error validateBookingDraft's own-overlap check gives (S-8);
+// create_booking_batch repeats the check inside its lock since the form's
+// read of existingRentals predates that lock.
+const OWN_OVERLAP_MESSAGE = "你已經預約過這個時段";
 
 // Re-runs the form's checks against freshly-read rules, roster, plans and
 // rentals — someone may have registered a conflicting slot while the form
@@ -68,6 +72,13 @@ export async function submitBooking(draft: BookingDraft, acknowledgedIds: string
     const batch = await rentalRepo.createBatch(rows, acknowledgedIds);
     if (batch.status === "needs_confirm") {
       return failBlockers("FAILED_PRECONDITION", NEEDS_CONFIRM_MESSAGE, { conflicts: batch.conflicts });
+    }
+    if (batch.status === "own_overlap") {
+      const fieldErrors: BookingFieldErrors = {};
+      rows.forEach((row, index) => {
+        if (batch.ids.includes(row.id)) fieldErrors[`slots.${index}`] = OWN_OVERLAP_MESSAGE;
+      });
+      return failFields(fieldErrors);
     }
 
     return ok({ batchId, rentalIds: rows.map((r) => r.id) });

@@ -72,7 +72,10 @@ function resolveRenter(
   if (!entry) return { ok: false, reason: "找不到租借人的人員資料" };
   // Catches a roster entry archived after the form was opened.
   if (entry.archivedAt !== null) return { ok: false, reason: "這位人員已停用" };
-  return { ok: true, renter: { ...renter, role: entry.role }, role: entry.role };
+  // id, name and role all come from the roster row, never the client's —
+  // a roster renter's name is only ever a display label the client sends,
+  // not an identity the server should trust.
+  return { ok: true, renter: { type: "roster", id: entry.id, name: entry.name, role: entry.role }, role: entry.role };
 }
 
 // Run by the form before submitting and again by the server against fresh
@@ -122,6 +125,10 @@ export function validateBookingDraft(
 
   const priced: PricedSlot[] = [];
   const now = ctx.now ?? new Date();
+  // Earlier slots' intervals in this same draft, in order, so a later slot
+  // that collides with one of them (an exact date+time repeat is just the
+  // degenerate case of an overlap) gets the error, never the earlier one.
+  const seenIntervals: DateTimeInterval[] = [];
   draft.slots.forEach((slot, index) => {
     // Shape and start/end consistency checked first, so later checks can
     // rely on a well-formed interval.
@@ -135,6 +142,11 @@ export function validateBookingDraft(
       errors[`slots.${index}`] = "這個時段已經過去了";
       return;
     }
+    if (seenIntervals.some((seen) => intervalsOverlap(interval, seen))) {
+      errors[`slots.${index}`] = "這個時段跟上面選的時段重複了";
+      return;
+    }
+    seenIntervals.push(interval);
     const draftRenter = draft.renter;
     if (draftRenter && ctx.existingRentals.some((r) => isOwnOverlap(r, draftRenter, draft.room, interval))) {
       errors[`slots.${index}`] = "你已經預約過這個時段";

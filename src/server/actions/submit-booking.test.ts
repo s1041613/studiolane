@@ -224,3 +224,14 @@ describe("submitBooking: 情境2/3/5/6 — 撞單需要確認", () => {
     expect(result).toMatchObject({ ok: true });
   });
 });
+
+describe("submitBooking: create_booking_batch 在鎖裡發現跟自己重疊", () => {
+  it("own_overlap → 跟 S-8 一樣的欄位錯誤，錯誤落在對應的那張時段卡", async () => {
+    data.createBatch.mockImplementation(async (rows) => ({ status: "own_overlap", ids: [rows[1].id] }));
+    const result = unseal(await submitBooking(draft));
+    expect(result).toMatchObject({
+      ok: false,
+      error: { kind: "fields", code: "INVALID_ARGUMENT", fields: { "slots.1": "你已經預約過這個時段" } },
+    });
+  });
+});
