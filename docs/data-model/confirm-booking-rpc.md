@@ -7,10 +7,10 @@ status: draft
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-30T17:30:40Z }
 sources:
   - id: init-migration
-    resource: https://github.com/s1041613/studiolane/blob/d1006d2e51a0f33076428620477f412f0eeea742/supabase/migrations/0001_init.sql
+    resource: https://github.com/s1041613/studiolane/blob/main/supabase/migrations/0001_init.sql
     title: Initial migration 0001_init.sql
   - id: rental-repository
-    resource: https://github.com/s1041613/studiolane/blob/d1006d2e51a0f33076428620477f412f0eeea742/src/server/repositories/rental-repository.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/repositories/rental-repository.ts
     title: RentalRepository source
 ---
 
