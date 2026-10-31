@@ -46,6 +46,7 @@ function isoDaysFromNow(days: number): string {
 
 const FREE_SLOT_DATE = isoDaysFromNow(100);
 const CONFLICT_DATE = isoDaysFromNow(107);
+const TAKEN_DATE = isoDaysFromNow(114);
 const SLOT_START = "14:00";
 const SLOT_END = "15:00";
 
@@ -200,6 +201,38 @@ test("an overlapping slot is blocked until 仍要送出, and 取消 writes nothi
     await expect(notice).toBeHidden();
 
     expect(await countRentalsNamed(db, renterName)).toBe(1);
+  } finally {
+    await db.query("delete from rentals where id = $1", [rivalId]);
+    await deleteRentalsNamed(db, renterName);
+    await db.end();
+  }
+});
+
+// A different renter's REGISTERED booking overlapping the submitted slot is
+// a hard block: the field error from booking-rules' wording, never the
+// confirm dialog, and nothing written.
+test("a registered rival's slot is rejected as a field error, not the confirm dialog", async ({ page }) => {
+  const db = new Client({ connectionString: process.env.DATABASE_URL });
+  await db.connect();
+  const rivalName = `E2E已登記${STAMP}`;
+  const renterName = `E2E撞已登記${STAMP}`;
+
+  const { rows: rivalRows } = await db.query<{ id: string }>(
+    `insert into rentals (room, renter_type, renter_id, renter_name, purpose, starts_at, ends_at, status, payment_state, payment_method, amount)
+     values ('B', 'customer', null, $1, 'dance', $2, $3, 'registered', 'unpaid', 'transfer', 400)
+     returning id`,
+    [rivalName, taipeiInstant(TAKEN_DATE, SLOT_START), taipeiInstant(TAKEN_DATE, SLOT_END)],
+  );
+  const rivalId: string = rivalRows[0].id;
+
+  try {
+    await fillBookingForm(page, renterName, TAKEN_DATE);
+    await page.getByRole("button", { name: "送出預約", exact: true }).click();
+
+    await expect(page.getByRole("alertdialog", { name: "這個時段已有其他預約" })).toBeHidden();
+    await expect(page.getByText(`${SLOT_START}–${SLOT_END} 已有人預約`)).toBeVisible();
+
+    expect(await countRentalsNamed(db, renterName)).toBe(0);
   } finally {
     await db.query("delete from rentals where id = $1", [rivalId]);
     await deleteRentalsNamed(db, renterName);

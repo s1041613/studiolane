@@ -84,6 +84,18 @@ export async function submitBooking(draft: BookingDraft, acknowledgedIds: string
       });
       return failFields(fieldErrors);
     }
+    if (batch.status === "taken") {
+      // A different renter registered one of these slots between the
+      // form's read and this lock; same field error validateBookingDraft
+      // would give from fresher data. Hard block: acknowledgedIds can
+      // never clear it, so nothing is written either way.
+      const fieldErrors: BookingFieldErrors = {};
+      rows.forEach((row, index) => {
+        const blocked = batch.blocked.find((b) => b.id === row.id);
+        if (blocked) fieldErrors[`slots.${index}`] = blocked.message;
+      });
+      return failFields(fieldErrors);
+    }
 
     return ok({ batchId, rentalIds: rows.map((r) => r.id) });
   });

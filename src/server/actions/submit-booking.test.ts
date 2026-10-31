@@ -125,12 +125,22 @@ describe("submitBooking", () => {
     });
   });
 
-  it("別人已登記的時段重疊 → 不在表單擋，交給 create_booking_batch 判斷衝突", async () => {
+  it("別人已登記的時段重疊 → 回傳那張卡的錯誤，整批都不寫入", async () => {
     data.rentals = [
       makeRental({ room: "B", date: "2026-10-06", start: "14:30", end: "15:30", status: RentalStatus.Registered }),
     ];
-    await submitBooking(draft);
-    expect(data.createBatch).toHaveBeenCalledTimes(1);
+    const result = unseal(await submitBooking(draft));
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        kind: "fields",
+        code: "INVALID_ARGUMENT",
+        message: "有 1 個地方需要修改",
+        fields: { "slots.0": "14:30–15:30 已有人預約" },
+        errorId: ERROR_ID,
+      },
+    });
+    expect(data.createBatch).not.toHaveBeenCalled();
   });
 
   it("U14: 客戶的預約帶展演直接呼叫 action → 「僅限 老師」，不寫入", async () => {
@@ -220,6 +230,23 @@ describe("submitBooking: 情境2/3/5/6 — 撞單需要確認", () => {
     const result = unseal(await submitBooking(draft, ["rival-1"]));
     expect(result).toMatchObject({ ok: true });
   });
+
+  it("按下仍要送出前，確認過的對手變成已登記 → 整批不寫入，那張卡顯示已有人預約", async () => {
+    // The dialog showed rival-1 as pending; by the time this resend reaches
+    // create_booking_batch's lock, rival-1 has been registered. Being in
+    // acknowledgedIds only clears a needs_confirm conflict — it can't clear
+    // a registered rival's hard block — so the function still reports it,
+    // this time as 'taken'.
+    data.createBatch.mockImplementation(async (rows) => ({
+      status: "taken",
+      blocked: [{ id: rows[0].id, message: "14:30–15:30 已有人預約" }],
+    }));
+    const result = unseal(await submitBooking(draft, ["rival-1"]));
+    expect(result).toMatchObject({
+      ok: false,
+      error: { kind: "fields", code: "INVALID_ARGUMENT", fields: { "slots.0": "14:30–15:30 已有人預約" } },
+    });
+  });
 });
 
 describe("submitBooking: create_booking_batch 在鎖裡發現跟自己重疊", () => {
@@ -229,6 +256,20 @@ describe("submitBooking: create_booking_batch 在鎖裡發現跟自己重疊", (
     expect(result).toMatchObject({
       ok: false,
       error: { kind: "fields", code: "INVALID_ARGUMENT", fields: { "slots.1": "你已經預約過這個時段" } },
+    });
+  });
+});
+
+describe("submitBooking: create_booking_batch 在鎖裡發現別人剛登記走", () => {
+  it("taken → 跟驗證一樣的欄位錯誤，錯誤落在對應的那張時段卡，整批不寫入", async () => {
+    data.createBatch.mockImplementation(async (rows) => ({
+      status: "taken",
+      blocked: [{ id: rows[1].id, message: "15:00–16:00 已有人預約" }],
+    }));
+    const result = unseal(await submitBooking(draft));
+    expect(result).toMatchObject({
+      ok: false,
+      error: { kind: "fields", code: "INVALID_ARGUMENT", fields: { "slots.1": "15:00–16:00 已有人預約" } },
     });
   });
 });

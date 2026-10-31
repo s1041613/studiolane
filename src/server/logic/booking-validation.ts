@@ -150,9 +150,11 @@ export function validateBookingDraft(
       errors[`slots.${index}`] = "你已經預約過這個時段";
       return;
     }
-    // Other renters' held rentals, registered included, are conflicts for
-    // create_booking_batch to confirm, so only the rules can block here.
-    const slotCheck = checkBooking(slot, draft.room, { rules: ctx.rules, existingRentals: [] });
+    // A different renter's registered rental is a hard block (checkBooking
+    // only counts RentalStatus.Registered rows); their still-pending or
+    // awaiting-payment holds are conflicts left for create_booking_batch to
+    // confirm instead, so they don't reach this check.
+    const slotCheck = checkBooking(slot, draft.room, ctx);
     if (!slotCheck.ok) {
       errors[`slots.${index}`] = slotCheck.reason;
       return;

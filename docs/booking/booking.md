@@ -74,6 +74,12 @@ The checks cover:[^validation]
   a Saturday from 14:00 to 16:00. A new booking for Dana that overlaps that
   time is rejected as a likely duplicate, before any check against other
   renters runs.
+- Each slot does not overlap a booking someone else already has `已登記`
+  (registered) in the same room. That's the only status that confirms a
+  rental, so it is a hard block: the field error names the taken time and
+  nothing about the booking is written. A different renter's still-pending
+  or awaiting-payment hold on the same time is not checked here — it is a
+  conflict, handled by the confirm dialog described below.
 - Slots in the same submit do not overlap each other. The later slot gets
   the error.
 
@@ -86,10 +92,12 @@ cancelled, completed, or postponed is not held, and never blocks anything.
 
 # Conflict detection
 
-A held booking in the same room, from a different renter, that overlaps a
-submitted slot, is a conflict.[^migration] The same renter's own overlap is
-never a conflict. It is caught earlier, as the plain field error described
-above.[^migration]
+A `待確認` (pending) or `待付款` (awaiting payment) booking in the same room,
+from a different renter, that overlaps a submitted slot, is a conflict.
+[^migration] A different renter's `已登記` (registered) overlap is not a
+conflict — it is the field error described above, a hard block that nothing
+can write past. The same renter's own overlap is never a conflict either. It
+is caught earlier, as its own plain field error.[^migration]
 
 Conflicts are checked for every slot in the batch, because the batch is
 written all or nothing. The same held booking is only listed once, even when
@@ -112,6 +120,13 @@ just booked the same slot, the server reports it the same way.[^submit-action]
 The dialog reopens with the new list, and the staff member must accept that
 list too before anything is written.
 
+If instead a listed conflict gets registered before `仍要送出` is pressed, the
+resend does not reopen the dialog. The database function rechecks that
+rival's status inside its lock, finds it now `已登記`, and reports it as the
+same hard-block field error described above — accepting the id earlier never
+covered this case. The dialog closes, nothing is written, and the time slot
+shows the error instead.[^migration][^submit-action]
+
 # Writing the batch
 
 A booking is written through one database function,
@@ -120,10 +135,14 @@ list of conflict ids the staff member has already accepted. The repository
 calls this function through one `sql` query.[^repo]
 
 The function locks on the room being booked, for the rest of its own
-transaction.[^migration] If any conflict is still unaccepted once that check
-runs, the function writes nothing and returns the full, fresh conflict
-list.[^migration] Otherwise it writes every slot in the batch in one
-transaction. Either all the slots are written, or none are.[^migration]
+transaction.[^migration] Inside that lock it rechecks for a different
+renter's registered rental first; any slot blocked that way is reported as
+a field error and nothing is written, regardless of what the caller
+accepted. Only once that's clear does it check for still-pending or
+awaiting-payment rivals: if any conflict there is unaccepted, the function
+writes nothing and returns the full, fresh conflict list.[^migration]
+Otherwise it writes every slot in the batch in one transaction. Either all
+the slots are written, or none are.[^migration]
 
 # Concurrency guarantee
 
