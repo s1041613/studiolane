@@ -1,13 +1,3 @@
-// Whether a submitted slot collides with another renter's held booking in
-// the same room. Reuses STILL_HELD and intervalsOverlap from
-// booking-validation.ts rather than redefining "held" and the overlap test;
-// the only difference here is checking the renter, not the room or status
-// set.
-//
-// The same renter's own overlap never reaches this function — it's caught
-// earlier as a field error by validateBookingDraft. This module only
-// answers whether a slot collides with someone else's booking, which needs
-// the person's confirmation rather than blocking the form.
 import { STILL_HELD } from "@/server/logic/booking-validation";
 import type { RenterSelection, SlotDraft } from "@/server/logic/booking";
 import { RentalStatus } from "@/server/types/home";
@@ -54,6 +44,12 @@ function toConflict(rental: RentalSummary): BookingConflict {
   return { id: rental.id, date: rental.date, start: rental.start, end: rental.end, renterName: rental.person, status: rental.status };
 }
 
+// Whether a submitted slot collides with another renter's held booking in
+// the same room. Reuses STILL_HELD and intervalsOverlap from
+// booking-validation.ts rather than redefining "held" and the overlap test;
+// the same renter's own overlap never reaches this function — it's caught
+// earlier as a field error by validateBookingDraft.
+//
 // Every slot in the batch is checked, since the batch writes all-or-nothing;
 // conflicts are deduplicated by rental id since the same held booking can
 // overlap more than one slot.
