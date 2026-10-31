@@ -29,6 +29,7 @@ const NEEDS_CONFIRM_MESSAGE = "這個時段跟別人的預約撞到了，請確�
 // create_booking_batch repeats the check inside its lock since the form's
 // read of existingRentals predates that lock.
 const OWN_OVERLAP_MESSAGE = "你已經預約過這個時段";
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Re-runs the form's checks against freshly-read rules, roster, plans and
 // rentals — someone may have registered a conflicting slot while the form
@@ -69,7 +70,10 @@ export async function submitBooking(draft: BookingDraft, acknowledgedIds: string
       handler: actor.name,
     }));
 
-    const batch = await rentalRepo.createBatch(rows, acknowledgedIds);
+    const batch = await rentalRepo.createBatch(
+      rows,
+      acknowledgedIds.filter((id) => UUID_PATTERN.test(id)),
+    );
     if (batch.status === "needs_confirm") {
       return failBlockers("FAILED_PRECONDITION", NEEDS_CONFIRM_MESSAGE, { conflicts: batch.conflicts });
     }

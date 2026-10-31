@@ -221,6 +221,7 @@ export function BookingSheet({
       setConflicts(null);
       setSuccessCount(result.data.rentalIds.length);
     } else if (result.error.kind === "fields") {
+      setConflicts(null);
       setServerErrors({ draftKey, errors: result.error.fields });
       focusFirstBookingError(result.error.fields);
     } else if (result.error.kind === "blockers") {
@@ -228,6 +229,7 @@ export function BookingSheet({
       // the dialog was open — this replaces its list with the new one.
       setConflicts(result.error.blockers.conflicts);
     } else {
+      setConflicts(null);
       setSubmitError(result.error);
     }
   }

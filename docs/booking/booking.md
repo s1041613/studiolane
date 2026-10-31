@@ -12,9 +12,6 @@ sources:
   - id: validation
     resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/booking-validation.ts
     title: Booking validation logic
-  - id: conflicts
-    resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/booking-conflicts.ts
-    title: Booking conflict detection
   - id: sheet
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/booking/booking-sheet.tsx
     title: Booking sheet component
@@ -90,13 +87,13 @@ cancelled, completed, or postponed is not held, and never blocks anything.
 # Conflict detection
 
 A held booking in the same room, from a different renter, that overlaps a
-submitted slot, is a conflict.[^conflicts] The same renter's own overlap is
+submitted slot, is a conflict.[^migration] The same renter's own overlap is
 never a conflict. It is caught earlier, as the plain field error described
-above.[^conflicts]
+above.[^migration]
 
 Conflicts are checked for every slot in the batch, because the batch is
 written all or nothing. The same held booking is only listed once, even when
-it overlaps more than one submitted slot.[^conflicts]
+it overlaps more than one submitted slot.[^migration]
 
 # The confirm dialog
 
@@ -165,7 +162,6 @@ bookings is separate work, not covered here.
 
 [^types]: Booking draft types
 [^validation]: Booking validation logic
-[^conflicts]: Booking conflict detection
 [^sheet]: Booking sheet component
 [^dialog]: Conflict confirm dialog component
 [^submit-action]: Submit booking server action
