@@ -5,7 +5,7 @@ import { role } from "./enums";
 export const pricingPlans = pgTable("pricing_plans", {
   id: uuid().defaultRandom().primaryKey().notNull(),
   role: role().notNull(),
-  appliesTo: text("applies_to").notNull(),
+  appliesTo: text("applies_to"),
   roomARate: integer("room_a_rate").default(0).notNull(),
   roomBRate: integer("room_b_rate").default(0).notNull(),
   archivedAt: timestamp("archived_at", { withTimezone: true, mode: "string" }),
