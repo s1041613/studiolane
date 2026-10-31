@@ -6,6 +6,8 @@
     "src/server/drizzle/schema/*.ts",
     "src/server/logic/*.ts",
     "src/server/repositories/*.ts",
+    "src/server/services/*.ts",
+    "src/server/actions/*.ts",
     "src/server/types/*.ts",
     "src/components/settings/*.ts",
     "src/components/shared/**/*.{ts,tsx}",
