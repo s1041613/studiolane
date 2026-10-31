@@ -126,8 +126,15 @@ export function RentalRulesBoard({
   const [showArchived, setShowArchived] = useState(false);
   const [dialog, setDialog] = useState<OpenDialog | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [noticeKey, setNoticeKey] = useState(0);
   const [failure, setFailure] = useState<ToggleFailure | null>(null);
-  const toggle = useRuleToggle(setNotice, setFailure);
+  const toggle = useRuleToggle(
+    (message) => {
+      setNotice(message);
+      setNoticeKey((key) => key + 1);
+    },
+    setFailure,
+  );
 
   // 租借規則 only; 上課時段 would be managed on its own page, not yet built.
   const forRoom = rules.filter((r) => r.kind === "rental" && (r.room === null || r.room === room));
@@ -164,7 +171,7 @@ export function RentalRulesBoard({
         {/* Floats so clearing it can't shift the row under the pointer. */}
         {(notice || failure) && (
           <div className="fixed inset-x-8 bottom-8 z-40 flex flex-col items-stretch gap-2 md:absolute md:inset-x-auto md:right-5 md:bottom-8 md:left-auto md:w-96 md:items-end">
-            {notice && <SuccessToast key={notice} message={notice} onDismiss={() => setNotice(null)} />}
+            {notice && <SuccessToast key={noticeKey} message={notice} onDismiss={() => setNotice(null)} />}
             {failure && (
               <div className="relative w-full rounded-md bg-popover shadow-(--eb-shadow-popover)">
                 <ActionFailure failure={failure} className="pr-10" />
@@ -291,6 +298,7 @@ export function RentalRulesBoard({
           onSaved={(message) => {
             setDialog(null);
             setNotice(message);
+            setNoticeKey((key) => key + 1);
           }}
         />
       )}
