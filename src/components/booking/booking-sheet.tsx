@@ -29,8 +29,7 @@ import type { RosterEntry, PricingPlan } from "@/server/logic/pricing";
 import type { RentalRule } from "@/server/logic/booking-rules";
 import type { BookingDraft, IsoDate, PaymentChoice, Purpose, RenterSelection, SlotDraft } from "@/server/logic/booking";
 import { todayIso } from "@/server/logic/date";
-import { toStartsEndsAt } from "@/server/supabase/codecs";
-import { purposeToLabel } from "@/server/supabase/codecs";
+import { toStartsEndsAt, purposeToLabel } from "@/server/supabase/codecs";
 import type { RentalSummary } from "@/server/types/home";
 
 interface BookingSheetProps {
