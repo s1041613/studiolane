@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon, CircleCheckIcon, XIcon } from "lucide-react";
 import { addDays, shortDate, shortDateParts } from "@/server/logic/date";
 import {
   ruleDayLabel,
@@ -76,6 +76,34 @@ function WeekLegend() {
   );
 }
 
+// Gone after 4s; hovering pauses it and leaving restarts the 4s. The ref
+// keeps a parent re-render from resetting the timer.
+function SuccessToast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  const [paused, setPaused] = useState(false);
+  const onDismissRef = useRef(onDismiss);
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  }, [onDismiss]);
+
+  useEffect(() => {
+    if (paused) return;
+    const timer = setTimeout(() => onDismissRef.current(), 4000);
+    return () => clearTimeout(timer);
+  }, [paused]);
+
+  return (
+    <div
+      role="status"
+      className="flex items-start gap-2 rounded-lg bg-popover p-3 text-sm text-popover-foreground shadow-(--eb-shadow-popover)"
+      onPointerEnter={() => setPaused(true)}
+      onPointerLeave={() => setPaused(false)}
+    >
+      <CircleCheckIcon className="mt-0.5 text-success" />
+      {message}
+    </div>
+  );
+}
+
 type OpenDialog = { key: number; mode: RuleDialogMode };
 
 // canEdit false hides every edit control; the server refuses writes anyway.
@@ -98,8 +126,15 @@ export function RentalRulesBoard({
   const [showArchived, setShowArchived] = useState(false);
   const [dialog, setDialog] = useState<OpenDialog | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [noticeKey, setNoticeKey] = useState(0);
   const [failure, setFailure] = useState<ToggleFailure | null>(null);
-  const toggle = useRuleToggle(setNotice, setFailure);
+  const toggle = useRuleToggle(
+    (message) => {
+      setNotice(message);
+      setNoticeKey((key) => key + 1);
+    },
+    setFailure,
+  );
 
   // 租借規則 only; 上課時段 would be managed on its own page, not yet built.
   const forRoom = rules.filter((r) => r.kind === "rental" && (r.room === null || r.room === room));
@@ -131,14 +166,29 @@ export function RentalRulesBoard({
   return (
     <SettingsBoard>
       {!canEdit && <ReadOnlyNotice />}
-      {notice && (
-        <div role="status" className="rounded-md bg-muted p-3 text-sm">
-          {notice}
-        </div>
-      )}
-      {failure && <ActionFailure failure={failure} />}
 
-      <Card padding="none" fill>
+      <Card padding="none" fill className="relative">
+        {/* Floats so clearing it can't shift the row under the pointer. */}
+        {(notice || failure) && (
+          <div className="fixed inset-x-8 bottom-8 z-40 flex flex-col items-stretch gap-2 md:absolute md:inset-x-auto md:right-5 md:bottom-8 md:left-auto md:w-96 md:items-end">
+            {notice && <SuccessToast key={noticeKey} message={notice} onDismiss={() => setNotice(null)} />}
+            {failure && (
+              <div className="relative w-full rounded-md bg-popover shadow-(--eb-shadow-popover)">
+                <ActionFailure failure={failure} className="pr-10" />
+                <Button
+                  variant="row-action"
+                  size="icon-xs"
+                  aria-label="關閉"
+                  className="absolute top-2 right-2"
+                  onClick={() => setFailure(null)}
+                >
+                  <XIcon />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         <Toolbar disabled={readFailure !== null}>
           <ToolbarFilters>
             <div className="flex items-center gap-1">
@@ -248,6 +298,7 @@ export function RentalRulesBoard({
           onSaved={(message) => {
             setDialog(null);
             setNotice(message);
+            setNoticeKey((key) => key + 1);
           }}
         />
       )}
