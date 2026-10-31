@@ -116,6 +116,60 @@ describe("create_booking_batch", () => {
     expect(rows).toHaveLength(0);
   });
 
+  it("別人已登記的重疊預約 → taken，插入 0 筆，帶對手的時段", async () => {
+    const rival = newRow({ date: "2032-07-11", start: "10:00", end: "11:00", renterName: "測試租借人P" });
+    await repo.createBatch([rival], []);
+    await admin.query("update rentals set status = 'registered' where id = $1", [rival.id]);
+
+    const mine = newRow({ date: "2032-07-11", start: "10:30", end: "11:30", renterName: "測試租借人Q" });
+    const result = await repo.createBatch([mine], []);
+
+    expect(result).toEqual({ status: "taken", blocked: [{ id: mine.id, message: "10:00–11:00 已有人預約" }] });
+    const { rows } = await admin.query("select 1 from rentals where id = $1", [mine.id]);
+    expect(rows).toHaveLength(0);
+  });
+
+  it("已經確認過的對手變成已登記 → 帶著 acknowledgedIds 重送也還是 taken，插入 0 筆", async () => {
+    const rival = newRow({ date: "2032-07-12", start: "10:00", end: "11:00", renterName: "測試租借人R" });
+    await repo.createBatch([rival], []);
+
+    const mine = newRow({ date: "2032-07-12", start: "10:30", end: "11:30", renterName: "測試租借人S" });
+    const firstAttempt = await repo.createBatch([mine], []);
+    expect(firstAttempt).toEqual({
+      status: "needs_confirm",
+      conflicts: [
+        { id: rival.id, date: "2032-07-12", start: "10:00", end: "11:00", renterName: "測試租借人R", status: RentalStatus.Pending },
+      ],
+    });
+
+    // The person acknowledged rival while it was still pending; before the
+    // resend reaches the lock, someone else confirms it.
+    await admin.query("update rentals set status = 'registered' where id = $1", [rival.id]);
+    const resend = await repo.createBatch([mine], [rival.id]);
+
+    expect(resend).toEqual({ status: "taken", blocked: [{ id: mine.id, message: "10:00–11:00 已有人預約" }] });
+    const { rows } = await admin.query("select 1 from rentals where id = $1", [mine.id]);
+    expect(rows).toHaveLength(0);
+  });
+
+  it("別人待付款的重疊預約 → needs_confirm，不是 taken", async () => {
+    const rival = newRow({ date: "2032-07-13", start: "10:00", end: "11:00", renterName: "測試租借人T" });
+    await repo.createBatch([rival], []);
+    await admin.query("update rentals set status = 'awaiting_payment' where id = $1", [rival.id]);
+
+    const mine = newRow({ date: "2032-07-13", start: "10:30", end: "11:30", renterName: "測試租借人U" });
+    const result = await repo.createBatch([mine], []);
+
+    expect(result).toEqual({
+      status: "needs_confirm",
+      conflicts: [
+        { id: rival.id, date: "2032-07-13", start: "10:00", end: "11:00", renterName: "測試租借人T", status: RentalStatus.AwaitingPayment },
+      ],
+    });
+    const { rows } = await admin.query("select 1 from rentals where id = $1", [mine.id]);
+    expect(rows).toHaveLength(0);
+  });
+
   it("(c) 同一筆帶著已確認的衝突 id 重送 → 寫入", async () => {
     const rival = newRow({ date: "2032-07-03", start: "10:00", end: "11:00", renterName: "測試租借人D" });
     await repo.createBatch([rival], []);

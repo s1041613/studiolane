@@ -125,17 +125,35 @@ function rawConflictToBookingConflict(row: RawConflictRow): BookingConflict {
   return { id: row.id, date, start, end, renterName: row.renter_name, status: ENUM_TO_DOMAIN_STATUS[row.status] };
 }
 
+// One new row blocked by a different renter's registered rental: the id is
+// the new row's own (NewRentalRow.id), so the caller can put the field
+// error on the right slot, and starts_at/ends_at are the blocking
+// registered rival's, for wording the same "HH:MM–HH:MM 已有人預約"
+// message checkBooking's unavailableReason gives.
+type RawTakenRow = { id: string; starts_at: string; ends_at: string };
+
+const ALREADY_BOOKED_SUFFIX = "已有人預約";
+
+function rawTakenToFieldMessage(row: RawTakenRow): string {
+  const { start, end } = fromStartsEndsAt({ startsAt: new Date(row.starts_at), endsAt: new Date(row.ends_at) });
+  return `${start}–${end} ${ALREADY_BOOKED_SUFFIX}`;
+}
+
 type BatchFunctionResult =
   | { status: "created"; conflicts: [] }
   | { status: "needs_confirm"; conflicts: RawConflictRow[] }
-  | { status: "own_overlap"; own_overlap_ids: string[] };
+  | { status: "own_overlap"; own_overlap_ids: string[] }
+  | { status: "taken"; taken: RawTakenRow[] };
 
 export type CreateBookingBatchResult =
   | { status: "created" }
   | { status: "needs_confirm"; conflicts: BookingConflict[] }
   // ids of the new rows (NewRentalRow.id) that collided with the same
   // renter's own held booking; nothing was inserted.
-  | { status: "own_overlap"; ids: string[] };
+  | { status: "own_overlap"; ids: string[] }
+  // A different renter's registered rental blocks these new rows outright;
+  // nothing was inserted, and acknowledging ids can't clear this.
+  | { status: "taken"; blocked: Array<{ id: string; message: string }> };
 
 function rentalRowToInsert(row: NewRentalRow): typeof rentals.$inferInsert {
   const { startsAt, endsAt } = toStartsEndsAt(row.date, row.start, row.end, row.isCrossMidnight);
@@ -260,6 +278,9 @@ export class RentalRepository {
     const batchResult = result.rows[0].result;
     if (batchResult.status === "created") return { status: "created" };
     if (batchResult.status === "own_overlap") return { status: "own_overlap", ids: batchResult.own_overlap_ids };
+    if (batchResult.status === "taken") {
+      return { status: "taken", blocked: batchResult.taken.map((row) => ({ id: row.id, message: rawTakenToFieldMessage(row) })) };
+    }
     return { status: "needs_confirm", conflicts: batchResult.conflicts.map(rawConflictToBookingConflict) };
   }
 }

@@ -1,10 +1,17 @@
 -- Writes every slot of one BookingDraft as rentals rows, all or nothing,
--- after re-checking for other renters' held conflicts inside the room's
--- own advisory lock.
+-- after re-checking for other renters' held rivals inside the room's own
+-- advisory lock.
 --
 -- "Held" = status pending/awaiting_payment/registered, the same set
--- booking-validation.ts calls STILL_HELD. Conflict = same room, an
--- overlapping [starts_at, ends_at) interval, held, and a different renter.
+-- booking-validation.ts calls STILL_HELD. A different renter's REGISTERED
+-- overlap is a hard block ('taken' below) — the same rule
+-- booking-validation.ts's checkBooking already applies from the data it
+-- read before this lock, repeated here in case a rival registered in the
+-- meantime. Their still-pending/awaiting-payment overlaps are conflicts
+-- ('needs_confirm') the caller may resend past, once shown and
+-- acknowledged. Acknowledging an id never clears a 'taken' block: it only
+-- answers a 'needs_confirm' conflict, so a conflict that gets registered
+-- between being shown and being acknowledged still blocks as 'taken'.
 -- The same renter's own overlap is normally caught earlier as a field
 -- error by validateBookingDraft, but that check reads existingRentals
 -- before this lock is taken, so a second submit from the same renter can
@@ -35,6 +42,7 @@ declare
   v_renter_id uuid;
   v_renter_name text;
   v_own_overlap_ids jsonb;
+  v_taken jsonb;
   v_conflicts jsonb;
   v_has_unacknowledged boolean;
 begin
@@ -87,6 +95,40 @@ begin
     return jsonb_build_object('status', 'own_overlap', 'own_overlap_ids', v_own_overlap_ids);
   end if;
 
+  -- A different renter's REGISTERED rental overlapping one of this batch's
+  -- rows is a hard block, never a confirmable conflict: nothing in
+  -- p_acknowledged can clear it. For each blocked new row, report the
+  -- earliest-starting registered rival so the caller can word the field
+  -- error the same way checkBooking's unavailableReason does.
+  select coalesce(
+    jsonb_agg(jsonb_build_object('id', t.slot_id, 'starts_at', t.starts_at, 'ends_at', t.ends_at)),
+    '[]'::jsonb
+  )
+    into v_taken
+  from (
+    select distinct on ((slot ->> 'id'))
+      (slot ->> 'id')::uuid as slot_id, r.starts_at, r.ends_at
+    from rentals r, jsonb_array_elements(p_rows) as slot
+    where r.room = v_room
+      and r.status = 'registered'
+      and not (
+        r.renter_type = v_renter_type
+        and (
+          (v_renter_type = 'roster' and r.renter_id = v_renter_id)
+          or (v_renter_type = 'customer' and r.renter_name = v_renter_name)
+        )
+      )
+      and tstzrange(r.starts_at, r.ends_at, '[)')
+          && tstzrange((slot ->> 'starts_at')::timestamptz, (slot ->> 'ends_at')::timestamptz, '[)')
+    order by (slot ->> 'id'), r.starts_at
+  ) t;
+
+  if jsonb_array_length(v_taken) > 0 then
+    return jsonb_build_object('status', 'taken', 'taken', v_taken);
+  end if;
+
+  -- Only still-pending/awaiting-payment rivals reach here — a registered
+  -- one was already handled above as 'taken'.
   select
     coalesce(jsonb_agg(jsonb_build_object(
       'id', c.id, 'starts_at', c.starts_at, 'ends_at', c.ends_at,
@@ -98,7 +140,7 @@ begin
     select distinct r.id, r.starts_at, r.ends_at, r.renter_name, r.status
     from rentals r, jsonb_array_elements(p_rows) as slot
     where r.room = v_room
-      and r.status in ('pending', 'awaiting_payment', 'registered')
+      and r.status in ('pending', 'awaiting_payment')
       and not (
         r.renter_type = v_renter_type
         and (
