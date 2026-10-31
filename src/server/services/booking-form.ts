@@ -11,6 +11,5 @@ export type BookingFormData = BookingSourceSections;
 export const getBookingFormData = cache(async (): Promise<BookingFormData> => {
   const sections = await loadBookingSections();
   const { roster } = sections;
-  // The renter picker offers active people only (roster R21).
   return { ...sections, roster: roster.ok ? { ...roster, data: activeOnly(roster.data) } : roster };
 });

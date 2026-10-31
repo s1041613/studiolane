@@ -17,17 +17,17 @@ const pricingRepo = new PricingRepository();
 const rentalRepo = new RentalRepository();
 const purposeSettingsRepo = new PurposeSettingsRepository();
 
-// Everything a booking check reads. The form page and the submit action both
-// load through here, so a settings page that adds a source (e.g. purpose
-// settings) adds it in this one place.
+// Everything a booking check reads. Both the form page and the submit
+// action load through here, so adding a new source means adding it in this
+// one place.
 export type BookingSourceData = {
   rules: RentalRule[];
-  // Rentable people, archived ones included — the form narrows it to active
-  // people, the server re-check needs them to say why a stale form fails.
+  // Archived people included — the form narrows to active ones, but the
+  // server re-check needs them to explain why a stale form fails.
   roster: RosterEntry[];
   plans: PricingPlan[];
   existingRentals: RentalSummary[];
-  // Archived purposes included, so a stale form gets told why (用途 B4).
+  // Archived purposes included, so a stale form gets told why.
   purposeSettings: PurposeSetting[];
 };
 

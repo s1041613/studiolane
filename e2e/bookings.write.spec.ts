@@ -2,19 +2,15 @@ import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 import { Client } from "pg";
 
-// E-41 預約教室 write flows: a free slot booked through the real form, and
-// an overlapping slot that the server reports as a conflict with someone
+// Booking write flows: a free slot booked through the real form, and an
+// overlapping slot that the server reports as a conflict with someone
 // else's held booking. Like the other *.write specs these touch data, so
 // they only run when E2E_WRITES=1 and the app talks to a local Supabase.
-// The list/confirm flows the source repo's bookings.write.spec.ts covered
-// are out of scope (the list page is E-46) — this file replaces that
-// coverage with E-41's own scenarios instead.
 //
-// This project has no @supabase/supabase-js dependency (studiolane talks to
-// Postgres through drizzle + pg, not the supabase-js client the source
-// repo's spec used), so seeding the rival booking and reading/cleaning up
-// what the form wrote goes through `pg` directly — the same client the
-// src/server/db/*.db.test.ts files already use against DATABASE_URL.
+// This project has no @supabase/supabase-js dependency — studiolane talks
+// to Postgres through drizzle + pg — so seeding the rival booking and
+// reading/cleaning up what the form wrote goes through `pg` directly, the
+// same client src/server/db/*.db.test.ts already use against DATABASE_URL.
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
@@ -34,8 +30,8 @@ const STAMP = Date.now().toString(36).slice(-5);
 
 // supabase/seed.sql's weekly rental_rules all sit outside 14:00–15:00
 // (Monday 19:00–22:00 both rooms, room A Wednesday 19:00–21:00, room B
-// Saturday 10:00–12:00), so that slot is free on room B (F-教室-2, the
-// form's default) whatever day it falls on. Picking the day 100+ days out
+// Saturday 10:00–12:00), so that slot is free on room B (the form's
+// default) whatever day it falls on. Picking the day 100+ days out
 // clears every seeded rental too (the latest is current_date + 3) and the
 // seed's one-day 可租 opening (current_date + 7), without needing a fixed
 // calendar date that could go stale.
@@ -105,8 +101,7 @@ async function pickDate(page: Page, iso: string): Promise<void> {
 // TimeCombobox (src/components/shared/schedule/time-combobox.tsx): click the
 // button named "開始"/"結束", type the time, Escape. Same pattern as
 // settings-rules.write.spec.ts's typeTime — base-ui's Popover opens fine on
-// a Playwright click in this project's @base-ui/react 1.9 (the source
-// repo's TODO about 1.8.0 not opening on click no longer applies).
+// a Playwright click in this project's @base-ui/react 1.9.
 async function fillTime(page: Page, label: "開始" | "結束", value: string): Promise<void> {
   await page.getByRole("button", { name: label, exact: true }).click();
   await page.getByPlaceholder("輸入或選擇時間").fill(value);
@@ -115,8 +110,8 @@ async function fillTime(page: Page, label: "開始" | "結束", value: string): 
 }
 
 // Renter, date and the 14:00–15:00 slot, through the real form. Room stays
-// at its default (B, F-教室-2); purpose and payment keep their defaults
-// (dance, transfer — F-用途-8, F-付款-1), both open to a 外部客戶.
+// at its default (B); purpose and payment keep their defaults (dance,
+// transfer), both open to a 外部客戶.
 async function fillBookingForm(page: Page, renterName: string, date: string): Promise<void> {
   await page.goto("/bookings/new");
   await pickNewCustomer(page, renterName);
@@ -163,7 +158,7 @@ test("a free slot books through the form and the row lands in rentals", async ({
   }
 });
 
-// 情境2/3/5: someone else's held booking overlapping the submitted slot
+// Someone else's held booking overlapping the submitted slot
 // (ConflictConfirmDialog, src/components/booking/conflict-confirm-dialog.tsx).
 // 取消 leaves the form as is and writes nothing; resubmitting shows the same
 // conflict again, and 仍要送出 resends with it acknowledged.

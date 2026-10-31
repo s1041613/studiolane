@@ -5,11 +5,11 @@ import { TEST_DATABASE_URL } from "@/server/db/test-database-url";
 import { PaymentMethod, PaymentState, RentalStatus } from "@/server/types/home";
 import { toStartsEndsAt } from "@/server/supabase/codecs";
 
-// create_booking_batch (0002): the real function against the local
-// database. (a)-(d) go through RentalRepository.createBatch, the same path
+// create_booking_batch, the real function against the local database.
+// (a)-(d) go through RentalRepository.createBatch, the same path
 // submitBooking uses; (e) drives the function directly over two raw
 // connections to prove the room's advisory lock serialises two concurrent
-// submits for the same free slot (情境6). Fictional names only.
+// submits for the same free slot. Fictional names only.
 process.env.DATABASE_URL = TEST_DATABASE_URL;
 
 const { RentalRepository } = await import("@/server/repositories/rental-repository");

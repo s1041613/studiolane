@@ -67,7 +67,7 @@ beforeEach(() => {
   data.rentals = [];
   data.purposeSettings = SAMPLE_PURPOSE_SETTINGS;
   data.createBatch.mockResolvedValue({ status: "created" });
-  // The drafts book 10/6–10/7; pin "now" before them so S-9 doesn't reject them.
+  // The drafts book 10/6–10/7; pin "now" before them so they aren't rejected as already past.
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-01T00:00:00+08:00"));
   vi.spyOn(console, "warn").mockImplementation(() => {});

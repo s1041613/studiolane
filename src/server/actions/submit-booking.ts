@@ -14,12 +14,11 @@ import { loadBookingSources } from "@/server/services/booking-sources";
 
 const rentalRepo = new RentalRepository();
 
-// E-41: someone else's held, overlapping booking. The person is shown this
-// list and resends with their ids in acknowledgedIds (情境2/3).
+// Someone else's held, overlapping booking(s); shown to the person, who
+// resends with their ids in acknowledgedIds.
 export type SubmitBookingBlockers = { conflicts: BookingConflict[] };
 
-// Not audited yet (D5: a separate ticket); runAction is the same boundary
-// without the audit row.
+// Not audited yet; runAction is the same boundary without the audit row.
 export type SubmitBookingResult = Sealed<
   { batchId: string; rentalIds: string[] },
   { fields: BookingFieldErrors; blockers: SubmitBookingBlockers }
@@ -27,16 +26,16 @@ export type SubmitBookingResult = Sealed<
 
 const NEEDS_CONFIRM_MESSAGE = "這個時段跟別人的預約撞到了，請確認是否仍要送出";
 
-// Re-runs the form's S-1..S-8 checks against freshly-read rules, roster,
-// plans and rentals — someone may have registered a conflicting slot while
-// the form was open (S-錯誤-5), and the client's data is never trusted.
-// All-or-nothing: any problem means none of the batch is written. The
-// batch_id shared by every slot is generated here.
+// Re-runs the form's checks against freshly-read rules, roster, plans and
+// rentals — someone may have registered a conflicting slot while the form
+// was open, and the client's data is never trusted. All-or-nothing: any
+// problem means none of the batch is written. The batch_id shared by every
+// slot is generated here.
 //
 // acknowledgedIds carries the conflict ids the person has already been
 // shown and told to submit anyway. create_booking_batch is the source of
-// truth for whether that is still enough (情境5/6: it recomputes conflicts
-// itself, inside the room's own advisory lock) — this action only maps its
+// truth for whether that's still enough — it recomputes conflicts itself,
+// inside the room's own advisory lock — and this action only maps its
 // answer onto the three outcomes the screen reacts to.
 export async function submitBooking(draft: BookingDraft, acknowledgedIds: string[] = []): Promise<SubmitBookingResult> {
   return runAction({ attempted: "送出預約", access: "staff", revalidate: ["/bookings", "/"] }, async (actor) => {
@@ -63,7 +62,7 @@ export async function submitBooking(draft: BookingDraft, acknowledgedIds: string
       paymentMethod,
       paymentState,
       amount,
-      handler: actor.name, // L18
+      handler: actor.name,
     }));
 
     const batch = await rentalRepo.createBatch(rows, acknowledgedIds);

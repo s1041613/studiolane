@@ -6,9 +6,9 @@ import { TEACHER } from "@/server/logic/test-fixtures";
 
 afterEach(cleanup);
 
-// base-ui's Popover positions itself via ResizeObserver, which jsdom doesn't
-// implement; cmdk's list also calls scrollIntoView while filtering. Neither
-// affects what this test asserts (the picker's options, not its placement).
+// base-ui's Popover positions via ResizeObserver, which jsdom lacks; cmdk's
+// list also calls scrollIntoView while filtering. Neither affects what this
+// test asserts.
 class StubResizeObserver {
   observe() {}
   unobserve() {}

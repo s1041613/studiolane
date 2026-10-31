@@ -6,15 +6,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { PaymentChoice } from "@/server/logic/booking";
 import { paymentMethodToLabel } from "@/server/supabase/codecs";
 
-// F-付款-1: free bookings carry no payment method, so "free" is not an option.
+// Free bookings carry no payment method, so "free" isn't a selectable option.
 const PAYMENTS: PaymentChoice[] = ["transfer", "on_site"];
 
 interface PaymentPickerProps {
   payment: PaymentChoice;
   onChange: (payment: PaymentChoice) => void;
-  // "pending" until a purpose is chosen; "free" when the rate is 0 (F-付款-2).
+  // "pending" until a purpose is chosen; "free" when the rate is 0.
   mode: "pending" | "free" | "choose";
-  // S-錯誤-4: outlined in red while the field has an error.
   invalid?: boolean;
 }
 
