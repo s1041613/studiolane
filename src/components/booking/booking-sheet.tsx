@@ -146,13 +146,15 @@ export function BookingSheet({
 
   // Per-card status: time problems show as soon as anything is typed, a
   // past start is flagged too; the price shows once renter and purpose are
-  // known.
+  // known. Hidden behind the success notice: the revalidated rentals now
+  // include the booking just written, which would read as a self-conflict.
   const slotViews = orderedSlots.map((slot, index) => {
     const live = slot.start || slot.end ? checkBooking(slot, room, ctx) : null;
     const isPast =
       live?.ok === true &&
       toStartsEndsAt(slot.date, slot.start, slot.end, slot.isCrossMidnight).startsAt < new Date();
-    const liveError = live && !live.ok ? live.reason : isPast ? "這個時段已經過去了" : null;
+    const liveError =
+      successCount !== null ? null : live && !live.ok ? live.reason : isPast ? "這個時段已經過去了" : null;
     const error = errors[`slots.${index}`] ?? liveError;
     const quote =
       !error && live?.ok && !isPast && renter && chosenPurpose
@@ -220,6 +222,10 @@ export function BookingSheet({
     if (result.ok) {
       setConflicts(null);
       setSuccessCount(result.data.rentalIds.length);
+      // The revalidated rentals include this booking; rechecking would flag it.
+      setShowErrors(false);
+      setServerErrors(null);
+      setSubmitError(null);
     } else if (result.error.kind === "fields") {
       setConflicts(null);
       setServerErrors({ draftKey, errors: result.error.fields });

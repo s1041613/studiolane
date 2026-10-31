@@ -142,8 +142,14 @@ test("a free slot books through the form and the row lands in rentals", async ({
 
     const notice = page.getByRole("alertdialog", { name: "預約已送出" });
     await expect(notice).toBeVisible();
+
+    // E-49: the just-written booking must not read as a self-conflict.
+    await expect(page.getByText(/個地方需要處理/)).toBeHidden();
+    await expect(page.getByText("你已經預約過這個時段")).toBeHidden();
+
     await notice.getByRole("button", { name: "確定", exact: true }).click();
     await expect(notice).toBeHidden();
+    await expect(page.getByRole("button", { name: "選擇租借人…", exact: true })).toBeVisible();
 
     const { rows } = await db.query<{ id: string; room: string; starts_at: string; ends_at: string; status: string }>(
       "select id, room, starts_at, ends_at, status from rentals where renter_name = $1",
