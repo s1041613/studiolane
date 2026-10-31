@@ -131,12 +131,21 @@ export function RentalRulesBoard({
   return (
     <SettingsBoard>
       {!canEdit && <ReadOnlyNotice />}
-      {notice && (
-        <div role="status" className="rounded-md bg-muted p-3 text-sm">
-          {notice}
+      {/* Floats so clearing it can't shift the row under the pointer. */}
+      {(notice || failure) && (
+        <div className="pointer-events-none fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md flex-col gap-2 md:left-[calc(var(--eb-content-offset)+16px)] md:right-6">
+          {notice && (
+            <div role="status" className="rounded-md bg-muted p-3 text-sm shadow-lg">
+              {notice}
+            </div>
+          )}
+          {failure && (
+            <div className="pointer-events-auto">
+              <ActionFailure failure={failure} />
+            </div>
+          )}
         </div>
       )}
-      {failure && <ActionFailure failure={failure} />}
 
       <Card padding="none" fill>
         <Toolbar disabled={readFailure !== null}>
