@@ -6,7 +6,6 @@ import { RentalRulesBoard } from "@/components/rental-rules/rental-rules-board";
 import { dataOrEmpty } from "@/components/shared/failures/section-failure";
 import { requirePageAccess } from "@/server/auth/require-staff";
 
-// The title, tabs and page frame come from app/settings/layout.tsx.
 export default async function RentalRulesPage() {
   // Everyone signed in can read; ADMIN_PAGES decides who may change it.
   const { canEdit } = await requirePageAccess("/settings/rules");

@@ -2,12 +2,11 @@ import { z } from "zod";
 import type { RuleDraft, RuleField, RuleFieldErrors } from "@/server/logic/rental-rule-form";
 
 // The runtime shape a RuleDraft must have before any business rule in
-// validateRuleDraft (rental-rule-form.ts) is worth checking. The dialog only
-// ever submits one of a few shapes; a server action called directly, or a
-// stale client after a deploy, can send anything. This is the action's own
-// front door: it runs before validateRuleDraft and never throws, so a
-// malformed request always comes back as field errors the screen already
-// knows how to show.
+// validateRuleDraft is worth checking. The dialog only ever submits one of
+// a few shapes; a server action called directly, or a stale client after a
+// deploy, can send anything. This is the action's own front door: it runs
+// before validateRuleDraft and never throws, so a malformed request always
+// comes back as field errors the screen already knows how to show.
 
 const ROOM = z.enum(["A", "B"]);
 const WEEKDAY = z.number().int().min(1).max(7);
@@ -29,8 +28,8 @@ export const ruleDraftSchema = z
     reason: z.string(),
   })
   // Only the ordering is checked here — format and the 10-minute step still
-  // belong to timeRangeError (scheduling-range.ts), run inside
-  // validateRuleDraft once the shape is trusted.
+  // belong to timeRangeError, run inside validateRuleDraft once the shape
+  // is trusted.
   .superRefine((draft, ctx) => {
     if (draft.start && draft.end && draft.start >= draft.end) {
       ctx.addIssue({ code: "custom", path: ["end"], message: "結束要晚於開始" });
@@ -52,8 +51,8 @@ const FIELD_FOR_PATH: Record<string, RuleField> = {
   reason: "reason",
 };
 
-// Matches draftShapeError's own wording (rental-rule-form.ts) for the same
-// situation: the value isn't shaped like a RuleDraft at all.
+// Matches draftShapeError's own wording for the same situation: the value
+// isn't shaped like a RuleDraft at all.
 const SHAPE_ERROR_MESSAGE = "資料格式不正確，請重新整理再試一次";
 
 function fieldErrorsFromIssues(issues: readonly z.core.$ZodIssue[]): RuleFieldErrors {

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // No accounts, no login: auth here is a stub that always returns a demo
-// admin (AGENTS.md), so there's no 'setup' project or storageState to wire up.
+// admin, so there's no 'setup' project or storageState to wire up.
 const WRITE_SPECS = /\.write\.spec\.ts$/;
 
 // A dedicated port (not 3000) so this suite can run next to another local

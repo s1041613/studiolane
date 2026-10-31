@@ -33,11 +33,9 @@ export function SectionFailure({ message = "暫時讀不到", failure, placement
   );
 }
 
-// The settings lists' failure pattern. The page hands its board empty data
-// plus the failure (dataOrEmpty); the board keeps its toolbar in place with
-// <Toolbar disabled> (every control, 新增 included, at 50% and off: nothing
-// can act on data it doesn't have) and swaps its body for
-// <FailedList>: the table's column heads, if it has any, then the failure.
+// The settings lists' failure pattern: the page hands its board empty data
+// plus the failure, and the board keeps its toolbar in place (disabled)
+// while swapping its body for <FailedList>.
 export function dataOrEmpty<T>(section: Result<T>, empty: T): { data: T; failure: Failure | null } {
   return section.ok ? { data: section.data, failure: null } : { data: empty, failure: section.error };
 }

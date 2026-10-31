@@ -2,15 +2,14 @@ import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 // Read-only: runs against the dev server's real Supabase, so nothing here
-// saves, archives or reactivates. The write paths are covered by
-// settings-rules.write.spec.ts and the action/DB tests.
+// saves, archives or reactivates.
 //
 // Expects supabase/seed.sql's rows: a weekly room B block ("場地保養",
 // 週六 10:00–12:00, kind: "rental"). The seed also has two weekly
 // kind: "class_hours" rows and a one-day kind: "rental" opening 7 days out,
-// but this page only ever shows kind: "rental" rows (class_hours belongs to
-// a timetable page that doesn't exist yet), and the one-day opening is
-// always a week ahead of "today" so it never falls in the default week.
+// but this page only ever shows kind: "rental" rows, and the one-day
+// opening is always a week ahead of "today" so it never falls in the
+// default week.
 
 test.beforeEach(async ({ page }) => {
   const response = await page.goto("/settings/rules");
@@ -35,8 +34,6 @@ test("the list has one line per 租借規則, each with its own 編輯 and 停�
   const list = page.getByRole("region", { name: "清單" });
   await expect(list.getByRole("button", { name: "編輯 週六 10:00–12:00 場地保養" })).toBeVisible();
   await expect(list.getByRole("button", { name: "停用 週六 10:00–12:00 場地保養" })).toBeVisible();
-  // kind: "class_hours" rows belong to a timetable page that doesn't exist
-  // yet, so this list never shows any.
   await expect(list.getByText("上課時段")).toHaveCount(0);
   // Any count: the write spec archives what it creates, so a reused
   // database may already have archived rows from an earlier run.
@@ -46,7 +43,6 @@ test("the list has one line per 租借規則, each with its own 編輯 and 停�
   await expect(showArchived).toBeHidden();
 });
 
-// The shared TimeCombobox: open the list, type the time, close it.
 async function typeTime(page: Page, dialog: Locator, label: "開始" | "結束", value: string): Promise<void> {
   await dialog.getByRole("button", { name: label, exact: true }).click();
   await page.getByPlaceholder("輸入或選擇時間").fill(value);
@@ -75,11 +71,9 @@ test("the add dialog checks times; 租借 only for one date", async ({ page }) =
   await expect(dialog.getByLabel("日期")).toHaveCount(0);
   await dialog.getByRole("radio", { name: "指定日期" }).or(dialog.getByRole("button", { name: "指定日期" })).first().click();
   await expect(dialog.getByLabel("日期")).toBeVisible();
-  // 租借 shows up for one date, 不可租 first.
   await expect(dialog.getByRole("button", { name: "可租", exact: true })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "不可租", exact: true })).toHaveAttribute("aria-pressed", "true");
 
-  // A changed form asks before closing.
   await dialog.getByRole("button", { name: "關閉" }).click();
   await expect(page.getByRole("alertdialog", { name: "放棄這次的修改？" })).toBeVisible();
   await page.getByRole("button", { name: "放棄" }).click();

@@ -106,9 +106,9 @@ export function RentalRuleDialog({
   const errors: RuleFieldErrors = submitted ? { ...validateRuleDraft(draft, today, purpose), ...serverErrors } : {};
   const reasonError = errors.reason ?? overLengthMessage(draft.reason, REASON_MAX);
 
-  // I-03 (docs/rental-time-rules): ask the server again whenever room, day or
-  // time changes; only the latest answer counts. Bookings the change would
-  // break are listed and 儲存 stays off until they are dealt with.
+  // Ask the server again whenever room, day or time changes; only the
+  // latest answer counts. Bookings the change would break are listed and
+  // 儲存 stays off until they are dealt with.
   const key = overlapKey(draft);
   useEffect(() => {
     const [rooms, dayMode, weekdays, onDate, effect, start, end] = JSON.parse(key);
@@ -117,7 +117,7 @@ export function RentalRuleDialog({
       const preview = { ...EMPTY_RULE_DRAFT, rooms, mode: dayMode, weekdays, onDate, effect, start, end };
       const result = await settle(previewRuleOverlaps(preview, editingId));
       if (ticket !== latestPreview.current) return;
-      // K4: a failed check doesn't lock 儲存 — saving checks again on the
+      // A failed check doesn't lock 儲存 — saving checks again on the
       // server — but the stale list goes and the user is told why.
       setPreviewFailed(!result.ok);
       setOverlaps(result.ok ? result.data : []);
@@ -275,7 +275,6 @@ export function RentalRuleDialog({
                 </p>
               )}
 
-              {/* X1–X3: the bookings this change would break; deal with them first. */}
               {blockedByBookings && (
                 <div className="mt-4">
                   <AffectedRentals heading={`${brokenRentalsMessage(overlaps.length, "存")}，請先改期或取消`} rentals={overlaps} />

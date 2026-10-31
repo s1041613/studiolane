@@ -5,10 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SETTINGS_TABS, currentSettingsTab } from "@/components/settings/settings-tabs";
 
-// Minimal settings frame: just the tab bar every /settings page shares.
-// The page title comes from the app shell (nav-items.ts already maps every
-// /settings/* path to 「設定」); a client component because layouts don't
-// re-render on navigation and so can't read the pathname otherwise.
+// A client component because layouts don't re-render on navigation and so
+// can't read the pathname otherwise.
 function SettingsTabs() {
   const pathname = usePathname();
   const current = currentSettingsTab(pathname);
@@ -22,8 +20,6 @@ function SettingsTabs() {
 
   return (
     <nav aria-label="設定項目" className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
-      {/* DESIGN.md §5.4 底線分頁: text only, 28px apart on one full-width
-          hairline; the current page is dark, 500, with a 2px underline. */}
       <div className="flex w-max min-w-full gap-7 border-b border-divider-header">
         {SETTINGS_TABS.map((tab) => {
           const isCurrent = tab === current;

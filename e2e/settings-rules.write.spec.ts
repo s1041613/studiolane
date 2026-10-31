@@ -3,11 +3,8 @@ import type { Locator, Page } from "@playwright/test";
 
 // Write flows for /settings/rules: unlike settings-rules.spec.ts these SAVE
 // data, so they only run when E2E_WRITES=1 and the app talks to a local
-// Supabase (the throwaway stack the no-mistakes/CI pipeline resets before a
-// write run). They run in their own project, after the read-only spec
-// (playwright.config.ts), which asserts on seed data. Names carry a run
-// stamp so reruns on the same database don't collide; every row this file
-// creates it also archives before finishing.
+// Supabase. Names carry a run stamp so reruns on the same database don't
+// collide; every row this file creates it also archives before finishing.
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
@@ -26,8 +23,8 @@ test.describe.configure({ mode: "serial" });
 
 const STAMP = Date.now().toString(36).slice(-5);
 
-// WEEKDAY_ZH_ISO (server/logic/date.ts), duplicated here so this spec stays
-// self-contained: index 1 (Monday) .. 7 (Sunday), matching rental_rules.weekday.
+// Duplicated here so this spec stays self-contained: index 1 (Monday) ..
+// 7 (Sunday), matching rental_rules.weekday.
 const WEEKDAY_CHARS = ["", "一", "二", "三", "四", "五", "六", "日"];
 
 // The dev server streams HTML before React hydrates it; a click that lands
@@ -39,7 +36,6 @@ async function clickUntil(button: Locator, shown: Locator): Promise<void> {
   }).toPass({ timeout: 15_000 });
 }
 
-// The shared TimeCombobox: open the list, type the time, close it.
 async function typeTime(page: Page, dialog: Locator, label: "開始" | "結束", value: string): Promise<void> {
   await dialog.getByRole("button", { name: label, exact: true }).click();
   await page.getByPlaceholder("輸入或選擇時間").fill(value);
@@ -109,12 +105,10 @@ test("create, edit and archive a 租借規則, persisting through a reload at ea
   await expect(createDialog).toBeHidden();
   await expect(page.getByRole("status").filter({ hasText: "已新增 1 筆租借規則" })).toBeVisible();
 
-  // Reload: the new row persisted.
   await openRulesPage(page);
   let list = await openListView(page);
   await expect(list.getByRole("button", { name: `編輯 週二 05:00–06:00 ${reason}` })).toBeVisible();
 
-  // Edit: change the reason, save, and the row's own buttons update.
   const editButton = list.getByRole("button", { name: `編輯 週二 05:00–06:00 ${reason}` });
   const editDialog = page.getByRole("dialog", { name: `編輯：週二 ${reason}` });
   await clickUntil(editButton, editDialog);
@@ -123,21 +117,17 @@ test("create, edit and archive a 租借規則, persisting through a reload at ea
   await expect(editDialog).toBeHidden();
   await expect(page.getByRole("status").filter({ hasText: "已儲存" })).toBeVisible();
 
-  // Reload: the edit persisted.
   await openRulesPage(page);
   list = await openListView(page);
   const editedButton = list.getByRole("button", { name: `編輯 週二 05:00–06:00 ${editedReason}` });
   await expect(editedButton).toBeVisible();
 
-  // Archive: confirm, and the row leaves the default (active-only) list.
   const archiveButton = list.getByRole("button", { name: `停用 週二 05:00–06:00 ${editedReason}` });
   await clickUntil(archiveButton, page.getByRole("alertdialog"));
   await confirm(page, "停用這個租借規則？", "停用");
   await expect(page.getByRole("status").filter({ hasText: "已停用" })).toBeVisible();
   await expect(editedButton).toHaveCount(0);
 
-  // Reload: the archive persisted — hidden by default, shown (with 已停用
-  // and an 啟用 button instead) once 顯示已停用 is on.
   await openRulesPage(page);
   list = await openListView(page);
   await expect(list.getByRole("button", { name: `編輯 週二 05:00–06:00 ${editedReason}` })).toHaveCount(0);
@@ -158,8 +148,8 @@ test("submitting an invalid time range shows a field error instead of failing", 
   await dialog.getByLabel("原因").fill(`整合測試${STAMP}-範圍`);
   await dialog.getByRole("button", { name: "儲存", exact: true }).click();
 
-  // Caught client-side (server/logic/scheduling-range.ts's timeRangeError):
-  // a field error, not a 500 or an unhandled exception, and nothing saved.
+  // Caught client-side: a field error, not a 500 or an unhandled exception,
+  // and nothing saved.
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("結束要晚於開始");
   expect(pageErrors).toEqual([]);
@@ -216,8 +206,7 @@ test("editing a rule's time to cover an existing booking is blocked and lists it
     await typeTime(page, editDialog, "開始", "13:00");
     await typeTime(page, editDialog, "結束", "16:00");
 
-    // docs/rental-time-rules "Impact on existing bookings": the dialog
-    // previews overlaps a few hundred ms after a field changes.
+    // The dialog previews overlaps a few hundred ms after a field changes.
     const overlap = editDialog.getByRole("status").filter({ hasText: "陳大樹" });
     const found = await overlap
       .waitFor({ state: "visible", timeout: 1_500 })
@@ -230,14 +219,11 @@ test("editing a rule's time to cover an existing booking is blocked and lists it
       await expect(editDialog.getByRole("button", { name: "儲存", exact: true })).toBeDisabled();
     }
 
-    // Either way: this test only reads the preview, it never saves the edit.
     await discard(page, editDialog);
     if (found) break;
   }
   expect(matched, "neither candidate weekday matched the seeded booking 2 days out").toBe(true);
 
-  // Reload: the blocked edit never saved — both rows are still at their
-  // original, non-conflicting time.
   await openRulesPage(page);
   await page.getByRole("button", { name: "B", exact: true }).click();
   const reloadedList = await openListView(page);
@@ -245,7 +231,6 @@ test("editing a rule's time to cover an existing booking is blocked and lists it
     await expect(reloadedList.getByRole("button", { name: `編輯 週${WEEKDAY_CHARS[weekday]} 08:00–09:00 ${reason}` })).toBeVisible();
   }
 
-  // Clean up: archive both rows (neither blocks anything at 08:00–09:00).
   for (const weekday of candidates) {
     const archiveButton = reloadedList.getByRole("button", { name: `停用 週${WEEKDAY_CHARS[weekday]} 08:00–09:00 ${reason}` });
     await clickUntil(archiveButton, page.getByRole("alertdialog"));
