@@ -90,6 +90,18 @@ export function bookingsUrlForDay(date: string): string {
   return `/bookings?${new URLSearchParams({ day: date }).toString()}`;
 }
 
+// E-46: the read-only bookings list's one sort — newest first by date,
+// then start time, then submission, so the most recent activity leads
+// without any status grouping.
+export function sortBookingsNewestFirst(bookings: RentalSummary[]): RentalSummary[] {
+  return [...bookings].sort(
+    (a, b) =>
+      b.date.localeCompare(a.date) ||
+      b.start.localeCompare(a.start) ||
+      b.createdAt.localeCompare(a.createdAt),
+  );
+}
+
 // B1: search + filter (status/pay/date range, all stackable) + sort by
 // status priority, then date, then start time.
 export function selectBookingRows(

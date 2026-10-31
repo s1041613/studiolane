@@ -15,6 +15,12 @@ describe("isNavActive", () => {
   it("highlights 預約教室 only on its own path", () => {
     expect(isNavActive("/bookings/new", "/bookings/new")).toBe(true);
     expect(isNavActive("/bookings/new", "/")).toBe(false);
+    expect(isNavActive("/bookings/new", "/bookings")).toBe(false);
+  });
+
+  it("highlights 預約列表 on /bookings but not on /bookings/new", () => {
+    expect(isNavActive("/bookings", "/bookings")).toBe(true);
+    expect(isNavActive("/bookings", "/bookings/new")).toBe(false);
   });
 
   it("does not match a path that merely shares the prefix", () => {
@@ -25,6 +31,10 @@ describe("isNavActive", () => {
 describe("pageTitle", () => {
   it("names 預約教室", () => {
     expect(pageTitle("/bookings/new")).toBe("預約教室");
+  });
+
+  it("names 預約列表", () => {
+    expect(pageTitle("/bookings")).toBe("預約列表");
   });
 
   it("titles every settings page 設定", () => {

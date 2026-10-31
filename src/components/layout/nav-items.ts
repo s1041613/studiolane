@@ -1,4 +1,4 @@
-import { CalendarPlus, LayoutGrid, Settings, type LucideIcon } from "lucide-react";
+import { CalendarPlus, LayoutGrid, ListChecks, Settings, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   label: string;
@@ -9,6 +9,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: "首頁", href: "/", icon: LayoutGrid },
   { label: "預約教室", href: "/bookings/new", icon: CalendarPlus },
+  { label: "預約列表", href: "/bookings", icon: ListChecks },
   { label: "設定", href: "/settings", icon: Settings },
 ];
 
@@ -20,6 +21,7 @@ export function isNavActive(href: string, pathname: string): boolean {
 
 const PAGE_TITLES: Record<string, string> = {
   "/bookings/new": "預約教室",
+  "/bookings": "預約列表",
 };
 
 export function pageTitle(pathname: string): string | null {
