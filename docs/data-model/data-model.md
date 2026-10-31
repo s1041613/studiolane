@@ -1,6 +1,6 @@
 ---
 type: Data Model
-resource: https://github.com/s1041613/studiolane/blob/d1006d2e51a0f33076428620477f412f0eeea742/supabase/migrations/0001_init.sql
+resource: https://github.com/s1041613/studiolane/blob/main/supabase/migrations/0001_init.sql
 title: Data Model Overview
 description: The six Studiolane tables, grouped into rental rules, pricing plans, purposes, roster and rentals.
 tags: [database, schema, supabase]
@@ -8,10 +8,10 @@ status: draft
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-30T17:30:40Z }
 sources:
   - id: init-migration
-    resource: https://github.com/s1041613/studiolane/blob/d1006d2e51a0f33076428620477f412f0eeea742/supabase/migrations/0001_init.sql
+    resource: https://github.com/s1041613/studiolane/blob/main/supabase/migrations/0001_init.sql
     title: Initial migration 0001_init.sql
   - id: seed
-    resource: https://github.com/s1041613/studiolane/blob/d1006d2e51a0f33076428620477f412f0eeea742/supabase/seed.sql
+    resource: https://github.com/s1041613/studiolane/blob/main/supabase/seed.sql
     title: Local demo seed seed.sql
   - id: drizzle-schema
     resource: https://github.com/s1041613/studiolane/tree/d1006d2e51a0f33076428620477f412f0eeea742/src/server/drizzle/schema
