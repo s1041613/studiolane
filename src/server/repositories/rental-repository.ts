@@ -4,6 +4,7 @@ import { classifyDbError } from "@/server/boundary/db-errors";
 import { currentDb } from "@/server/drizzle/context";
 import { rentals } from "@/server/drizzle/schema/rentals";
 import { weekdayZh } from "@/server/logic/date";
+import type { BookingConflict } from "@/server/logic/booking-conflicts";
 import { PaymentMethod, PaymentState, RentalStatus } from "@/server/types/home";
 import type { RentalSummary } from "@/server/types/home";
 import { fromNaiveUtcTimestamp, fromStartsEndsAt, paymentMethodLabelOrDash, purposeToLabel, toStartsEndsAt } from "@/server/supabase/codecs";
@@ -86,6 +87,49 @@ export type NewRentalRow = {
   createdAt: string; // ISO timestamp
   handler: string; // who entered it: the signed-in staff member's name
 };
+
+// create_booking_batch's input: one jsonb object per row, snake_case to
+// match the rentals columns the function's own INSERT reads them into.
+function rentalRowToBatchJson(row: NewRentalRow) {
+  const { startsAt, endsAt } = toStartsEndsAt(row.date, row.start, row.end, row.isCrossMidnight);
+  return {
+    id: row.id,
+    batch_id: row.batchId,
+    room: row.room,
+    handler: row.handler,
+    renter_name: row.renterName,
+    renter_id: row.renterId,
+    renter_type: row.renterType,
+    purpose: row.purpose,
+    payment_state: row.paymentState,
+    note: row.note,
+    payment_method: row.paymentMethod,
+    amount: row.amount,
+    created_at: row.createdAt,
+    starts_at: startsAt.toISOString(),
+    ends_at: endsAt.toISOString(),
+  };
+}
+
+// create_booking_batch's conflicts come back as raw starts_at/ends_at
+// instants and the DB status code, the same shape listAll's rows have
+// before rowToRental derives the Taipei-local fields.
+type RawConflictRow = {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  renter_name: string;
+  status: RentalStatusCode;
+};
+
+function rawConflictToBookingConflict(row: RawConflictRow): BookingConflict {
+  const { date, start, end } = fromStartsEndsAt({ startsAt: new Date(row.starts_at), endsAt: new Date(row.ends_at) });
+  return { id: row.id, date, start, end, renterName: row.renter_name, status: ENUM_TO_DOMAIN_STATUS[row.status] };
+}
+
+type BatchFunctionResult = { status: "created" | "needs_confirm"; conflicts: RawConflictRow[] };
+
+export type CreateBookingBatchResult = { status: "created" } | { status: "needs_confirm"; conflicts: BookingConflict[] };
 
 function rentalRowToInsert(row: NewRentalRow): typeof rentals.$inferInsert {
   const { startsAt, endsAt } = toStartsEndsAt(row.date, row.start, row.end, row.isCrossMidnight);
@@ -202,5 +246,25 @@ export class RentalRepository {
   async create(rows: NewRentalRow[]): Promise<void> {
     if (!rows.length) return;
     await currentDb().insert(rentals).values(rows.map(rentalRowToInsert));
+  }
+
+  // E-41: submitBooking's all-or-nothing write. create_booking_batch takes
+  // an advisory lock on the room, recomputes conflicts (other renter, held,
+  // overlapping) against acknowledgedIds, and either inserts every row or
+  // inserts none and returns the current full conflict list.
+  async createBatch(rows: NewRentalRow[], acknowledgedIds: readonly string[]): Promise<CreateBookingBatchResult> {
+    if (!rows.length) return { status: "created" };
+    const payload = rows.map(rentalRowToBatchJson);
+    // A JS array interpolated into drizzle's sql`` template expands into a
+    // parenthesized parameter list (for IN (...) use), not a single bound
+    // array — `()` on an empty list, which is invalid as `uuid[]`. A
+    // Postgres array literal string, bound as one parameter and cast, does
+    // what this needs.
+    const result = await currentDb().execute<{ result: BatchFunctionResult }>(
+      sql`select create_booking_batch(${JSON.stringify(payload)}::jsonb, ${`{${acknowledgedIds.join(",")}}`}::uuid[]) as result`,
+    );
+    const { status, conflicts } = result.rows[0].result;
+    if (status === "created") return { status: "created" };
+    return { status: "needs_confirm", conflicts: conflicts.map(rawConflictToBookingConflict) };
   }
 }
