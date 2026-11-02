@@ -94,11 +94,11 @@ function SuccessToast({ message, onDismiss }: { message: string; onDismiss: () =
   return (
     <div
       role="status"
-      className="flex items-start gap-2 rounded-lg bg-popover p-3 text-sm text-popover-foreground shadow-(--eb-shadow-popover)"
+      className="flex items-center gap-2 rounded-lg bg-popover p-3 text-sm text-popover-foreground shadow-(--eb-shadow-popover)"
       onPointerEnter={() => setPaused(true)}
       onPointerLeave={() => setPaused(false)}
     >
-      <CircleCheckIcon className="mt-0.5 text-success" />
+      <CircleCheckIcon aria-hidden className="size-4 shrink-0 text-success" />
       {message}
     </div>
   );
