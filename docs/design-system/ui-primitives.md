@@ -236,16 +236,19 @@ The page hides the editing controls, but the server still refuses a write
 from a non-admin. Hiding the controls is a convenience for the user, not
 the only guard.
 
+An error shown as a toast always has a ✕ close button. An error does not go
+away on its own, so the user must be able to close it.
+
 # App Shell Icon Rail and Mobile Bar
 
 `AppShell` renders two navigation layouts and picks one by screen
 width.[^app-shell] The desktop layout is a fixed `IconRail` on the left,
-with the `Logo` above three navigation items. The current page is marked
+with the `Logo` above four navigation items. The current page is marked
 with a darker background.[^app-shell][^logo] Below the `md` breakpoint, it
 switches to a `MobileBar`, with the `Logo` and a hamburger menu button that
 expands into the navigation list when tapped.[^app-shell] Both layouts
-share the same `NAV_ITEMS` list, which has three items today: `首頁` (home),
-`預約教室` (book a room), and `設定` (settings).[^nav-items]
+share the same `NAV_ITEMS` list, which has four items today: `首頁` (home),
+`預約教室` (book a room), `預約列表` (bookings list), and `設定` (settings).[^nav-items]
 
 `AppShell` also decides whether to show a page title. The `pageTitle`
 function reads the path to choose the title text. Only `/bookings/new` has
