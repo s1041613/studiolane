@@ -6,6 +6,9 @@
   search box (renter name or rental ID), its 清除 link, and the 找不到符合的預約 empty
   state; moved "Filters" out of Out of scope to call out that date, status,
   and payment filters are still missing.
+* **Update**: [Creating a Booking](booking.md) now says `前往預約追蹤`
+  filters the bookings list to that renter, since `/bookings?q=` now
+  implements the filter it used to note as missing.
 
 ## 2026-10-31
 
