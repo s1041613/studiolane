@@ -52,6 +52,7 @@ export function SlotCard({ slot, room, ruleCtx, blockedBy, error, quote, onChang
           <span aria-hidden className={`h-4 w-1 rounded-sm ${isError ? "bg-danger" : "bg-cal-class-bar"}`} />
           {shortDate(slot.date)}
         </h3>
+        {/* eslint-disable-next-line no-restricted-syntax -- legacy raw button, migrating to ui/ in a follow-up */}
         <button
           type="button"
           aria-label="移除這個時段"
@@ -68,6 +69,7 @@ export function SlotCard({ slot, room, ruleCtx, blockedBy, error, quote, onChang
             <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
               可預約：
               {todayWindows.map((w) => (
+                // eslint-disable-next-line no-restricted-syntax -- legacy raw button, migrating to ui/ in a follow-up
                 <button
                   key={w.start}
                   type="button"

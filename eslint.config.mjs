@@ -104,6 +104,31 @@ const eslintConfig = defineConfig([
       "no-restricted-imports": ["error", { paths: internalOnlyPaths }],
     },
   },
+  // Feature and page code must compose ui/ primitives instead of raw
+  // elements or one-off colors.
+  {
+    files: ["src/components/**/*.{ts,tsx}", "src/app/**/*.{ts,tsx}"],
+    ignores: ["src/components/ui/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXOpeningElement[name.name=/^(button|input|textarea|select)$/]",
+          message:
+            "Use a ui/ primitive instead of a raw form element: Button / ActionButton / RowAction (@/components/ui/button, action-button, row-action), Input, Textarea, SegmentedControl, RadioGroup. See docs/design-system/ui-primitives.md.",
+        },
+        {
+          selector: "JSXOpeningElement[name.name='table']",
+          message: "Use Table from @/components/ui/table. See docs/design-system/ui-primitives.md.",
+        },
+        {
+          selector:
+            "Literal[value=/(bg|text|border|ring|fill|stroke)-\\[#/], TemplateElement[value.raw=/(bg|text|border|ring|fill|stroke)-\\[#/]",
+          message: "No arbitrary hex colors. Use a design token class (see docs/design-system/design-system.md).",
+        },
+      ],
+    },
+  },
   globalIgnores([
     ".next/**",
     "out/**",

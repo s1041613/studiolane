@@ -140,6 +140,7 @@ export function WeekTimeline({
               style={{ top: top(item.start), height: height(item) }}
             >
               {item.onSelect ? (
+                // eslint-disable-next-line no-restricted-syntax -- full-cell hit area, not a styled button
                 <button type="button" className="block size-full text-left" onClick={item.onSelect}>
                   <span className="sr-only">{itemTitle(item)}</span>
                   <span aria-hidden>
