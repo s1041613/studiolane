@@ -16,6 +16,7 @@ export function RoomPicker({ room, onChange, roomARate, roomBRate }: RoomPickerP
         const rate = r === "A" ? roomARate : roomBRate;
         const selected = room === r;
         return (
+          // eslint-disable-next-line no-restricted-syntax -- legacy raw button, migrating to ui/ in a follow-up
           <button
             key={r}
             type="button"

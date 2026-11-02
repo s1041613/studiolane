@@ -59,6 +59,7 @@ function MobileBar({ pathname }: { pathname: string }) {
     <header className="md:hidden">
       <div className="flex h-14 items-center justify-between px-4">
         <Logo />
+        {/* eslint-disable-next-line no-restricted-syntax -- legacy raw button, migrating to ui/ in a follow-up */}
         <button
           type="button"
           aria-label="開啟選單"

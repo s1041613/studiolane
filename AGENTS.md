@@ -41,3 +41,19 @@ in later PRs.
   another local Supabase stack without colliding.
 - Schema lives in `supabase/migrations/`; `supabase/seed.sql` holds
   fictional seed data only.
+
+## Rule enforcement
+
+Every rule here names what enforces it. A rule enforced only by this file
+is a candidate for a check.
+
+| Rule | Enforced by | Layer |
+|---|---|---|
+| Build UI from `src/components/ui/` primitives; no raw `button`/`input`/`select`/`textarea`/`table`, no `bg-[#…]` colors outside `ui/` | ESLint `no-restricted-syntax` (`eslint.config.mjs`) | Check |
+| Feature folders import only `ui/` and `shared/` | ESLint `no-restricted-imports` | Check |
+| Use ConfirmDialog/NoticeDialog, not `ui/alert-dialog` | ESLint `no-restricted-imports` | Check |
+| No real names, emails, phones, prices, calendar IDs | gitleaks (`pnpm pii`, CI) | Check |
+| Before designing UI, read `docs/design-system/ui-primitives.md` and reuse an existing primitive; add a new one to `ui/` only when none fits | This file | Docs |
+| Researching a tool: read the version pinned in `package.json`, cite that version's docs (`node_modules/<pkg>/dist/docs` or Context7); every comparison claim carries a source and version, unsourced claims are labeled "inference" | This file | Docs (candidate for a source-column check) |
+| Doc links point at `main`, not a feature branch | This file | Docs (candidate for a link check) |
+| Update "Current scope" above when a page lands | no-mistakes document step | Pipeline |

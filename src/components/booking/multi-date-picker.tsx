@@ -37,6 +37,7 @@ export function MultiDatePicker({ dates, onChange, isDateDisabled, invalid }: Mu
           className={`${insetVariants({ padding: "none" })} inline-flex h-8 items-center gap-2 rounded-md pr-2 pl-3 text-sm tabular-nums`}
         >
           {shortDate(d)}
+          {/* eslint-disable-next-line no-restricted-syntax -- legacy raw button, migrating to ui/ in a follow-up */}
           <button
             type="button"
             aria-label={`移除 ${shortDate(d)}`}
