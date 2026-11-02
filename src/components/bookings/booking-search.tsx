@@ -19,6 +19,7 @@ export function BookingSearch({ query }: BookingSearchProps) {
     // Keyed by query so a navigation (submit, or 清除) remounts the input
     // instead of leaving React's uncontrolled value stale against the URL.
     <Form key={query} action="/bookings" className="flex items-center gap-2">
+      {/* eslint-disable-next-line no-restricted-syntax -- legacy raw input, migrating to ui/ in a follow-up */}
       <input
         type="search"
         name="q"
@@ -27,6 +28,7 @@ export function BookingSearch({ query }: BookingSearchProps) {
         defaultValue={query}
         className={controlVariants({ width: "search" })}
       />
+      {/* eslint-disable-next-line no-restricted-syntax -- legacy raw button, migrating to ui/ in a follow-up */}
       <button type="submit" className={buttonVariants({ variant: "outline" })}>
         查詢
       </button>
