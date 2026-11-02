@@ -106,3 +106,19 @@ test:
     - If ports still collide on start, switch to the other slot; never stop
       or reset another project's stack. You cannot write decisions.tsv, so
       report the collision and the chosen range so the Lead can record it.
+
+pr:
+  template: .github/pull_request_template.md
+
+review:
+  path_instructions:
+    - path: "src/**"
+      instructions: |
+        Flag comments that narrate what the code does, banner or phase comments,
+        commented-out code, and lint or type suppressions (eslint-disable,
+        @ts-ignore, @ts-expect-error) that give no reason. Comments may stay only
+        for license headers, non-obvious behavior forced by an external
+        dependency or platform, public API docs, and issue links.
+        Flag slop: needless abstraction layers or one-caller wrappers, duplicate
+        or impossible-state guards, redundant casts, and defensive checks on
+        values the types already guarantee.
