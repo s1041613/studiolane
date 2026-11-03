@@ -62,9 +62,9 @@ test("typing in the search box and submitting updates the URL", async ({ page })
   await expect(table.getByText("周小貓")).not.toBeVisible();
 });
 
-// E-55: the row's action button is whatever allowedActions(rental) picks
-// as primary (src/server/logic/bookings.ts) — read-only here, the write
-// spec (booking-actions.write.spec.ts) is what actually clicks them.
+// The row's action button is whatever allowedActions(rental) picks as
+// primary (src/server/logic/bookings.ts) — read-only here, the write spec
+// (booking-actions.write.spec.ts) is what actually clicks them.
 test("周小貓's pending row shows a 確認 button", async ({ page }) => {
   await page.goto("/bookings");
 

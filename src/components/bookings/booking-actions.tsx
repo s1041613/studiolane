@@ -26,17 +26,40 @@ interface BookingActionsProps {
 }
 
 type EndAction = "postpone" | "cancel";
+type PrimaryAction = "confirm" | "markPaid" | "markDone";
 type Notice = { title: string; failure: ShownFailure };
 
-const PRIMARY_LABEL: Partial<Record<BookingAction, string>> = {
+const PRIMARY_LABEL: Record<PrimaryAction, string> = {
   confirm: "確認",
   markPaid: "標記已付款",
   markDone: "標記完成",
 };
 
+// Each server action declares its own Reactions (confirmBooking alone adds
+// blockers), so the table normalizes every call to the same shape here
+// rather than exposing that mismatch to runPrimary.
+const PRIMARY_ACTION: Record<PrimaryAction, (id: string) => Promise<ShownFailure | null>> = {
+  confirm: async (id) => {
+    const result = await settle(confirmBooking(id));
+    return result.ok ? null : result.error;
+  },
+  markPaid: async (id) => {
+    const result = await settle(markBookingPaid(id));
+    return result.ok ? null : result.error;
+  },
+  markDone: async (id) => {
+    const result = await settle(markBookingDone(id));
+    return result.ok ? null : result.error;
+  },
+};
+
 const END_LABEL: Record<EndAction, string> = { postpone: "延期", cancel: "取消" };
 
-// E-55 T-按鈕: shows exactly what allowedActions(rental) permits — the same
+function isPrimaryAction(action: BookingAction): action is PrimaryAction {
+  return action in PRIMARY_ACTION;
+}
+
+// T-按鈕: shows exactly what allowedActions(rental) permits — the same
 // rule the server re-checks on every call. confirm/markPaid/markDone run
 // straight off the primary button; postpone/cancel always confirm first.
 // Every refusal — a plain message, or confirm's overlapping-rivals
@@ -49,20 +72,14 @@ export function BookingActions({ rental }: BookingActionsProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const actions = allowedActions(rental);
-  const primary = actions.find((a) => PRIMARY_LABEL[a]);
+  const primary = actions.find(isPrimaryAction);
   const endActions = actions.filter((a): a is EndAction => a === "postpone" || a === "cancel");
 
   if (actions.length === 0) return null;
 
-  async function runPrimary(action: BookingAction) {
-    const call =
-      action === "confirm"
-        ? confirmBooking(rental.id)
-        : action === "markPaid"
-          ? markBookingPaid(rental.id)
-          : markBookingDone(rental.id);
-    const result = await settle(call);
-    if (!result.ok) setNotice({ title: `不能${PRIMARY_LABEL[action]}`, failure: result.error });
+  async function runPrimary(action: PrimaryAction) {
+    const failure = await PRIMARY_ACTION[action](rental.id);
+    if (failure) setNotice({ title: `不能${PRIMARY_LABEL[action]}`, failure });
   }
 
   function openEndDialog(action: EndAction) {

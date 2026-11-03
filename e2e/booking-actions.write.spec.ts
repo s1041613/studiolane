@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 import type { Locator } from "@playwright/test";
 import { Client } from "pg";
 
-// Row actions on /bookings: confirm, mark paid, mark done, postpone, cancel
-// (E-55). Like bookings.write.spec.ts these mutate rentals directly, so they
-// only run when E2E_WRITES=1 and the app talks to a local Supabase.
+// Row actions on /bookings: confirm, mark paid, mark done, postpone,
+// cancel. Like bookings.write.spec.ts these mutate rentals directly, so
+// they only run when E2E_WRITES=1 and the app talks to a local Supabase.
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
