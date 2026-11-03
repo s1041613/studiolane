@@ -211,9 +211,10 @@ test("a free slot books through the form and the row lands in rentals", async ({
   }
 });
 
-// E-51: the batch page's 前往預約追蹤 opens /bookings?q=<renter>, and the
-// list then shows only that renter's bookings, not the seeded ones.
-test("前往預約追蹤 on the batch page lists only that renter", async ({ page }) => {
+// E-60: the batch page's 前往預約追蹤 goes to plain /bookings — the fresh
+// booking is pending, same as every other walk-in, so it lands in the
+// default 待確認 list alongside them instead of a renter-filtered one.
+test("前往預約追蹤 on the batch page lists the default 待確認 bookings", async ({ page }) => {
   const db = new Client({ connectionString: process.env.DATABASE_URL });
   await db.connect();
   const renterName = `E2E追蹤${STAMP}`;
@@ -225,11 +226,13 @@ test("前往預約追蹤 on the batch page lists only that renter", async ({ pag
 
     await page.getByRole("link", { name: "前往預約追蹤" }).click();
 
-    await expect(page).toHaveURL(`/bookings?q=${encodeURIComponent(renterName)}`);
+    await expect(page).toHaveURL("/bookings");
     const table = page.getByRole("table", { name: "預約列表" });
     await expect(table.getByText(renterName)).toBeVisible();
+    // 周小貓's seeded pending booking shares the default 待確認 list; 林小雨's
+    // seeded registered booking does not.
+    await expect(table.getByText("周小貓")).toBeVisible();
     await expect(table.getByText("林小雨")).toHaveCount(0);
-    await expect(table.getByText("周小貓")).toHaveCount(0);
   } finally {
     await deleteRentalsNamed(db, renterName);
     await db.end();
@@ -377,9 +380,9 @@ test("the bookings list shows 已登記 and 待付款 as distinct statuses", asy
   const awaitingId = awaitingRows[0].id;
 
   try {
-    // LIST_DATE is further out than every other write-spec date, so both
-    // rows sort to the top of page 1.
-    await page.goto("/bookings");
+    // day=LIST_DATE opens on every status for that one day, so both rows
+    // show up regardless of the default list's 待確認-only filter.
+    await page.goto(`/bookings?day=${LIST_DATE}`);
     const registeredRow = page.locator("tr").filter({ hasText: registeredName });
     const awaitingRow = page.locator("tr").filter({ hasText: awaitingName });
 
