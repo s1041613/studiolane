@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { refuse } from "@/server/audit/refusal";
 import { classifyDbError } from "@/server/boundary/db-errors";
 import { currentDb } from "@/server/drizzle/context";
@@ -63,6 +63,18 @@ function rowToRental(row: RentalRow): RentalSummary {
     createdAt: fromNaiveUtcTimestamp(row.createdAt),
   };
 }
+
+// The two columns every allowedActions() branch in src/server/logic/bookings.ts
+// switches on. transition() only writes when the row's current pair still
+// matches this exact snapshot — the one the caller read just before
+// deciding what to write. Guarding on both, not just status, matters for
+// Registered: markPaid and markDone are both reached from status ===
+// Registered, distinguished only by paymentState, so a status-only guard
+// would let a second markPaid race through after the first already flipped
+// paymentState.
+export type StatusSnapshot = { status: RentalStatus; paymentState: PaymentState };
+
+export type StatusPatch = { status: RentalStatus; paymentState?: PaymentState; note?: string };
 
 export type NewRentalRow = {
   date: string;
@@ -223,12 +235,38 @@ export class RentalRepository {
     }
   }
 
-  async updateStatus(id: string, status: RentalStatus, note?: string): Promise<void> {
-    const code = status as RentalStatusCode;
-    await currentDb()
+  // Single source of truth for every status-changing write in this ticket
+  // (confirm, markPaid, markDone, postpone, cancel). Returns false, and
+  // writes nothing, when `expected` no longer matches the row: a
+  // concurrent write got there first. The caller turns that into ABORTED;
+  // it never retries here, since retrying would mean re-deciding `patch`
+  // against fresh data, which is the action's job, not the repository's.
+  async transition(id: string, expected: StatusSnapshot, patch: StatusPatch): Promise<boolean> {
+    const set: Partial<typeof rentals.$inferInsert> = { status: patch.status as RentalStatusCode };
+    if (patch.paymentState !== undefined) set.paymentState = patch.paymentState as PaymentStateCode;
+    if (patch.note !== undefined) set.note = patch.note;
+    const written = await currentDb()
       .update(rentals)
-      .set(note === undefined ? { status: code } : { status: code, note })
-      .where(eq(rentals.id, id));
+      .set(set)
+      .where(
+        and(
+          eq(rentals.id, id),
+          eq(rentals.status, expected.status as RentalStatusCode),
+          eq(rentals.paymentState, expected.paymentState as PaymentStateCode),
+        ),
+      )
+      .returning({ id: rentals.id });
+    return written.length > 0;
+  }
+
+  // confirm and markPaid serialize on the room: both read every rental in
+  // the room to decide (planConfirm's rivals, findRegisteredOverlaps), and
+  // that cross-row read is not itself covered by transition()'s per-row
+  // guard. Call inside withTransaction (src/server/drizzle/context.ts) so
+  // the lock holds until the caller's re-read and write commit. Same key as
+  // create_booking_batch's own room lock (supabase/migrations/0002_create_booking_batch.sql).
+  async lockRoom(room: "A" | "B"): Promise<void> {
+    await currentDb().execute(sql`select pg_advisory_xact_lock(hashtext('booking_room_' || ${room}))`);
   }
 
   // Cancels the rivals (each with its own, possibly refund-marked, note)
@@ -250,11 +288,6 @@ export class RentalRepository {
       if (classifyDbError(error).code === "P0001") refuse("ABORTED", innermostMessage(error));
       throw error;
     }
-  }
-
-  // One UPDATE so status and paymentState can never land out of sync.
-  async markPaid(id: string): Promise<void> {
-    await currentDb().update(rentals).set({ status: "registered", paymentState: "paid" }).where(eq(rentals.id, id));
   }
 
   async create(rows: NewRentalRow[]): Promise<void> {
