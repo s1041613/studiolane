@@ -125,7 +125,7 @@ describe("confirmBooking", () => {
       error: {
         kind: "blockers",
         code: "FAILED_PRECONDITION",
-        message: "跟 1 筆預約時間重疊",
+        message: "跟 1 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認",
         blockers: { conflicts: [rival] },
         errorId: ERROR_ID,
       },

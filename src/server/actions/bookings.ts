@@ -100,9 +100,11 @@ export async function confirmBooking(id: string): Promise<ConfirmBookingResult> 
 
       const plan = planConfirm(rental, all); // no cancelIds: this ticket never supplies one
       if (plan.kind === "conflicts") {
-        return failBlockers("FAILED_PRECONDITION", `跟 ${plan.conflicts.length} 筆預約時間重疊`, {
-          conflicts: plan.conflicts,
-        });
+        return failBlockers(
+          "FAILED_PRECONDITION",
+          `跟 ${plan.conflicts.length} 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認`,
+          { conflicts: plan.conflicts },
+        );
       }
       return applyTransition(rental, { status: plan.nextStatus });
     });

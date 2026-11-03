@@ -169,13 +169,9 @@ test("confirming a pending booking that overlaps another pending rival is refuse
     const row = rowFor(page, id);
     const rivalRow = rowFor(page, rivalId);
 
-    // design.md sketched a longer "請先取消或延期..." body sentence, but the
-    // landed implementation (confirmBooking's failBlockers call) only ever
-    // sends "跟 N 筆預約時間重疊" plus the rival list — see
-    // booking-actions.test.tsx's own assertion on the same dialog.
     const notice = page.getByRole("alertdialog", { name: "不能確認" });
     await clickUntil(row.getByRole("button", { name: "確認", exact: true }), notice);
-    await expect(notice).toContainText("跟 1 筆預約時間重疊");
+    await expect(notice).toContainText("跟 1 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認");
     await expect(notice).toContainText(rivalName);
 
     await notice.getByRole("button", { name: "確定", exact: true }).click();
