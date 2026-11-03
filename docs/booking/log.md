@@ -2,6 +2,15 @@
 
 ## 2026-11-03
 
+* **Update**: [Bookings List](bookings-list.md) now documents the filter
+  bar (search, payment method, multi-select status, date range, applied
+  only on 查詢), the `待確認`-only default and the `?day=` override, the
+  status-then-date-then-start sort, and the unified
+  沒有符合條件的預約 empty state, replacing the old renter-name-only
+  `?q=` search box and newest-first sort.
+* **Update**: [Creating a Booking](booking.md) now says `前往預約追蹤`
+  goes to the bookings list's default view, since `/bookings?q=<renter>`
+  no longer exists.
 * **Update**: [Bookings List](bookings-list.md) now documents the five row
   actions (確認, 標記已付款, 標記完成, 延期, 取消), which statuses show
   which buttons, the refund note on a paid postpone/cancel, and the
