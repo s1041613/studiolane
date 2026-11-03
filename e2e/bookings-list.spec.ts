@@ -62,6 +62,26 @@ test("typing in the search box and submitting updates the URL", async ({ page })
   await expect(table.getByText("周小貓")).not.toBeVisible();
 });
 
+// E-55: the row's action button is whatever allowedActions(rental) picks
+// as primary (src/server/logic/bookings.ts) — read-only here, the write
+// spec (booking-actions.write.spec.ts) is what actually clicks them.
+test("周小貓's pending row shows a 確認 button", async ({ page }) => {
+  await page.goto("/bookings");
+
+  const row = page.locator("tr").filter({ hasText: "周小貓" });
+  await expect(row).toHaveAttribute("data-status", "pending");
+  await expect(row.getByRole("button", { name: "確認", exact: true })).toBeVisible();
+});
+
+test("林小雨's paid registered row shows a 標記完成 button, not 確認", async ({ page }) => {
+  await page.goto("/bookings");
+
+  const row = page.locator("tr").filter({ hasText: "林小雨" });
+  await expect(row).toHaveAttribute("data-status", "registered");
+  await expect(row.getByRole("button", { name: "標記完成", exact: true })).toBeVisible();
+  await expect(row.getByRole("button", { name: "確認", exact: true })).toHaveCount(0);
+});
+
 test("清除 goes back to /bookings showing every renter", async ({ page }) => {
   await page.goto("/bookings?q=林小雨");
 
