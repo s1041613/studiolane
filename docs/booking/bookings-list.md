@@ -25,13 +25,13 @@ sources:
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/bookings/booking-search.tsx
     title: Booking search component
   - id: row-actions
-    resource: https://github.com/s1041613/studiolane/blob/862357614a2676b2b9d38165cb5be746c8840b62/src/components/bookings/booking-actions.tsx
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/bookings/booking-actions.tsx
     title: Booking row actions component
   - id: actions
-    resource: https://github.com/s1041613/studiolane/blob/862357614a2676b2b9d38165cb5be746c8840b62/src/server/actions/bookings.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/actions/bookings.ts
     title: Booking status-change server actions
   - id: repo
-    resource: https://github.com/s1041613/studiolane/blob/862357614a2676b2b9d38165cb5be746c8840b62/src/server/repositories/rental-repository.ts
+    resource: https://github.com/s1041613/studiolane/blob/main/src/server/repositories/rental-repository.ts
     title: Rental repository
 ---
 
