@@ -83,8 +83,7 @@ read as 全部狀態 (every status) in the status field.[^filters]
 
 The list defaults to `待確認` (pending confirmation) only, any date.[^sort]
 A `day` passed in the URL, as `/bookings?day=<date>`, instead opens every
-status for that one day; the home page's 今日租借 (today's rentals) card
-uses this to send staff straight to a specific day.[^sort] Either way, the
+status for that one day.[^sort] Either way, the
 filters live only in the page's own state: the URL drops back to plain
 `/bookings` once the page loads, and a reload starts from the default
 again.[^view]
