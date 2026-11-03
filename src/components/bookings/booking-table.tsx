@@ -9,6 +9,7 @@ import { shortDateParts } from "@/server/logic/date";
 import type { RentalSummary } from "@/server/types/home";
 import { paymentStateToLabel, statusToLabel } from "@/server/supabase/codecs";
 import type { PaymentStateCode, RentalStatusCode } from "@/server/supabase/codecs";
+import { BookingActions } from "@/components/bookings/booking-actions";
 import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TablePagination } from "@/components/ui/table-pagination";
 
@@ -39,6 +40,7 @@ export function BookingTableHeader() {
         <TableHead align="amount" width="5rem">
           金額
         </TableHead>
+        <TableHead width="9rem">操作</TableHead>
       </TableRow>
     </TableHeader>
   );
@@ -121,6 +123,9 @@ export function BookingTable({ rows, allRentals }: BookingTableProps) {
                   </TableCell>
                   <TableCell label="金額" align="amount" className="md:whitespace-nowrap">
                     {rental.amount != null ? money(rental.amount) : "—"}
+                  </TableCell>
+                  <TableCell label="操作">
+                    <BookingActions rental={rental} />
                   </TableCell>
                 </TableRow>
               );
