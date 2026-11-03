@@ -1,5 +1,13 @@
 # Update Log
 
+## 2026-11-03
+
+* **Update**: [Bookings List](bookings-list.md) now documents the five row
+  actions (確認, 標記已付款, 標記完成, 延期, 取消), which statuses show
+  which buttons, the refund note on a paid postpone/cancel, and the
+  re-read-before-write guard that refuses a lost race instead of
+  corrupting the row.
+
 ## 2026-11-01
 
 * **Update**: [Bookings List](bookings-list.md) now documents the `?q=`
