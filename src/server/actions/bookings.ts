@@ -23,13 +23,12 @@ const rulesRepo = new RulesRepository();
 
 const NO_LONGER_RENTABLE = "這段時間已經不能租";
 const STALE_BOOKING = "這筆預約的狀態已經變動，請重新整理後再試一次";
-// E-55: /bookings only, not "/" — this ticket has no home-page surface.
+// These actions have no home-page surface to revalidate.
 const REVALIDATE = ["/bookings"] as const;
 
-// docs/rental-time-rules X5, ported unchanged: a safety net before a
-// booking starts holding its slot. Only covers bookings that haven't
-// started yet — a started or past one must stay confirmable/payable
-// regardless of today's rules.
+// docs/rental-time-rules X5: a safety net before a booking starts holding
+// its slot. Only covers bookings that haven't started yet — a started or
+// past one must stay confirmable/payable regardless of today's rules.
 async function stillRentable(rental: RentalSummary): Promise<boolean> {
   if (new Date(rental.startsAt) <= new Date()) return true;
   const slot = { date: rental.date, start: rental.start, end: rental.end, isCrossMidnight: rental.isCrossMidnight };
@@ -84,8 +83,7 @@ export type BookingActionResult = Sealed;
 export type ConfirmBookingResult = Sealed<null, { blockers: { conflicts: RentalSummary[] } }>;
 
 // T-確認: no rivals -> confirm; rivals -> reject with the read-only list.
-// E-55 is reject-only (E-59 owns any success-side "confirm and cancel the
-// rest" dialog): there is no cancelIds parameter and no path here that
+// Reject-only: there is no cancelIds parameter and no path here that
 // cancels a rival.
 export async function confirmBooking(id: string): Promise<ConfirmBookingResult> {
   return runAction({ attempted: "確認預約", access: "staff", revalidate: REVALIDATE }, async () => {
@@ -98,7 +96,7 @@ export async function confirmBooking(id: string): Promise<ConfirmBookingResult> 
       const { rental, all } = loaded.data;
       if (!(await stillRentable(rental))) return fail("FAILED_PRECONDITION", NO_LONGER_RENTABLE);
 
-      const plan = planConfirm(rental, all); // no cancelIds: this ticket never supplies one
+      const plan = planConfirm(rental, all);
       if (plan.kind === "conflicts") {
         return failBlockers(
           "FAILED_PRECONDITION",

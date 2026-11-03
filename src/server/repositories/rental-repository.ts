@@ -235,12 +235,12 @@ export class RentalRepository {
     }
   }
 
-  // Single source of truth for every status-changing write in this ticket
-  // (confirm, markPaid, markDone, postpone, cancel). Returns false, and
-  // writes nothing, when `expected` no longer matches the row: a
-  // concurrent write got there first. The caller turns that into ABORTED;
-  // it never retries here, since retrying would mean re-deciding `patch`
-  // against fresh data, which is the action's job, not the repository's.
+  // Single source of truth for every status-changing write (confirm,
+  // markPaid, markDone, postpone, cancel). Returns false, and writes
+  // nothing, when `expected` no longer matches the row: a concurrent write
+  // got there first. The caller turns that into ABORTED; it never retries
+  // here, since retrying would mean re-deciding `patch` against fresh
+  // data, which is the action's job, not the repository's.
   async transition(id: string, expected: StatusSnapshot, patch: StatusPatch): Promise<boolean> {
     const set: Partial<typeof rentals.$inferInsert> = { status: patch.status as RentalStatusCode };
     if (patch.paymentState !== undefined) set.paymentState = patch.paymentState as PaymentStateCode;
