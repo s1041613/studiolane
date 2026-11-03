@@ -57,7 +57,7 @@ function blockers(): ServerResult<null, { blockers: { conflicts: RentalSummary[]
     error: {
       kind: "blockers",
       code: "FAILED_PRECONDITION",
-      message: "跟 1 筆預約時間重疊",
+      message: "跟 1 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認",
       blockers: { conflicts: [RIVAL] },
       errorId: "abcd1234",
     },
@@ -116,7 +116,7 @@ describe("BookingActions: primary button", () => {
     fireEvent.click(screen.getByRole("button", { name: "確認" }));
 
     const dialog = await screen.findByRole("alertdialog", { name: "不能確認" });
-    expect(dialog).toHaveTextContent("跟 1 筆預約時間重疊");
+    expect(dialog).toHaveTextContent("跟 1 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認");
     expect(dialog).toHaveTextContent("示範對手");
     expect(screen.queryByRole("button", { name: /確認這筆/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "確定" })).toBeInTheDocument();
