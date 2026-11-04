@@ -145,7 +145,7 @@ test("confirming an onsite pending booking registers it and relabels the row's �
   }
 });
 
-test("confirming a pending booking that overlaps another pending rival is disabled, not refused", async ({ page }) => {
+test("confirming a clashing pending booking opens the clash dialog naming the rival, then cancels it", async ({ page }) => {
   const db = new Client({ connectionString: process.env.DATABASE_URL });
   await db.connect();
   const renterName = `E2E撞待確認${STAMP}`;
@@ -161,6 +161,9 @@ test("confirming a pending booking that overlaps another pending rival is disabl
     paymentMethod: "on_site",
     amount: 400,
   });
+  // Pending (not registered) so the date cell's own 撞單 tag also lights up
+  // (conflictInfo only ranks pending/awaiting-payment rivals); paid so the
+  // dialog's refund warning shows too.
   const rivalId = await seedRental(db, {
     room: "B",
     renterName: rivalName,
@@ -168,8 +171,8 @@ test("confirming a pending booking that overlaps another pending rival is disabl
     start: "14:00",
     end: "15:00",
     status: "pending",
-    paymentState: "unpaid",
-    paymentMethod: "on_site",
+    paymentState: "paid",
+    paymentMethod: "transfer",
     amount: 400,
   });
 
@@ -178,18 +181,26 @@ test("confirming a pending booking that overlaps another pending rival is disabl
     const row = rowFor(page, id);
     const rivalRow = rowFor(page, rivalId);
 
-    // Both rows clash, so the date cell marks them 撞單 and 確認 is
-    // disabled rather than refused after the fact.
+    // The row still clashes, so the date cell marks it 撞單, but 確認
+    // itself is enabled and opens the clash dialog instead of refusing.
     await expect(row.getByText("撞單")).toBeVisible();
-    await openStatusMenu(row, "待確認");
-    const rivalItem = page.getByRole("menuitem", { name: rivalName });
-    await expect(rivalItem).toBeVisible();
-    await expect(rivalItem).toHaveAttribute("aria-disabled", "true");
-    await expect(page.getByRole("menuitem", { name: "確認", exact: true })).toHaveCount(0);
+    const dialog = page.getByRole("alertdialog", { name: "確認並取消重疊的預約？" });
+    await expect(async () => {
+      await row.getByRole("button", { name: "狀態 待確認", exact: true }).click();
+      await page.getByRole("menuitem", { name: "確認", exact: true }).click({ timeout: 1_000 });
+      await expect(dialog).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 15_000 });
 
-    await page.keyboard.press("Escape");
-    await expect(row).toHaveAttribute("data-status", "pending");
-    await expect(rivalRow).toHaveAttribute("data-status", "pending");
+    await expect(dialog).toContainText(rivalName);
+    await expect(dialog).toContainText("需要退款");
+
+    await dialog.getByRole("button", { name: "確認並取消其他", exact: true }).click();
+    await expect(dialog).toBeHidden();
+
+    await expect(row).toHaveAttribute("data-status", "registered");
+    await expect(rivalRow).toHaveAttribute("data-status", "cancelled");
+    const { rows } = await db.query<{ note: string }>("select note from rentals where id = $1", [rivalId]);
+    expect(rows[0].note).toContain("【需要退款】");
   } finally {
     await deleteRentals(db, [id, rivalId]);
     await db.end();
