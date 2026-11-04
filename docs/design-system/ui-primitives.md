@@ -102,6 +102,21 @@ sources:
   - id: info-panel
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/info-panel.tsx
     title: InfoPanel component
+  - id: widget
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/widget.tsx
+    title: Widget component
+  - id: widget-grid
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/widget-grid.tsx
+    title: WidgetGrid component
+  - id: widget-grid-layout
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/widget-grid-layout.ts
+    title: Widget grid placement rules
+  - id: widget-gallery
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/widget-gallery.tsx
+    title: WidgetGallery component
+  - id: context-menu
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/context-menu.tsx
+    title: ContextMenu component
 ---
 
 # Overview
@@ -341,6 +356,22 @@ controlled prop, written back only when a drag ends, the same pattern as
 list's shelf view (sidebar folders, a row's `狀態` menu, a clash tooltip,
 and the row's info panel).
 
+# Widget, Widget Grid, Widget Gallery, and Context Menu
+
+`Widget` is a frosted desktop card in a light or dark tone. It fills the
+box the grid gives it. In edit mode it wobbles and shows a round − button;
+`WidgetAddButton` is the matching round +.[^widget] `WidgetGrid` places
+widgets on a home-screen-style grid of square cells. In edit mode a widget
+can be dragged, and on release it snaps to the cell under it, or the
+nearest free cell when that one is taken, so a drop never displaces
+another widget.[^widget-grid] The placement rules (free-cell check, first
+free cell, nearest free cell, re-flow to a narrower grid) are pure
+functions with unit tests.[^widget-grid-layout] `WidgetGallery` is the
+加入小工具 sheet: a list on the left and a real-size preview with one
+action on the right.[^widget-gallery] `ContextMenu` is the right-click
+menu that opens at the pointer; the desktop uses it to enter edit
+mode.[^context-menu]
+
 [^button]: Button component
 [^action-button]: ActionButton component
 [^dialog]: Dialog component
@@ -373,3 +404,8 @@ and the row's info panel).
 [^tooltip]: Tooltip component
 [^sidebar-list]: SidebarList component
 [^info-panel]: InfoPanel component
+[^widget]: Widget component
+[^widget-grid]: WidgetGrid component
+[^widget-grid-layout]: Widget grid placement rules
+[^widget-gallery]: WidgetGallery component
+[^context-menu]: ContextMenu component

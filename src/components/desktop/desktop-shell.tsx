@@ -6,6 +6,7 @@ import { DockBar } from "@/components/desktop/dock-bar";
 import { BookingsWindow } from "@/components/desktop/bookings-window";
 import { KobeyeeWindow } from "@/components/desktop/kobeyee-window";
 import { KobeyeeCat } from "@/components/desktop/kobeyee-cat";
+import { DesktopWidgets } from "@/components/desktop/desktop-widgets";
 import { isAnyWindowOpen, useDesktopStore } from "@/components/desktop/desktop-store";
 
 // Blue gradient wallpaper, inspired by classic desktop UIs.
@@ -20,7 +21,7 @@ interface DesktopShellProps {
 }
 
 // Replaces /bookings' page shell: a full-viewport desktop with a menu bar,
-// wallpaper, a Dock, and the 預約冊 window. `children` is the existing
+// wallpaper, widgets, a Dock, and the 預約冊 window. `children` is the existing
 // BookingsView, rendered unchanged inside the window.
 function DesktopShell({ children }: DesktopShellProps) {
   const windowOpen = useDesktopStore((state) => isAnyWindowOpen(state.windows));
@@ -32,6 +33,7 @@ function DesktopShell({ children }: DesktopShellProps) {
         className="absolute inset-0 transition-[filter] duration-300"
         style={{ background: WALLPAPER_GRADIENT, filter: windowOpen ? "blur(22px) brightness(0.75)" : "none" }}
       />
+      <DesktopWidgets hidden={windowOpen} />
       <MenuBar />
       <BookingsWindow>{children}</BookingsWindow>
       <KobeyeeWindow />
