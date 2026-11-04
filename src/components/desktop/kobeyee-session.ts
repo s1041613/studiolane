@@ -213,6 +213,14 @@ export function readyToCreate(session: KobeyeeSession): boolean {
   return draft.renter !== null && draft.purpose !== null && draft.slots.length > 0 && !unanswered;
 }
 
+/** Ask who rents only while something could still be booked. */
+export function needsRenterQuestion(session: KobeyeeSession): boolean {
+  const { phase, draft } = session;
+  if (phase.kind !== "filled" && phase.kind !== "created") return false;
+  const unanswered = overlapQuestions(phase.review).some(({ slotIndex }) => !session.overlapAnswers[slotIndex]);
+  return (draft?.slots.length ?? 0) > 0 || unanswered;
+}
+
 const ROOM_LABEL = { A: "大教室", B: "小教室" } as const;
 
 // Fictional placeholder until the studio's real account has a settings home.
