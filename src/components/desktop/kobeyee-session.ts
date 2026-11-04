@@ -141,6 +141,17 @@ export function kobeyeeLine(phase: KobeyeePhase): string | null {
   return rejected > 0 ? `${legal} 段可以，${rejected} 段不行` : `${legal} 段可以`;
 }
 
+/** One line per slot that can't be booked, so staff see which ones and why. */
+export function rejectedSlotLines(phase: KobeyeePhase): string[] {
+  if (phase.kind !== "filling" && phase.kind !== "filled") return [];
+  return phase.review.slots.flatMap((slot) => {
+    if (slot.state !== "blocked" && slot.state !== "overlap") return [];
+    const { date, start, end } = slot.slot;
+    const reason = slot.state === "blocked" ? slot.reason : "時間重疊";
+    return [`${Number(date.slice(5, 7))}/${Number(date.slice(8))} ${start}-${end} ${reason}`];
+  });
+}
+
 export const FORM_WIDTH = 600;
 export const FORM_MIN_WIDTH = 420;
 const DESKTOP_MARGIN = 16;

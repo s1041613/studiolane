@@ -3,6 +3,7 @@ import {
   FORM_WIDTH,
   INITIAL_KOBEYEE_SESSION,
   kobeyeeLine,
+  rejectedSlotLines,
   kobeyeeWindowRect,
   reduceKobeyee,
   type KobeyeeEvent,
@@ -141,5 +142,20 @@ describe("kobeyeeWindowRect", () => {
     const windowRect = kobeyeeWindowRect(s.layout, s.chatRect!, VIEWPORT);
     const moved = run([{ type: "moveWindow", windowRect: { ...windowRect, x: windowRect.x - 50 }, viewport: VIEWPORT }], s);
     expect(moved.chatRect).toEqual({ ...CHAT, x: CHAT.x - 50 });
+  });
+});
+
+describe("rejectedSlotLines", () => {
+  it("lists blocked and overlapping slots with their reason, skipping legal and incomplete", () => {
+    const review: KobeyeeReview = {
+      ...REVIEW,
+      slots: [
+        { state: "legal", slot: SLOT, quote: "q", inferred: { year: false } },
+        { state: "incomplete", date: "2026-01-01", start: null, end: null, quote: "q", inferred: { year: false } },
+        { state: "blocked", slot: SLOT, reason: "已過期", quote: "q", inferred: { year: false } },
+        { state: "overlap", slot: SLOT, conflicts: [], quote: "q", inferred: { year: false } },
+      ],
+    };
+    expect(rejectedSlotLines({ kind: "filled", review })).toEqual(["1/1 10:00-11:00 已過期", "1/1 10:00-11:00 時間重疊"]);
   });
 });
