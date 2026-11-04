@@ -1,24 +1,25 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { RoomPicker } from "@/components/booking/room-picker";
-import { MultiDatePicker } from "@/components/booking/multi-date-picker";
-import { SlotCard } from "@/components/booking/slot-card";
-import { PurposePicker } from "@/components/booking/purpose-picker";
-import { PaymentPicker } from "@/components/booking/payment-picker";
+import { useState, type ReactNode } from "react";
 import { PersonPicker } from "@/components/shared/people/person-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Skeleton } from "@/components/ui/skeleton";
+import { calendarDateToIso, isoToCalendarDate } from "@/lib/calendar-dates";
 import { checkBooking, isDateDisabled } from "@/server/logic/booking-rules";
 import { defaultPurposeFor, purposeOptions } from "@/server/logic/purpose-rules";
 import type { PurposeSetting } from "@/server/logic/purpose-rules";
 import { hourlyRate, quoteSlot } from "@/server/logic/pricing";
 import type { PricingPlan, RosterEntry } from "@/server/logic/pricing";
 import type { RentalRule } from "@/server/logic/booking-rules";
-import type { BookingDraft, IsoDate, RenterSelection } from "@/server/logic/booking";
+import type { BookingDraft, IsoDate, PaymentChoice, Purpose, RenterSelection, SlotDraft } from "@/server/logic/booking";
 import { DRAFT_FIELDS, type DraftField } from "@/server/logic/kobeyee";
-import { todayIso } from "@/server/logic/date";
+import { shortDateParts, todayIso } from "@/server/logic/date";
 import { money } from "@/server/logic/home-selectors";
-import { purposeToLabel } from "@/server/supabase/codecs";
+import { paymentMethodToLabel, purposeToLabel, roleToLabel } from "@/server/supabase/codecs";
 import type { RentalSummary } from "@/server/types/home";
 
 export interface BookingDraftFieldsData {
@@ -37,12 +38,70 @@ interface BookingDraftFieldsProps {
   data: BookingDraftFieldsData;
 }
 
-function Row({ field, label, revealed, children }: { field: DraftField; label: string; revealed: number; children: ReactNode }) {
+const ROOMS = [
+  { value: "A", label: "大教室" },
+  { value: "B", label: "小教室" },
+] as const;
+const PAYMENTS: PaymentChoice[] = ["transfer", "on_site"];
+const SKELETON_TONE = "bg-foreground/[.07]";
+
+function Row({ field, label, revealed, skeleton, children }: {
+  field: DraftField;
+  label: string;
+  revealed: number;
+  skeleton: ReactNode;
+  children: ReactNode;
+}) {
   const shown = DRAFT_FIELDS.indexOf(field) < revealed;
   return (
-    <div data-field={field} className="grid grid-cols-[5.5rem_1fr] items-start gap-x-6 py-2.5">
-      <span className="pt-1.5 text-sm text-muted-foreground">{label}</span>
-      {shown ? <div className="min-w-0">{children}</div> : <div aria-hidden="true" className="h-8 w-3/5 animate-pulse rounded-md bg-foreground/5" />}
+    <div data-field={field} className="grid grid-cols-[84px_1fr] items-baseline gap-x-3 py-[7px]">
+      <span className="pt-1 text-[13px] text-muted-foreground">{label}</span>
+      {shown ? <div className="min-w-0 animate-in fade-in-0 duration-300">{children}</div> : <div aria-hidden="true">{skeleton}</div>}
+    </div>
+  );
+}
+
+function Bar({ className }: { className: string }) {
+  return <Skeleton className={`${SKELETON_TONE} ${className}`} />;
+}
+
+function Divider() {
+  return <div className="my-2.5 h-px bg-(--eb-desk-hair)" />;
+}
+
+function DateList({ dates, onChange, isDisabled }: { dates: IsoDate[]; onChange: (dates: IsoDate[]) => void; isDisabled: (date: IsoDate) => boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger className="-ml-2 rounded-md px-2 py-1 text-left text-[15px] font-medium hover:bg-foreground/5">
+        {dates.length ? dates.map((d) => shortDateParts(d).monthDay).join("、") : <span className="font-normal text-muted-foreground">選擇日期</span>}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto p-0">
+        <Calendar
+          mode="multiple"
+          selected={dates.map(isoToCalendarDate)}
+          disabled={(day) => isDisabled(calendarDateToIso(day))}
+          onSelect={(days) => onChange((days ?? []).map(calendarDateToIso).sort())}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function SlotRow({ slot, error, amount, onChange }: { slot: SlotDraft; error: string | null; amount: number | null; onChange: (slot: SlotDraft) => void }) {
+  const { monthDay, weekday } = shortDateParts(slot.date);
+  return (
+    <div className={`grid h-[35px] grid-cols-[118px_150px_1fr_auto] items-center text-sm ${error ? "font-semibold" : ""}`}>
+      <span>
+        {monthDay} <small className="text-[13px] text-muted-foreground">{weekday}</small>
+      </span>
+      <span className="flex items-center">
+        <Input variant="inline" controlSize="inline" className="w-[52px] px-1" aria-label={`${monthDay} 開始`} value={slot.start} onChange={(e) => onChange({ ...slot, start: e.target.value })} />
+        <span>–</span>
+        <Input variant="inline" controlSize="inline" className="w-[52px] px-1" aria-label={`${monthDay} 結束`} value={slot.end} onChange={(e) => onChange({ ...slot, end: e.target.value })} />
+      </span>
+      <span className="ml-2.5 text-[11.5px] font-bold text-warn">{error}</span>
+      <span className="text-right text-text-secondary">{amount !== null && money(amount)}</span>
     </div>
   );
 }
@@ -52,8 +111,8 @@ function renterLabel(renter: RenterSelection | null): string {
   return renter.type === "roster" ? renter.name : `${renter.name}（外部客戶）`;
 }
 
-// A controlled BookingDraft editor. Prices and the payment row wait for a
-// renter, since the rate depends on who is renting.
+// A controlled BookingDraft editor laid out as label/value rows. Prices and
+// the payment row wait for a renter, since the rate depends on who rents.
 export function BookingDraftFields({ draft, onDraftChange, revealed, data }: BookingDraftFieldsProps) {
   const { renter, room, slots, purpose } = draft;
   const ctx = data;
@@ -62,14 +121,14 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
   const purposeChoices = role ? purposeOptions(data.purposeSettings, role) : null;
   const rate = renter && purpose ? hourlyRate({ renter, purpose, room }, ctx) : null;
   const isFree = rate?.ok === true && rate.rate === 0;
+  const priced = renter !== null && purpose !== null;
 
   const slotViews = slots.map((slot) => {
     const check = slot.start && slot.end ? checkBooking(slot, room, ctx) : null;
     const quote = check?.ok && renter && purpose ? quoteSlot({ renter, purpose, room, slot }, ctx) : null;
-    return { slot, error: check && !check.ok ? check.reason : null, quote: quote?.ok ? quote : null };
+    return { slot, error: check && !check.ok ? check.reason : null, amount: quote?.ok ? quote.amount : null };
   });
-  const totalAmount = slotViews.reduce((sum, v) => sum + (v.quote?.amount ?? 0), 0);
-  const priced = renter !== null && purpose !== null;
+  const totalAmount = slotViews.reduce((sum, v) => sum + (v.amount ?? 0), 0);
 
   const change = (patch: Partial<BookingDraft>) => onDraftChange({ ...draft, ...patch });
 
@@ -79,10 +138,11 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
   }
 
   return (
-    <div className="divide-y divide-divider px-8 py-5">
-      <div className="pb-2">
-        <Row field="renter" label="租借人" revealed={revealed}>
+    <div className="px-[34px] pt-[22px] pb-6">
+      <Row field="renter" label="租借人" revealed={revealed} skeleton={<Bar className="h-7 w-40" />}>
+        <div className="flex items-baseline [&>button]:-ml-2 [&>button]:h-auto [&>button]:w-auto [&>button]:max-w-[340px] [&>button]:py-0.5 [&>button]:text-xl [&>button]:font-semibold">
           <PersonPicker
+            variant="inline"
             people={data.roster}
             selectedLabel={renterLabel(renter)}
             placeholder="選擇租借人"
@@ -95,64 +155,83 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
               change({ renter: next, purpose: purpose ?? defaultPurposeFor(next.type === "roster" ? next.role : "customer") });
             }}
           />
-        </Row>
-        <Row field="room" label="教室" revealed={revealed}>
-          <RoomPicker room={room} onChange={(next) => change({ room: next })} />
-        </Row>
-        <Row field="dates" label="日期" revealed={revealed}>
-          <MultiDatePicker
-            dates={slots.map((slot) => slot.date)}
-            onChange={changeDates}
-            isDateDisabled={(date) => isDateDisabled(date, today, ctx)}
-          />
-        </Row>
-        <Row field="times" label="每天的時間" revealed={revealed}>
-          <div className="space-y-2">
-            {slotViews.map(({ slot, error, quote }) => (
-              <SlotCard
-                key={slot.date}
-                slot={slot}
-                room={room}
-                ruleCtx={ctx}
-                blockedBy={null}
-                error={error}
-                quote={quote}
-                onChange={(next) => change({ slots: slots.map((s) => (s.date === slot.date ? next : s)) })}
-                onRemove={() => change({ slots: slots.filter((s) => s.date !== slot.date) })}
-              />
+          {renter?.type === "roster" && <span className="ml-2.5 text-[13px] text-muted-foreground">{roleToLabel(renter.role)}</span>}
+        </div>
+      </Row>
+      <Row field="room" label="教室" revealed={revealed} skeleton={<Bar className="h-[26px] w-32" />}>
+        <SegmentedControl look="gel" aria-label="教室" options={ROOMS} value={room} onValueChange={(next) => change({ room: next })} />
+      </Row>
+      <Row field="dates" label="日期" revealed={revealed} skeleton={<Bar className="h-3.5 w-72" />}>
+        <DateList dates={slots.map((slot) => slot.date)} onChange={changeDates} isDisabled={(date) => isDateDisabled(date, today, ctx)} />
+      </Row>
+      <Row
+        field="times"
+        label="每天的時間"
+        revealed={revealed}
+        skeleton={
+          <div className="space-y-5 pt-1">
+            {slots.map((slot) => (
+              <div key={slot.date} className="flex justify-between">
+                <Bar className="h-3.5 w-48" />
+                <Bar className="h-3.5 w-11" />
+              </div>
             ))}
           </div>
-        </Row>
-      </div>
-      <div className="py-2">
-        <Row field="purpose" label="用途" revealed={revealed}>
-          {purposeChoices ? (
-            <PurposePicker purpose={purpose} onChange={(next) => change({ purpose: next })} options={purposeChoices} />
-          ) : (
-            <p className="pt-1.5 text-sm">{purpose && purposeToLabel(purpose)}</p>
-          )}
-        </Row>
-        {!isFree && (
-          <Row field="payment" label="付款方式" revealed={revealed}>
-            <PaymentPicker
-              payment={draft.payment ?? "transfer"}
-              onChange={(payment) => change({ payment })}
-              mode={priced ? "choose" : "pending"}
+        }
+      >
+        <div className="-mt-1 flex flex-col gap-0.5">
+          {slotViews.map(({ slot, error, amount }) => (
+            <SlotRow
+              key={slot.date}
+              slot={slot}
+              error={error}
+              amount={amount}
+              onChange={(next) => change({ slots: slots.map((s) => (s.date === slot.date ? next : s)) })}
             />
-          </Row>
+          ))}
+        </div>
+      </Row>
+      <Divider />
+      <Row field="purpose" label="用途" revealed={revealed} skeleton={<Bar className="h-7 w-44" />}>
+        {purposeChoices ? (
+          <SegmentedControl
+            look="gel"
+            aria-label="用途"
+            options={purposeChoices.map(({ purpose: p, availability }) => ({ value: p, label: purposeToLabel(p), disabled: !availability.ok }))}
+            value={purpose ?? ("" as Purpose)}
+            onValueChange={(next) => change({ purpose: next })}
+          />
+        ) : (
+          <p className="pt-1 text-sm">{purpose && purposeToLabel(purpose)}</p>
         )}
-        <Row field="note" label="備註" revealed={revealed}>
-          <Textarea rows={2} value={draft.note ?? ""} onChange={(e) => change({ note: e.target.value || undefined })} />
+      </Row>
+      {!isFree && (
+        <Row field="payment" label="付款方式" revealed={revealed} skeleton={<Bar className="h-7 w-36" />}>
+          <SegmentedControl
+            look="gel"
+            aria-label="付款方式"
+            options={PAYMENTS.map((p) => ({ value: p, label: paymentMethodToLabel(p) }))}
+            value={draft.payment ?? "transfer"}
+            onValueChange={(payment) => change({ payment })}
+          />
         </Row>
-      </div>
-      <div className="pt-2">
-        <Row field="total" label="合計" revealed={revealed}>
-          <p className="pt-0.5 text-sm">
-            {slots.length} 筆
-            {priced && <span className="ml-2 text-xl font-semibold" data-testid="booking-total">{isFree ? "免費" : money(totalAmount)}</span>}
-          </p>
-        </Row>
-      </div>
+      )}
+      <Row field="note" label="備註" revealed={revealed} skeleton={<Bar className="h-3.5 w-60" />}>
+        <Textarea
+          rows={1}
+          aria-label="備註"
+          value={draft.note ?? ""}
+          onChange={(e) => change({ note: e.target.value || undefined })}
+          className="-ml-2 min-h-0 resize-none border-transparent bg-transparent px-2 py-1 text-[14.5px] hover:border-transparent hover:bg-foreground/5 focus-visible:border-(--eb-desk-accent-edge) focus-visible:bg-(--eb-desk-field)"
+        />
+      </Row>
+      <Divider />
+      <Row field="total" label="合計" revealed={revealed} skeleton={<Bar className="h-7 w-32" />}>
+        <p className="pt-1.5 text-[22px] font-semibold tracking-tight">
+          <small className="mr-1.5 text-[13px] font-medium text-text-secondary">{slots.length} 筆</small>
+          {priced && <span data-testid="booking-total">{isFree ? "免費" : money(totalAmount)}</span>}
+        </p>
+      </Row>
     </div>
   );
 }

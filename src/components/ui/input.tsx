@@ -18,6 +18,9 @@ const controlVariants = cva(
         default: "border-control-border bg-control hover:border-control-border-hover",
         // A field that can't be filled in yet (「請先填完每天的時間」).
         pending: "border-dashed border-pending-border bg-transparent text-muted-foreground",
+        // Desktop windows: reads as plain text until hovered or focused.
+        inline:
+          "border-transparent bg-transparent hover:bg-foreground/5 focus-visible:border-(--eb-desk-accent-edge) focus-visible:bg-(--eb-desk-field) focus-visible:ring-[3px] focus-visible:ring-primary/25",
       },
       size: {
         default: "h-11 px-3.5",
@@ -25,6 +28,8 @@ const controlVariants = cva(
         sm: "h-[34px] rounded-md px-2.5",
         // A field holding chips that may wrap (日期多選): grows past 44px.
         auto: "min-h-11 px-1.5 py-1.5",
+        // Inline text in a desktop window form row.
+        inline: "h-8 rounded-md px-2",
       },
       width: {
         full: "w-full",

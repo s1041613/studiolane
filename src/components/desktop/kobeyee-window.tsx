@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useReducedMotion } from "motion/react";
 import { ArrowUpIcon, ClipboardPasteIcon } from "lucide-react";
-import { Window } from "@/components/ui/window";
+import { Window, WindowPane } from "@/components/ui/window";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useDesktopStore } from "@/components/desktop/desktop-store";
@@ -39,6 +39,8 @@ export interface KobeyeeWindowProps {
 }
 
 const REVEAL_MS = 1500;
+// The chat pane sits inside the window's 8px side gutters.
+const CHAT_PANE_INSET = 16;
 
 function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
   const session = useDesktopStore((state) => state.kobeyee);
@@ -82,20 +84,17 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
       minWidth={booking ? FORM_MIN_WIDTH + KOBEYEE_MIN_WIDTH : KOBEYEE_MIN_WIDTH}
       minHeight={KOBEYEE_MIN_HEIGHT}
       topInset={KOBEYEE_TOP_INSET}
-      titleAccessory={
-        <Button type="button" variant="ghost" size="xs" onClick={() => dispatch({ type: "clear" })}>
-          清除
-        </Button>
-      }
+      chrome="plain"
     >
-      {/* Opaque body: Kobeyee usually floats over the 預約冊 window, whose
-          text would otherwise ghost through the translucent Window panel. */}
-      <div className="flex h-full justify-end bg-surface-solid">
+      {/* Opaque panes: Kobeyee usually floats over the 預約冊 window, whose
+          text would otherwise ghost through the translucent Window body. */}
+      <div className="flex h-full justify-end gap-[7px] px-2 pt-[7px]">
         {booking && (
           // Any click or key in the form finishes the skeleton fill.
-          <section
+          <WindowPane
+            tone="pane"
             aria-label="預約表單"
-            className="min-w-0 flex-1 overflow-auto border-r border-divider"
+            className="min-w-0 flex-1 overflow-auto"
             onPointerDownCapture={() => dispatch({ type: "revealFinish" })}
             onKeyDownCapture={() => dispatch({ type: "revealFinish" })}
           >
@@ -104,40 +103,61 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
               revealed: revealedCount(phase),
               onDraftChange: (draft) => dispatch({ type: "editDraft", draft }),
             })}
-          </section>
+          </WindowPane>
         )}
-        <div className="flex h-full flex-none flex-col" style={{ width: chatRect.width }}>
+        <WindowPane
+          tone="panel"
+          aria-label="Kobeyee 對話"
+          className="flex h-full flex-none flex-col bg-surface-solid"
+          style={{ width: chatRect.width - CHAT_PANE_INSET }}
+        >
+          <header className="flex h-11 flex-none items-center gap-2.5 px-4 shadow-[0_1px_0_var(--eb-desk-hair)]">
+            <span className="relative size-[30px] flex-none overflow-hidden rounded-[7px] bg-(--eb-desk-field) shadow-[inset_0_0_0_1px_var(--eb-desk-edge)]">
+              <CatImage width={75} height={80} className="absolute max-w-none" style={{ left: -17, top: -4 }} />
+            </span>
+            <b className="text-sm font-semibold">Kobeyee</b>
+            <Button type="button" variant="bevel" size="xs" className="ml-auto px-2.5" onClick={() => dispatch({ type: "clear" })}>
+              清除
+            </Button>
+          </header>
           {message === null ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-[13px] text-muted-foreground">
               <CatImage width={CAT_CORNER_WIDTH} height={CAT_CORNER_HEIGHT} />
               <p>貼上 LINE 訊息</p>
             </div>
           ) : (
-            <div className="flex flex-1 flex-col gap-4 overflow-auto p-4 text-sm">
-              <p className="ml-8 self-end rounded-2xl bg-selected px-3.5 py-2.5 whitespace-pre-wrap">{message}</p>
-              {line && <p className="font-semibold">{line}</p>}
+            <div className="flex flex-1 flex-col gap-4 overflow-auto px-[18px] pt-[22px] pb-4 text-sm leading-relaxed">
+              <p className="ml-12 self-end rounded-[10px_10px_3px_10px] bg-(--eb-desk-sel) px-3 py-2 text-[13.5px] whitespace-pre-wrap">
+                {message}
+              </p>
+              {line && (
+                <div>
+                  <p className="mb-1 text-xs text-muted-foreground">Kobeyee 說：</p>
+                  <p className="text-[15px] font-semibold">{line}</p>
+                </div>
+              )}
             </div>
           )}
-          <div className="flex-none p-3">
-            <div className="flex flex-col rounded-2xl bg-white/80 shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.1)] focus-within:shadow-[0_0_0_0.5px_rgba(10,100,214,0.5),0_0_0_3px_rgba(10,100,214,0.12)]">
+          <div className="flex-none px-3 pt-2.5 pb-3">
+            <div className="flex flex-col rounded-md bg-(--eb-desk-field) shadow-[inset_0_1px_2px_rgb(40_60_90/.28),0_0_0_1px_rgb(60_80_120/.36)] focus-within:shadow-[inset_0_1px_2px_rgb(40_60_90/.28),0_0_0_1px_var(--eb-desk-accent-edge),0_0_0_3px_rgb(31_111_214/.25)]">
               <Textarea
                 placeholder="貼上 LINE 訊息"
                 aria-label="訊息"
                 value={text}
                 onChange={(event) => setText(event.target.value)}
-                className="h-16 resize-none border-0 bg-transparent shadow-none focus-visible:border-transparent focus-visible:ring-0"
+                className="h-[58px] min-h-0 resize-none border-0 bg-transparent px-3 pt-2.5 pb-0.5 shadow-none hover:border-0 focus-visible:border-transparent focus-visible:ring-0"
               />
               <div className="flex items-center justify-between px-2.5 pb-2.5">
-                <Button type="button" variant="ghost" size="sm">
+                <Button type="button" variant="ghost" size="xs" className="font-normal text-text-secondary">
                   <ClipboardPasteIcon /> 貼上
                 </Button>
-                <Button type="button" size="icon" aria-label="送出" onClick={submit}>
+                <Button type="button" variant="gel" size="icon-xs" className="size-7 rounded-full" aria-label="送出" onClick={submit}>
                   <ArrowUpIcon />
                 </Button>
               </div>
             </div>
           </div>
-        </div>
+        </WindowPane>
       </div>
     </Window>
   );
