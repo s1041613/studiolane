@@ -25,6 +25,8 @@ test("the cat opens Kobeyee, then closing the window returns the cat to the corn
 
 test("sending a message expands into a filled 預約教室 form; 清除 collapses it", async ({ page }) => {
   const kobeyee = await openKobeyee(page);
+  // Measure only after the open animation's scale-in has settled.
+  await expect.poll(() => kobeyee.evaluate((el) => getComputedStyle(el).transform)).toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
   const chatBox = await kobeyee.boundingBox();
 
   await kobeyee.getByPlaceholder("貼上 LINE 訊息").fill("想借小教室");
