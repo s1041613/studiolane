@@ -4,8 +4,10 @@ import { Suspense, use, type ComponentProps, type ReactNode } from "react";
 import { DesktopShell } from "@/components/desktop/desktop-shell";
 import { fixtureReader } from "@/components/desktop/kobeyee-fixture";
 import type { BookingFormSlotProps } from "@/components/desktop/kobeyee-window";
-import type { KobeyeeReader } from "@/components/desktop/kobeyee-session";
+import type { KobeyeeReader, KobeyeeSubmitter } from "@/components/desktop/kobeyee-session";
+import { settle } from "@/lib/settle";
 import { readKobeyeeMessage } from "@/server/actions/kobeyee";
+import { submitBooking } from "@/server/actions/submit-booking";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookingDraftFields, type BookingDraftFieldsData } from "@/components/booking/booking-draft-fields";
 
@@ -16,6 +18,15 @@ type DesktopBookingsProps = Pick<ComponentProps<typeof DesktopShell>, "sectionsP
 
 // Playwright sets this so e2e never calls the real model (playwright.config.ts).
 const kobeyeeReader: KobeyeeReader = process.env.NEXT_PUBLIC_KOBEYEE_FIXTURE === "1" ? fixtureReader : readKobeyeeMessage;
+
+const kobeyeeSubmitter: KobeyeeSubmitter = async (draft, acknowledgedIds) => {
+  const result = await settle(submitBooking(draft, acknowledgedIds));
+  if (result.ok) return { status: "registered" };
+  if (result.error.kind === "blockers") {
+    return { status: "conflicts", conflictIds: result.error.blockers.conflicts.map((conflict) => conflict.id) };
+  }
+  return { status: "error", message: result.error.message };
+};
 
 // A thin placeholder while formDataPromise is still pending; the Kobeyee
 // window is closed by default, so this only ever shows if someone opens
@@ -46,6 +57,7 @@ export function DesktopBookings({ sectionsPromise, formDataPromise, children }: 
     <DesktopShell
       sectionsPromise={sectionsPromise}
       reader={kobeyeeReader}
+      submitter={kobeyeeSubmitter}
       renderBookingForm={(form) => (
         <Suspense fallback={<BookingFormSkeleton />}>
           <ResolvedBookingForm formDataPromise={formDataPromise} {...form} />

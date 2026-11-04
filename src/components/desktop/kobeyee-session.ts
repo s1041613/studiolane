@@ -17,7 +17,9 @@ export type KobeyeePhase =
   | { kind: "unreadable" }
   // The read itself didn't finish; `message` on the session is kept so
   // `retry` can resend it.
-  | { kind: "failed" };
+  | { kind: "failed" }
+  // Staff pressed 確認登記 and the booking was written; the form is cleared.
+  | { kind: "registered" };
 
 export interface KobeyeeSession {
   open: boolean;
@@ -46,10 +48,20 @@ export type KobeyeeEvent =
   | { type: "revealFinish" }
   | { type: "editDraft"; draft: BookingDraft }
   | { type: "clear" }
+  | { type: "registered" }
   | { type: "moveWindow"; windowRect: WindowRect; viewport: Viewport };
 
-/** Reader seam: a fixture now, the real route later. */
+/** Reader seam: the AI action, or the fixture under e2e. */
 export type KobeyeeReader = (text: string) => Promise<KobeyeeResult>;
+
+type KobeyeeSubmitOutcome =
+  | { status: "registered" }
+  // Someone else's held booking overlaps; staff may resend with these ids.
+  | { status: "conflicts"; conflictIds: string[] }
+  | { status: "error"; message: string };
+
+/** Writes the draft staff confirmed; the AI never calls this. */
+export type KobeyeeSubmitter = (draft: BookingDraft, acknowledgedIds: string[]) => Promise<KobeyeeSubmitOutcome>;
 
 export const INITIAL_KOBEYEE_SESSION: KobeyeeSession = {
   open: false,
@@ -115,6 +127,8 @@ export function reduceKobeyee(s: KobeyeeSession, e: KobeyeeEvent): KobeyeeSessio
       return { ...s, draft: e.draft, phase: finishReveal(s.phase) };
     case "clear":
       return { ...s, layout: "chat", phase: { kind: "empty" }, draft: null, message: null };
+    case "registered":
+      return { ...s, layout: "chat", phase: { kind: "registered" }, draft: null };
     case "moveWindow":
       if (!s.chatRect) return s;
       return { ...s, chatRect: chatRectFrom(e.windowRect, s.layout, s.chatRect, e.viewport) };
@@ -132,6 +146,7 @@ export function revealedCount(phase: KobeyeePhase): number {
 export function kobeyeeLine(phase: KobeyeePhase): string | null {
   if (phase.kind === "unreadable") return "看不懂這則訊息";
   if (phase.kind === "failed") return "讀取失敗";
+  if (phase.kind === "registered") return "已登記";
   if (phase.kind !== "filling" && phase.kind !== "filled") return null;
   const legal = phase.review.slots.filter((slot) => slot.state === "legal").length;
   // "incomplete" has no SlotDraft yet (needs a `time` question): it's
@@ -146,6 +161,17 @@ export function kobeyeeLine(phase: KobeyeePhase): string | null {
     rejectedByReason.set(reason, (rejectedByReason.get(reason) ?? 0) + 1);
   }
   return [`${legal} 段可以`, ...[...rejectedByReason].map(([reason, count]) => `${count} 段${reason}`)].join("，");
+}
+
+const REQUIRED_LABELS = { renter: "租借人", slots: "時段", purpose: "用途" } as const;
+
+/** The required fields the draft still lacks, in form order. */
+export function missingDraftFields(draft: BookingDraft): string[] {
+  return [
+    ...(draft.renter === null ? [REQUIRED_LABELS.renter] : []),
+    ...(draft.slots.length === 0 ? [REQUIRED_LABELS.slots] : []),
+    ...(draft.purpose === null ? [REQUIRED_LABELS.purpose] : []),
+  ];
 }
 
 export const FORM_WIDTH = 600;

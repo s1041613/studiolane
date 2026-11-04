@@ -20,8 +20,10 @@ import {
   blankDraft,
   kobeyeeLine,
   kobeyeeWindowRect,
+  missingDraftFields,
   revealedCount,
   type KobeyeeReader,
+  type KobeyeeSubmitter,
 } from "@/components/desktop/kobeyee-session";
 import type { BookingDraft } from "@/server/logic/booking";
 import { DRAFT_FIELDS } from "@/server/logic/kobeyee";
@@ -35,6 +37,7 @@ export interface BookingFormSlotProps {
 
 export interface KobeyeeWindowProps {
   reader: KobeyeeReader;
+  submitter: KobeyeeSubmitter;
   renderBookingForm: (props: BookingFormSlotProps) => ReactNode;
 }
 
@@ -42,13 +45,23 @@ const REVEAL_MS = 1500;
 // The chat pane sits inside the window's 8px side gutters.
 const CHAT_PANE_INSET = 16;
 
-function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
+// What the last 確認登記 press left to say, cleared once the draft changes.
+type SubmitState =
+  | { kind: "idle" }
+  | { kind: "submitting" }
+  | { kind: "conflicts"; conflictIds: string[] }
+  | { kind: "error"; message: string };
+
+const IDLE: SubmitState = { kind: "idle" };
+
+function KobeyeeWindow({ reader, submitter, renderBookingForm }: KobeyeeWindowProps) {
   const session = useDesktopStore((state) => state.kobeyee);
   const dispatch = useDesktopStore((state) => state.dispatchKobeyee);
   const send = useDesktopStore((state) => state.sendToKobeyee);
   const retry = useDesktopStore((state) => state.retryKobeyee);
   const reduceMotion = useReducedMotion();
   const [text, setText] = useState("");
+  const [submitState, setSubmitState] = useState<SubmitState>(IDLE);
 
   const filling = session.phase.kind === "filling";
   useEffect(() => {
@@ -67,6 +80,22 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
   const booking = layout === "booking";
   const line = kobeyeeLine(phase);
   const reading = phase.kind === "reading";
+  const draft = session.draft;
+  const editable = phase.kind === "filled" || phase.kind === "manual";
+  const missing = draft && editable ? missingDraftFields(draft) : [];
+  const canRegister = draft !== null && editable && missing.length === 0;
+
+  async function register(acknowledgedIds: string[]) {
+    if (!draft) return;
+    setSubmitState({ kind: "submitting" });
+    const outcome = await submitter(draft, acknowledgedIds);
+    if (outcome.status === "registered") {
+      setSubmitState(IDLE);
+      dispatch({ type: "registered" });
+    } else {
+      setSubmitState(outcome.status === "conflicts" ? { kind: "conflicts", conflictIds: outcome.conflictIds } : { kind: "error", message: outcome.message });
+    }
+  }
 
   function submit() {
     const trimmed = text.trim();
@@ -103,8 +132,18 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
             {renderBookingForm({
               draft: session.draft ?? blankDraft(),
               revealed: revealedCount(phase),
-              onDraftChange: (draft) => dispatch({ type: "editDraft", draft }),
+              onDraftChange: (next) => {
+                setSubmitState(IDLE);
+                dispatch({ type: "editDraft", draft: next });
+              },
             })}
+            {canRegister && (
+              <div className="flex justify-end px-10 pb-8">
+                <Button type="button" variant="gel" disabled={submitState.kind === "submitting"} onClick={() => void register([])}>
+                  確認登記
+                </Button>
+              </div>
+            )}
           </WindowPane>
         )}
         <WindowPane
@@ -136,6 +175,24 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">Kobeyee 說：</p>
                   <p className="text-[15px] font-semibold">{line}</p>
+                  {missing.length > 0 && phase.kind === "filled" && (
+                    <p className="mt-1 text-[13px] text-muted-foreground">還要選{missing.join("、")}</p>
+                  )}
+                  {submitState.kind === "error" && <p className="mt-1 text-[13px] text-danger">{submitState.message}</p>}
+                  {submitState.kind === "conflicts" && (
+                    <div className="mt-1">
+                      <p className="text-[13px] text-danger">跟別人的預約時間重疊</p>
+                      <Button
+                        type="button"
+                        variant="bevel"
+                        size="xs"
+                        className="mt-2"
+                        onClick={() => void register(submitState.conflictIds)}
+                      >
+                        仍要登記
+                      </Button>
+                    </div>
+                  )}
                   {phase.kind === "failed" && (
                     <Button type="button" variant="bevel" size="xs" className="mt-2" onClick={() => void retry(reader)}>
                       再試一次
