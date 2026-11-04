@@ -2,11 +2,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { isAnyWindowOpen, useDesktopStore } from "@/components/desktop/desktop-store";
 import { DEFAULT_WIDGETS } from "@/components/desktop/widget-kinds";
+import { INITIAL_KOBEYEE_SESSION } from "@/components/desktop/kobeyee-session";
 
 const RECT = { x: 10, y: 20, width: 800, height: 600 };
 
 beforeEach(() => {
-  useDesktopStore.setState({ windows: {}, widgets: DEFAULT_WIDGETS, editingWidgets: false });
+  useDesktopStore.setState({ windows: {}, widgets: DEFAULT_WIDGETS, editingWidgets: false, kobeyee: INITIAL_KOBEYEE_SESSION });
 });
 
 describe("useDesktopStore", () => {
@@ -41,14 +42,17 @@ describe("useDesktopStore", () => {
     expect(useDesktopStore.getState().windows.bookings).toEqual({ id: "bookings", open: true, rect: moved });
   });
 
-  it("isAnyWindowOpen reflects whether any window in the record is open", () => {
-    expect(isAnyWindowOpen({})).toBe(false);
+  it("isAnyWindowOpen reflects any open window, Kobeyee included", () => {
+    expect(isAnyWindowOpen(useDesktopStore.getState())).toBe(false);
 
     useDesktopStore.getState().openWindow("bookings", RECT);
-    expect(isAnyWindowOpen(useDesktopStore.getState().windows)).toBe(true);
+    expect(isAnyWindowOpen(useDesktopStore.getState())).toBe(true);
 
     useDesktopStore.getState().closeWindow("bookings");
-    expect(isAnyWindowOpen(useDesktopStore.getState().windows)).toBe(false);
+    expect(isAnyWindowOpen(useDesktopStore.getState())).toBe(false);
+
+    useDesktopStore.getState().dispatchKobeyee({ type: "open", layout: "chat", defaultChatRect: RECT });
+    expect(isAnyWindowOpen(useDesktopStore.getState())).toBe(true);
   });
 });
 

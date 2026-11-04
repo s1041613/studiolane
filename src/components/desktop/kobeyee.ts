@@ -4,8 +4,6 @@
 import type { WindowRect } from "@/components/ui/window";
 import { MENU_BAR_HEIGHT } from "@/components/desktop/menu-bar";
 
-export const KOBEYEE_WINDOW_ID = "kobeyee";
-
 export const CAT_IMAGE_SRC = "/kobeyee-cat.png";
 
 // cat.png (public/kobeyee-cat.png) has no clean pixel grid. It only stays

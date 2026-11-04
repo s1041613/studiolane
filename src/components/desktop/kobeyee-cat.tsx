@@ -9,10 +9,10 @@ import {
   CAT_CORNER_HEIGHT,
   CORNER_RIGHT,
   CORNER_BOTTOM,
-  KOBEYEE_WINDOW_ID,
   defaultKobeyeeRect,
   perchPosition,
 } from "@/components/desktop/kobeyee";
+import { kobeyeeWindowRect } from "@/components/desktop/kobeyee-session";
 
 interface CatImageProps {
   width: number;
@@ -41,12 +41,11 @@ function CatImage({ width, height, className, style }: CatImageProps) {
 // open) a non-interactive sprite perched on the window's top edge, moving
 // with it since its position is derived from the window's rect.
 function KobeyeeCat() {
-  const windowState = useDesktopStore((state) => state.windows[KOBEYEE_WINDOW_ID]);
-  const openWindow = useDesktopStore((state) => state.openWindow);
-  const open = windowState?.open ?? false;
+  const session = useDesktopStore((state) => state.kobeyee);
+  const dispatch = useDesktopStore((state) => state.dispatchKobeyee);
 
-  if (open && windowState) {
-    const box = perchPosition(windowState.rect);
+  if (session.open && session.chatRect) {
+    const box = perchPosition(kobeyeeWindowRect(session.layout, session.chatRect, { width: window.innerWidth }));
     return (
       <CatImage
         width={box.width}
@@ -62,7 +61,7 @@ function KobeyeeCat() {
       type="button"
       variant="ghost"
       aria-label="Kobeyee"
-      onClick={() => openWindow(KOBEYEE_WINDOW_ID, defaultKobeyeeRect())}
+      onClick={() => dispatch({ type: "open", layout: "chat", defaultChatRect: defaultKobeyeeRect() })}
       // Below an open window (z-[100], e.g. the bookings ledger) so an open
       // window's content isn't covered by the cat. Each window's default
       // rect keeps clear of this corner (see CORNER_RESERVE_* in

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { MenuBar } from "@/components/desktop/menu-bar";
 import { DockBar } from "@/components/desktop/dock-bar";
 import { BookingsWindow } from "@/components/desktop/bookings-window";
-import { KobeyeeWindow } from "@/components/desktop/kobeyee-window";
+import { KobeyeeWindow, type KobeyeeWindowProps } from "@/components/desktop/kobeyee-window";
 import { KobeyeeCat } from "@/components/desktop/kobeyee-cat";
 import { DesktopWidgets } from "@/components/desktop/desktop-widgets";
 import { isAnyWindowOpen, useDesktopStore } from "@/components/desktop/desktop-store";
@@ -18,7 +18,7 @@ const WALLPAPER_GRADIENT = [
   "linear-gradient(180deg, #0a2f78 0%, #1356b8 45%, #2a7fe0 70%, #0d3f9a 100%)",
 ].join(", ");
 
-interface DesktopShellProps {
+interface DesktopShellProps extends KobeyeeWindowProps {
   // The widgets' data; null when that read failed.
   rentals: readonly RentalSummary[] | null;
   rules: readonly RentalRule[] | null;
@@ -27,9 +27,10 @@ interface DesktopShellProps {
 
 // Replaces /bookings' page shell: a full-viewport desktop with a menu bar,
 // wallpaper, widgets, a Dock, and the 預約冊 window. `children` is the existing
-// BookingsView, rendered unchanged inside the window.
-function DesktopShell({ rentals, rules, children }: DesktopShellProps) {
-  const windowOpen = useDesktopStore((state) => isAnyWindowOpen(state.windows));
+// BookingsView, rendered unchanged inside the window. The booking form
+// comes in as a render prop because desktop/ can't import booking/.
+function DesktopShell({ rentals, rules, children, reader, renderBookingForm }: DesktopShellProps) {
+  const windowOpen = useDesktopStore((state) => isAnyWindowOpen(state));
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: "#0b3a8c" }}>
@@ -41,7 +42,7 @@ function DesktopShell({ rentals, rules, children }: DesktopShellProps) {
       <DesktopWidgets hidden={windowOpen} rentals={rentals} rules={rules} />
       <MenuBar />
       <BookingsWindow>{children}</BookingsWindow>
-      <KobeyeeWindow />
+      <KobeyeeWindow reader={reader} renderBookingForm={renderBookingForm} />
       <KobeyeeCat />
       <DockBar />
     </div>

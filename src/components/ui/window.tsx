@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { animate, motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { cn } from "cn";
 import { TrafficLights } from "@/components/ui/traffic-lights";
 
@@ -29,11 +29,15 @@ interface WindowProps {
   // When set, the title bar leaves room for the content's own controls
   // (rendered through WindowToolbar) instead of showing `title`.
   toolbar?: boolean;
+  // Tween to a new `rect` from outside (e.g. the window growing to show
+  // more content) instead of jumping. Drags and resizes stay live.
+  animateRect?: boolean;
   children: React.ReactNode;
 }
 
 const DEFAULT_MIN_WIDTH = 640;
 const DEFAULT_MIN_HEIGHT = 360;
+const RECT_TWEEN = { duration: 0.42, ease: [0.22, 1, 0.36, 1] } as const;
 
 const ToolbarSlotContext = React.createContext<HTMLElement | null>(null);
 
@@ -67,6 +71,7 @@ function Window({
   topInset = 0,
   titleAccessory,
   toolbar = false,
+  animateRect = false,
   children,
 }: WindowProps) {
   const [toolbarSlot, setToolbarSlot] = React.useState<HTMLElement | null>(null);
@@ -80,14 +85,23 @@ function Window({
   // Follows `rect` (a reopen, or the store syncing back after a drag ends).
   // Not involved while a drag/resize is live — that mutates the node
   // directly, below.
+  // The first layout after opening never tweens, so a reopen lands in place.
+  const placedRef = React.useRef(false);
   React.useEffect(() => {
     const node = nodeRef.current;
-    if (!node || !open) return;
-    node.style.left = `${rect.x}px`;
-    node.style.top = `${rect.y}px`;
-    node.style.width = `${rect.width}px`;
-    node.style.height = `${rect.height}px`;
-  }, [rect, open]);
+    if (!node || !open) {
+      placedRef.current = false;
+      return;
+    }
+    const target = { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` };
+    if (!animateRect || reduceMotion || !placedRef.current) {
+      Object.assign(node.style, target);
+      placedRef.current = true;
+      return;
+    }
+    const tween = animate(node, target, RECT_TWEEN);
+    return () => tween.stop();
+  }, [rect, open, animateRect, reduceMotion]);
 
   // Esc closes the front window.
   React.useEffect(() => {
