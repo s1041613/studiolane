@@ -51,6 +51,7 @@
   --eb-warn-text:    #C2410C;  /* 撞單 */
   --eb-warn-dot:     #E07A55;
   --eb-danger-bg:    rgb(237 71 20 / .07); /* 只用在錯誤訊息條 */
+  --eb-link-text:    #1D6FD6;  /* 預約冊狀態選單：hover/選取/展開時的互動色 */
 
   /* ---------- 5. 色彩：行事曆 ---------- */
   --eb-cal-available: linear-gradient(180deg, rgb(243 255 172 / .85), rgb(243 255 172 / .45)); /* 可租、可預約、指定日期開放（萊姆） */
