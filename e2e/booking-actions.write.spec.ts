@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
-import type { Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { Client } from "pg";
 
-// Row actions on /bookings: confirm, mark paid, mark done, postpone,
-// cancel. Like bookings.write.spec.ts these mutate rentals directly, so
-// they only run when E2E_WRITES=1 and the app talks to a local Supabase.
+// Row actions on /bookings: the 狀態 cell is a menu trigger (confirm, mark
+// paid, mark done, postpone, cancel live as its items). Like
+// bookings.write.spec.ts these mutate rentals directly, so they only run
+// when E2E_WRITES=1 and the app talks to a local Supabase.
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
@@ -85,21 +86,36 @@ async function deleteRentals(db: Client, ids: string[]): Promise<void> {
   await db.query("delete from rentals where id = any($1)", [ids]);
 }
 
-function rowFor(page: import("@playwright/test").Page, id: string): Locator {
+function rowFor(page: Page, id: string): Locator {
   return page.locator(`[data-rent="${id}"]`);
 }
 
-// The dev server streams HTML before React hydrates it; a click that lands
-// first does nothing, so retry until the expected UI shows up. Same helper
-// as bookings.write.spec.ts, duplicated so this file stays self-contained.
-async function clickUntil(button: Locator, shown: Locator): Promise<void> {
+// Opens a row's 狀態 menu through its current label — the dev server
+// streams HTML before React hydrates it, so a click that lands first does
+// nothing; retrying the whole open covers that, same reasoning as
+// bookings.write.spec.ts's clickUntil, duplicated so this file stays
+// self-contained.
+async function openStatusMenu(row: Locator, label: string): Promise<void> {
+  const trigger = row.getByRole("button", { name: `狀態 ${label}`, exact: true });
   await expect(async () => {
-    await button.click();
+    await trigger.click();
+    await expect(row.page().getByRole("menu")).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+}
+
+// Opens the row's menu at its current label, clicks one item, and waits
+// for `shown` so a pre-hydration miss on either step gets retried from the
+// top rather than leaving the menu open with nothing clicked.
+async function openMenuAndClick(row: Locator, label: string, itemName: string, shown: Locator): Promise<void> {
+  const page = row.page();
+  await expect(async () => {
+    await row.getByRole("button", { name: `狀態 ${label}`, exact: true }).click();
+    await page.getByRole("menuitem", { name: itemName, exact: true }).click({ timeout: 1_000 });
     await expect(shown).toBeVisible({ timeout: 1_000 });
   }).toPass({ timeout: 15_000 });
 }
 
-test("confirming an onsite pending booking registers it and swaps the row's button", async ({ page }) => {
+test("confirming an onsite pending booking registers it and relabels the row's 狀態 cell", async ({ page }) => {
   const db = new Client({ connectionString: process.env.DATABASE_URL });
   await db.connect();
   const renterName = `E2E現場確認${STAMP}`;
@@ -119,24 +135,17 @@ test("confirming an onsite pending booking registers it and swaps the row's butt
     await page.goto("/bookings");
     const row = rowFor(page, id);
     await expect(row).toHaveAttribute("data-status", "pending");
-    await expect(row.getByRole("button", { name: "確認", exact: true })).toBeVisible();
 
-    await clickUntil(
-      row.getByRole("button", { name: "確認", exact: true }),
-      row.getByRole("button", { name: "標記已付款", exact: true }),
-    );
+    await openMenuAndClick(row, "待確認", "確認", row.getByRole("button", { name: "狀態 已登記", exact: true }));
 
     await expect(row).toHaveAttribute("data-status", "registered");
-    await expect(row.getByRole("button", { name: "確認", exact: true })).toHaveCount(0);
   } finally {
     await deleteRentals(db, [id]);
     await db.end();
   }
 });
 
-test("confirming a pending booking that overlaps another pending rival is refused and changes neither row", async ({
-  page,
-}) => {
+test("confirming a pending booking that overlaps another pending rival is disabled, not refused", async ({ page }) => {
   const db = new Client({ connectionString: process.env.DATABASE_URL });
   await db.connect();
   const renterName = `E2E撞待確認${STAMP}`;
@@ -169,14 +178,16 @@ test("confirming a pending booking that overlaps another pending rival is refuse
     const row = rowFor(page, id);
     const rivalRow = rowFor(page, rivalId);
 
-    const notice = page.getByRole("alertdialog", { name: "不能確認" });
-    await clickUntil(row.getByRole("button", { name: "確認", exact: true }), notice);
-    await expect(notice).toContainText("跟 1 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認");
-    await expect(notice).toContainText(rivalName);
+    // Both rows clash, so the date cell marks them 撞單 and 確認 is
+    // disabled rather than refused after the fact.
+    await expect(row.getByText("撞單")).toBeVisible();
+    await openStatusMenu(row, "待確認");
+    const rivalItem = page.getByRole("menuitem", { name: rivalName });
+    await expect(rivalItem).toBeVisible();
+    await expect(rivalItem).toHaveAttribute("aria-disabled", "true");
+    await expect(page.getByRole("menuitem", { name: "確認", exact: true })).toHaveCount(0);
 
-    await notice.getByRole("button", { name: "確定", exact: true }).click();
-    await expect(notice).toBeHidden();
-
+    await page.keyboard.press("Escape");
     await expect(row).toHaveAttribute("data-status", "pending");
     await expect(rivalRow).toHaveAttribute("data-status", "pending");
   } finally {
@@ -185,7 +196,7 @@ test("confirming a pending booking that overlaps another pending rival is refuse
   }
 });
 
-test("marking a transfer booking paid then done removes the row's buttons", async ({ page }) => {
+test("marking a transfer booking paid then done leaves the row with no 狀態 menu", async ({ page }) => {
   const db = new Client({ connectionString: process.env.DATABASE_URL });
   await db.connect();
   const renterName = `E2E付款完成${STAMP}`;
@@ -206,19 +217,21 @@ test("marking a transfer booking paid then done removes the row's buttons", asyn
     const row = rowFor(page, id);
     await expect(row).toHaveAttribute("data-status", "awaiting_payment");
 
-    await clickUntil(
-      row.getByRole("button", { name: "標記已付款", exact: true }),
-      row.getByRole("button", { name: "標記完成", exact: true }),
+    await openMenuAndClick(
+      row,
+      "待付款",
+      "標記已付款",
+      row.getByRole("button", { name: "狀態 已登記", exact: true }),
     );
     await expect(row).toHaveAttribute("data-status", "registered");
 
     // markDone leaves the row with no actions at all (completed is
-    // terminal), so there's no replacement button to wait for — only the
-    // 標記完成 button itself going away, which clickUntil can't express.
-    const markDone = row.getByRole("button", { name: "標記完成", exact: true });
+    // terminal): the 狀態 cell becomes plain text, so there's no menu
+    // trigger left to find.
     await expect(async () => {
-      await markDone.click();
-      await expect(markDone).toBeHidden({ timeout: 1_000 });
+      await row.getByRole("button", { name: "狀態 已登記", exact: true }).click();
+      await page.getByRole("menuitem", { name: "標記完成", exact: true }).click({ timeout: 1_000 });
+      await expect(row.getByText("已完成", { exact: true })).toBeVisible({ timeout: 1_000 });
     }).toPass({ timeout: 15_000 });
 
     await expect(row).toHaveAttribute("data-status", "completed");
@@ -249,9 +262,8 @@ test("cancelling a paid booking warns about the refund before it goes through", 
     await page.goto("/bookings");
     const row = rowFor(page, id);
 
-    const menu = page.locator('[data-slot="popover-content"]');
-    await clickUntil(row.getByRole("button", { name: "更多操作", exact: true }), menu);
-    await menu.getByRole("button", { name: "取消", exact: true }).click();
+    await openStatusMenu(row, "已登記");
+    await page.getByRole("menuitem", { name: "取消…", exact: true }).click();
 
     const dialog = page.getByRole("alertdialog", { name: "取消這筆預約？" });
     await expect(dialog).toBeVisible();
@@ -290,9 +302,8 @@ test("postponing an unpaid booking shows no refund warning", async ({ page }) =>
     await page.goto("/bookings");
     const row = rowFor(page, id);
 
-    const menu = page.locator('[data-slot="popover-content"]');
-    await clickUntil(row.getByRole("button", { name: "更多操作", exact: true }), menu);
-    await menu.getByRole("button", { name: "延期", exact: true }).click();
+    await openStatusMenu(row, "待確認");
+    await page.getByRole("menuitem", { name: "延期…", exact: true }).click();
 
     const dialog = page.getByRole("alertdialog", { name: "延期這筆預約？" });
     await expect(dialog).toBeVisible();
