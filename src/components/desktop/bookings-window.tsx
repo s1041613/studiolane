@@ -15,18 +15,17 @@ const DOCK_CLEARANCE = 100;
 // Each side keeps 6% of the viewport free.
 const SIDE_RATIO = 0.06;
 
-// Sized and centered against the current viewport; only meaningful once
+// Sized against the current viewport; only meaningful once
 // mounted in a browser, so callers only reach for this on the client.
 export function defaultBookingsRect(): WindowRect {
-  const width = Math.max(640, Math.round(window.innerWidth * (1 - SIDE_RATIO * 2)));
+  const x = Math.round(window.innerWidth * SIDE_RATIO);
+  // Stop short of the idle Kobeyee cat's corner spot (bottom-right): the cat
+  // renders below windows in z-order, so an overlap here would cover it.
+  const cornerLeft = window.innerWidth - CORNER_RIGHT - CORNER_RESERVE_WIDTH;
+  const width = Math.max(640, Math.min(window.innerWidth - x * 2, cornerLeft - x));
   const height = Math.max(360, window.innerHeight - MENU_BAR_HEIGHT - TOP_GAP - DOCK_CLEARANCE);
-  const centeredX = Math.round((window.innerWidth - width) / 2);
-  // Stay clear of the idle Kobeyee cat's corner spot (bottom-right) instead
-  // of letting this window's corner sit under it. The cat renders below
-  // windows in z-order, so an overlap here would cover it.
-  const maxX = window.innerWidth - width - CORNER_RIGHT - CORNER_RESERVE_WIDTH;
   return {
-    x: Math.max(0, Math.min(centeredX, maxX)),
+    x,
     y: MENU_BAR_HEIGHT + TOP_GAP,
     width,
     height,

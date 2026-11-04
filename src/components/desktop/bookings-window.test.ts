@@ -18,12 +18,13 @@ describe("defaultBookingsRect", () => {
     expect(rect.x + rect.width).toBeLessThanOrEqual(cornerLeft);
   });
 
-  it("still fills most of a wide viewport, where the corner isn't a constraint", () => {
+  it("keeps a 6% left margin and fills the width up to the cat's corner", () => {
     setViewport(1920, 1080);
 
     const rect = defaultBookingsRect();
+    const cornerLeft = window.innerWidth - CORNER_RIGHT - CORNER_RESERVE_WIDTH;
 
-    expect(rect.width).toBe(1120);
-    expect(rect.x).toBe(Math.round((1920 - 1120) / 2));
+    expect(rect.x).toBe(Math.round(1920 * 0.06));
+    expect(rect.x + rect.width).toBe(Math.min(1920 - rect.x, cornerLeft));
   });
 });
