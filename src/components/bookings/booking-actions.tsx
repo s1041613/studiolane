@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "cn";
 import { ChevronDownIcon } from "lucide-react";
 import { settle } from "@/lib/settle";
 import {
@@ -30,6 +31,8 @@ interface BookingActionsProps {
   // level up (bookings-shelf.tsx), not here.
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // Bold label: the row still needs a decision.
+  emphasized?: boolean;
 }
 
 type EndAction = "postpone" | "cancel";
@@ -75,7 +78,7 @@ const END_LABEL: Record<EndAction, string> = { postpone: "延期", cancel: "取�
 // the end actions' refund warning — surfaces through ConfirmDialog or
 // NoticeDialog plus the same ActionFailure, so there is exactly one way
 // this component says "no."
-export function BookingActions({ rental, open, onOpenChange }: BookingActionsProps) {
+export function BookingActions({ rental, open, onOpenChange, emphasized = false }: BookingActionsProps) {
   const [endDialog, setEndDialog] = useState<EndAction | null>(null);
   const [endError, setEndError] = useState<ShownFailure | null>(null);
   const [clashRivals, setClashRivals] = useState<RentalSummary[] | null>(null);
@@ -86,7 +89,7 @@ export function BookingActions({ rental, open, onOpenChange }: BookingActionsPro
   const label = statusToLabel(rental.status as RentalStatusCode);
 
   if (actions.length === 0) {
-    return <span>{label}</span>;
+    return <span className="text-muted-foreground">{label}</span>;
   }
 
   // 確認 with no rivals goes straight through; with rivals, the server
@@ -164,7 +167,10 @@ export function BookingActions({ rental, open, onOpenChange }: BookingActionsPro
               aria-label={`狀態 ${label}`}
               // Plain text at rest, same as every other cell; the row's own
               // "group" turns this blue on hover/selection (bookings-shelf.tsx).
-              className="-mx-1.5 h-auto gap-1 rounded-md border-none bg-transparent px-1.5 py-0.5 text-foreground hover:bg-transparent hover:text-link aria-expanded:bg-transparent group-hover:text-link group-aria-[selected=true]:text-link focus-visible:text-link data-popup-open:text-link"
+              className={cn(
+                "-mx-1.5 h-5 gap-1.5 rounded-[5px] border-none bg-transparent px-1.5 py-0 text-[13px] text-foreground hover:bg-transparent hover:text-link aria-expanded:bg-transparent group-hover:text-link group-aria-[selected=true]:text-link focus-visible:text-link data-popup-open:text-link",
+                emphasized ? "font-semibold" : "font-normal",
+              )}
             />
           }
         >

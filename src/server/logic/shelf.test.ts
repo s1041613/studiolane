@@ -3,11 +3,16 @@ import { makeRental } from "@/server/logic/test-fixtures";
 import { RentalStatus } from "@/server/types/home";
 import {
   DEFAULT_SHELF_FILTER,
+  DEFAULT_SHELF_SORT,
   folderActive,
+  nextShelfSort,
   rivalText,
   shelfCount,
   shelfRows,
+  shelfStatusText,
+  shelfTitle,
   SHELF_SECTIONS,
+  sortShelfRows,
   toggleFolder,
   withFolder,
 } from "@/server/logic/shelf";
@@ -276,5 +281,42 @@ describe("rivalText", () => {
     const rental = makeRental({ id: "alone", date: "2026-11-06", status: RentalStatus.Pending });
 
     expect(rivalText(rental, [rental])).toBe("");
+  });
+});
+
+describe("sortShelfRows / nextShelfSort", () => {
+  const all = [
+    makeRental({ id: "late", date: "2026-11-06", start: "15:00", amount: 100 }),
+    makeRental({ id: "early", date: "2026-11-06", start: "09:00", amount: 300 }),
+    makeRental({ id: "first", date: "2026-11-01", start: "20:00", amount: null }),
+  ];
+
+  it("defaults to date (then start time) ascending", () => {
+    expect(sortShelfRows(all, DEFAULT_SHELF_SORT, all).map((r) => r.id)).toEqual(["first", "early", "late"]);
+  });
+
+  it("sorts 金額 with no amount lowest, and flips on a second click", () => {
+    const sort = nextShelfSort(DEFAULT_SHELF_SORT, "amount");
+    expect(sort).toEqual({ key: "amount", direction: "ascending" });
+    expect(sortShelfRows(all, sort, all).map((r) => r.id)).toEqual(["first", "late", "early"]);
+    expect(nextShelfSort(sort, "amount").direction).toBe("descending");
+  });
+});
+
+describe("shelfTitle", () => {
+  it("names the period alone, or the narrowing folders without 全部", () => {
+    expect(shelfTitle(DEFAULT_SHELF_FILTER)).toBe("全部");
+    expect(shelfTitle(filter({ room: "A", status: RentalStatus.Pending }))).toBe("大教室・待確認");
+    expect(shelfTitle(filter({ period: "today", status: "clash" }))).toBe("今天・撞單");
+  });
+});
+
+describe("shelfStatusText", () => {
+  it("adds the 待確認 count only when it is part of the view", () => {
+    const pending = makeRental({ id: "p", date: "2026-11-04", status: RentalStatus.Pending });
+    const done = makeRental({ id: "d", date: "2026-11-04", status: RentalStatus.Completed });
+    expect(shelfStatusText([pending, done], "")).toBe("2 筆預約，1 筆待確認");
+    expect(shelfStatusText([pending], "")).toBe("1 筆預約");
+    expect(shelfStatusText([done], "林")).toBe("1 筆預約（搜尋「林」）");
   });
 });

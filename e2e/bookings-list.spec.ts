@@ -50,11 +50,11 @@ test("?q= with no match shows 找不到符合的預約", async ({ page }) => {
   await expect(page.getByText("找不到符合的預約")).toBeVisible();
 });
 
-test("typing in the search box and submitting updates the URL", async ({ page }) => {
+test("typing in the toolbar search box and pressing Enter updates the URL", async ({ page }) => {
   await page.goto("/bookings");
 
   await page.getByRole("searchbox", { name: "搜尋" }).fill("林小雨");
-  await page.getByRole("button", { name: "查詢" }).click();
+  await page.getByRole("searchbox", { name: "搜尋" }).press("Enter");
 
   await expect(page).toHaveURL("/bookings?q=林小雨");
   await expect(grid(page).getByText("林小雨")).toBeVisible();
@@ -113,4 +113,29 @@ test("double-clicking a row opens its info panel with 狀態, 租借人, 用途,
   await expect(panel.getByText("未付款")).toBeVisible();
   await expect(panel.getByText("1,200")).toBeVisible();
   await expect(panel.getByText("想借瑜珈墊")).toBeVisible();
+});
+
+test("rows start oldest date first, and the 日期 header flips the order", async ({ page }) => {
+  await page.goto("/bookings");
+
+  const dates = () => grid(page).locator("tbody tr td:first-child").allInnerTexts();
+  await expect(grid(page).getByText("林小雨")).toBeVisible();
+  const ascending = await dates();
+  await expect(page.getByRole("columnheader", { name: /日期/ })).toHaveAttribute("aria-sort", "ascending");
+
+  await page.getByRole("columnheader", { name: /日期/ }).getByRole("button").click();
+  await expect(page.getByRole("columnheader", { name: /日期/ })).toHaveAttribute("aria-sort", "descending");
+  expect(await dates()).toEqual([...ascending].reverse());
+});
+
+test("picking a folder retitles the window, and 上一頁 goes back to 全部", async ({ page }) => {
+  await page.goto("/bookings");
+  const window = page.getByRole("dialog", { name: "預約冊" });
+
+  await page.getByRole("navigation", { name: "預約冊資料夾" }).getByRole("button", { name: "小教室" }).click();
+  await expect(window.getByText("小教室", { exact: true }).first()).toBeVisible();
+
+  await page.getByRole("button", { name: "上一頁" }).click();
+  await expect(grid(page).getByText("林小雨")).toBeVisible();
+  await expect(page.getByText(/^\d+ 筆預約/)).toBeVisible();
 });
