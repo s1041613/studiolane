@@ -2,6 +2,14 @@
 
 ## 2026-11-04
 
+* **Update**: [Bookings List](bookings-list.md) now documents the sidebar
+  as three combinable facets (period, room, status) with faceted counts and
+  toggle-off room/status folders, replacing the old single-selection
+  folder model. Also documents `確認` on a clashing row: it now opens a
+  dialog naming the rivals (kept one marked, paid rivals warned about a
+  refund) instead of showing a disabled menu item, and confirms with the
+  rivals cancelled in one write once staff accept it.
+
 * **Update**: [Bookings List](bookings-list.md) now documents the 預約冊
   shelf UI: sidebar folders (預約/教室/狀態, with 撞單 counted separately),
   the row's 狀態 menu trigger replacing the old action buttons, the 撞單
