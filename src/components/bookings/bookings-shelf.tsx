@@ -7,6 +7,7 @@
 // nothing here is remembered across a reload.
 import { useMemo, useState } from "react";
 import { conflictInfo, isNextDay, money, paymentTag } from "@/server/logic/home-selectors";
+import { shortDateParts } from "@/server/logic/date";
 import { folderKey, rivalText, searchShelfRows, shelfCount, shelfRows, SHELF_SECTIONS } from "@/server/logic/shelf";
 import type { ShelfFolder } from "@/server/logic/shelf";
 import { roomToLabel, statusToLabel } from "@/server/supabase/codecs";
@@ -45,14 +46,17 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
     () =>
       SHELF_SECTIONS.map((section) => ({
         title: section.title,
-        items: section.items.map((item) => ({
-          key: folderKey(item.folder),
-          label: item.label,
-          count: shelfCount(allRentals, item.folder, today),
-          active: folderKey(item.folder) === folderKey(folder),
-          tone: item.folder.kind === "clash" ? ("danger" as const) : undefined,
-          onClick: () => setFolder(item.folder),
-        })),
+        items: section.items.map((item) => {
+          const count = shelfCount(allRentals, item.folder, today);
+          return {
+            key: folderKey(item.folder),
+            label: item.label,
+            count,
+            active: folderKey(item.folder) === folderKey(folder),
+            tone: item.folder.kind === "clash" && count > 0 ? ("danger" as const) : undefined,
+            onClick: () => setFolder(item.folder),
+          };
+        }),
       })),
     [allRentals, folder, today],
   );
@@ -191,13 +195,13 @@ function BookingRow({
       data-status={rental.status}
       role="row"
       aria-selected={selected}
-      className="group cursor-default aria-selected:bg-selected aria-selected:hover:bg-selected"
+      className="group cursor-default select-none aria-selected:bg-selected aria-selected:hover:bg-selected"
       onClick={onSelect}
       onDoubleClick={onOpenInfo}
       onContextMenu={onContextMenu}
     >
       <TableCell label="日期" className="tabular-nums whitespace-nowrap">
-        {rental.date.slice(5).replace("-", "/").replace(/^0/, "")}
+        {shortDateParts(rental.date).monthDay}
         {clashing && (
           <Tooltip>
             <TooltipTrigger
