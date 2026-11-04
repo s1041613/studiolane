@@ -8,7 +8,7 @@ import {
   blockedSlots,
   kobeyeeLead,
   overlapQuestions,
-  readyToRegister,
+  readyToCreate,
   renterReply,
   reduceKobeyee,
   type KobeyeeEvent,
@@ -167,13 +167,13 @@ describe("conversation lines", () => {
   });
 });
 
-describe("registering", () => {
+describe("creating", () => {
   it("waits for the renter and every overlap answer", () => {
     let s = filledWith(MIXED);
     s = run([{ type: "editDraft", draft: { ...s.draft!, renter: RENTER } }], s);
-    expect(readyToRegister(s)).toBe(false);
+    expect(readyToCreate(s)).toBe(false);
     s = run([{ type: "answerOverlap", slotIndex: 3, answer: "include" }], s);
-    expect(readyToRegister(s)).toBe(true);
+    expect(readyToCreate(s)).toBe(true);
     expect(s.draft!.slots).toHaveLength(2);
     expect(acknowledgedConflictIds(s)).toEqual(["h1"]);
   });
@@ -184,13 +184,13 @@ describe("registering", () => {
     expect(s.draft!.slots).toHaveLength(1);
     expect(acknowledgedConflictIds(s)).toEqual([]);
     expect(renterReply(s, 300)).toBe(
-      ["你好～幫你登記好小教室了：", "・1/1（四）10:00–11:00", "共 300 元", "", "以下時段不行：", "・1/3（六）10:00–11:00 場地保養", "・1/2（五）10:00–11:00 已有人預約", "", "範例銀行（000）", "戶名：範例舞蹈教室", "帳號：000-000-000000", "匯款完成請提供末五碼以利對帳"].join("\n"),
+      ["你好～幫你預約了小教室：", "・1/1（四）10:00–11:00", "共 300 元", "", "以下時段不行：", "・1/3（六）10:00–11:00 場地保養", "・1/2（五）10:00–11:00 已有人預約", "", "範例銀行（000）", "戶名：範例舞蹈教室", "帳號：000-000-000000", "匯款完成請提供末五碼以利對帳"].join("\n"),
     );
   });
 
-  it("keeps the review and slot count once registered", () => {
-    const s = run([{ type: "registered", reply: "r" }], filledWith(MIXED));
-    expect(s.phase).toMatchObject({ kind: "registered", count: 1, reply: "r" });
+  it("keeps the review and slot count once created", () => {
+    const s = run([{ type: "created", reply: "r" }], filledWith(MIXED));
+    expect(s.phase).toMatchObject({ kind: "created", count: 1, reply: "r" });
     expect(s.layout).toBe("booking");
   });
 });

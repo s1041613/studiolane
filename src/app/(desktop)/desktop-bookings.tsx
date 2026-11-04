@@ -21,7 +21,7 @@ const kobeyeeReader: KobeyeeReader = process.env.NEXT_PUBLIC_KOBEYEE_FIXTURE ===
 
 const kobeyeeSubmitter: KobeyeeSubmitter = async (draft, acknowledgedIds) => {
   const result = await settle(submitBooking(draft, acknowledgedIds));
-  if (result.ok) return { status: "registered" };
+  if (result.ok) return { status: "created" };
   if (result.error.kind === "blockers") {
     return { status: "conflicts", conflictIds: result.error.blockers.conflicts.map((conflict) => conflict.id) };
   }
