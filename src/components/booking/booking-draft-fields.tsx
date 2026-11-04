@@ -69,13 +69,16 @@ function Divider() {
 function SlotRow({ slot, error, amount }: { slot: SlotDraft; error: string | null; amount: number | null }) {
   const { monthDay, weekday } = shortDateParts(slot.date);
   return (
-    <div data-slot-row className={`grid h-[35px] grid-cols-[118px_150px_1fr_auto] items-center text-sm ${error ? "font-semibold" : ""}`}>
-      <span>
-        {monthDay} <small className="text-[13px] text-muted-foreground">{weekday}</small>
-      </span>
-      <span>
-        {slot.start} – {slot.end}
-      </span>
+    // Fixed columns so dates, weekdays and times line up whatever their width.
+    <div
+      data-slot-row
+      className={`grid h-[35px] grid-cols-[3rem_4.5rem_2.75rem_1rem_2.75rem_1fr_auto] items-center text-sm tabular-nums ${error ? "font-semibold" : ""}`}
+    >
+      <span>{monthDay}</span>
+      <small className="text-[13px] text-muted-foreground">{weekday}</small>
+      <span className="text-right">{slot.start}</span>
+      <span className="text-center">–</span>
+      <span>{slot.end}</span>
       <span className="ml-2.5 text-[11.5px] font-bold text-warn">{error}</span>
       <span className="text-right text-text-secondary">{amount !== null && money(amount)}</span>
     </div>
