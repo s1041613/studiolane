@@ -42,7 +42,8 @@ function fixtureResult(): KobeyeeResult {
 }
 
 
-const READ_DELAY_MS = 300;
+// Roughly a real read, so the loading state is visible.
+const READ_DELAY_MS = 1200;
 
 export const fixtureReader: KobeyeeReader = () =>
   new Promise((resolve) => setTimeout(() => resolve(fixtureResult()), READ_DELAY_MS));

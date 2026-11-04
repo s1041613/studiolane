@@ -39,7 +39,8 @@ const ROOMS = [
   { value: "B", label: "小教室" },
 ] as const;
 const PAYMENTS: PaymentChoice[] = ["transfer", "on_site"];
-const SKELETON_TONE = "bg-foreground/[.07]";
+// Placeholder rows for 每天的時間 before the read slots are known.
+const SKELETON_SLOT_ROWS = 3;
 
 function Row({ field, label, revealed, skeleton, children }: {
   field: DraftField;
@@ -58,7 +59,7 @@ function Row({ field, label, revealed, skeleton, children }: {
 }
 
 function Bar({ className }: { className: string }) {
-  return <Skeleton className={`${SKELETON_TONE} ${className}`} />;
+  return <Skeleton className={className} />;
 }
 
 function Divider() {
@@ -143,8 +144,8 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
         revealed={revealed}
         skeleton={
           <div className="space-y-5 pt-1">
-            {slots.map((slot) => (
-              <div key={slot.date} className="flex justify-between">
+            {Array.from({ length: Math.max(slots.length, SKELETON_SLOT_ROWS) }, (_, i) => (
+              <div key={i} className="flex justify-between">
                 <Bar className="h-3.5 w-48" />
                 <Bar className="h-3.5 w-11" />
               </div>
