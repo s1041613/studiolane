@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { RentalStatus } from "@/server/types/home";
 import { makeRental } from "@/server/logic/test-fixtures";
 import { bookingListFilters } from "@/server/logic/bookings";
@@ -28,7 +28,7 @@ describe("BookingsView", () => {
     expect(alert).toHaveTextContent("預約列表暫時讀不到");
   });
 
-  it("lists rentals with the newest date first", () => {
+  it("lists rentals oldest date first, and 日期 flips that", () => {
     const rentals = [
       makeRental({ id: "oldest", date: "2026-09-25" }),
       makeRental({ id: "newest", date: "2026-10-05" }),
@@ -41,7 +41,44 @@ describe("BookingsView", () => {
       .getAllByRole("row")
       .map((row) => row.getAttribute("data-rent"))
       .filter((id): id is string => id !== null);
-    expect(ids).toEqual(["newest", "middle", "oldest"]);
+    expect(ids).toEqual(["oldest", "middle", "newest"]);
+
+    fireEvent.click(screen.getByRole("button", { name: /日期/ }));
+    const flipped = screen
+      .getAllByRole("row")
+      .map((row) => row.getAttribute("data-rent"))
+      .filter((id): id is string => id !== null);
+    expect(flipped).toEqual(["newest", "middle", "oldest"]);
+    expect(screen.getByRole("columnheader", { name: /日期/ })).toHaveAttribute("aria-sort", "descending");
+  });
+
+  it("orders the columns 日期 時段 租借人 用途 教室 狀態 付款 金額", () => {
+    render(<BookingsView section={{ ok: true, data: [makeRental({ id: "a", date: "2026-11-04" })] }} today={TODAY} />);
+
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent?.replace(/[▲▼]/g, ""));
+    expect(headers).toEqual(["日期", "時段", "租借人", "用途", "教室", "狀態", "付款", "金額"]);
+  });
+
+  it("titles the toolbar with the folder and walks folder history with 上一頁/下一頁", () => {
+    render(<BookingsView section={{ ok: true, data: [makeRental({ id: "a", date: "2026-11-04", room: "B" })] }} today={TODAY} />);
+    const title = () => screen.getByText((_, el) => el?.tagName === "P" && /^(全部|小教室)$/.test(el.textContent ?? ""));
+
+    expect(title()).toHaveTextContent("全部");
+    expect(screen.getByRole("button", { name: "上一頁" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /小教室/ }));
+    expect(title()).toHaveTextContent("小教室");
+
+    fireEvent.click(screen.getByRole("button", { name: "上一頁" }));
+    expect(title()).toHaveTextContent("全部");
+    expect(screen.getByRole("button", { name: "下一頁" })).toBeEnabled();
+  });
+
+  it("puts the search field in the toolbar with no 查詢 button", () => {
+    render(<BookingsView section={{ ok: true, data: [makeRental({ id: "a", date: "2026-11-04" })] }} today={TODAY} />);
+
+    expect(screen.getByRole("searchbox", { name: "搜尋" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "查詢" })).not.toBeInTheDocument();
   });
 
   it("flags overlapping pending bookings in the same room as 撞單, but not overlapping registered ones", () => {

@@ -191,3 +191,59 @@ export function rivalText(rental: RentalSummary, all: RentalSummary[]): string {
   const { monthDay } = shortDateParts(earliest.date);
   return `撞 ${monthDay} ${earliest.start} ${earliest.person}`;
 }
+
+export type ShelfSortKey = "date" | "time" | "renter" | "purpose" | "room" | "status" | "payment" | "amount";
+export type ShelfSort = { key: ShelfSortKey; direction: "ascending" | "descending" };
+
+export const DEFAULT_SHELF_SORT: ShelfSort = { key: "date", direction: "ascending" };
+
+type SortValue = string | number;
+
+// Date and time compare as one instant so same-day rows keep their order;
+// 狀態 puts a clashing row ahead of the rest of its status.
+const SORT_VALUE: Record<ShelfSortKey, (rental: RentalSummary, all: RentalSummary[]) => SortValue> = {
+  date: (r) => `${r.date} ${r.start}`,
+  time: (r) => r.start,
+  renter: (r) => r.person,
+  purpose: (r) => r.purposeLabel,
+  room: (r) => r.room,
+  status: (r, all) => `${conflictInfo(r, all) != null ? "0" : "1"}${statusToLabel(r.status as RentalStatusCode)}`,
+  payment: (r) => r.paymentState,
+  amount: (r) => r.amount ?? -1,
+};
+
+function compareValues(a: SortValue, b: SortValue): number {
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return String(a).localeCompare(String(b), "zh-Hant");
+}
+
+export function sortShelfRows(rows: RentalSummary[], sort: ShelfSort, all: RentalSummary[]): RentalSummary[] {
+  const value = SORT_VALUE[sort.key];
+  const sign = sort.direction === "ascending" ? 1 : -1;
+  return [...rows].sort((a, b) => compareValues(value(a, all), value(b, all)) * sign);
+}
+
+// Clicking the sorted column flips it; any other column starts ascending.
+export function nextShelfSort(current: ShelfSort, key: ShelfSortKey): ShelfSort {
+  if (current.key !== key) return { key, direction: "ascending" };
+  return { key, direction: current.direction === "ascending" ? "descending" : "ascending" };
+}
+
+// The window title: the selected folders' names. 全部 drops out once a
+// room or status narrows it, since it no longer says anything.
+export function shelfTitle(filter: ShelfFilter): string {
+  const labels = [entryFor("period", filter.period), entryFor("room", filter.room), entryFor("status", filter.status)]
+    .filter((entry): entry is ShelfFolderEntry => entry !== undefined)
+    .map((entry) => entry.label);
+  const narrowed = filter.room !== null || filter.status !== null;
+  return (narrowed && filter.period === "all" ? labels.slice(1) : labels).join("・");
+}
+
+// The status bar: "N 筆預約，M 筆待確認", the second half only when it
+// singles out part of the view.
+export function shelfStatusText(rows: RentalSummary[], q: string): string {
+  const pending = rows.filter((rental) => rental.status === RentalStatus.Pending).length;
+  const pendingPart = pending > 0 && pending < rows.length ? `，${pending} 筆待確認` : "";
+  const queryPart = q ? `（搜尋「${q}」）` : "";
+  return `${rows.length} 筆預約${pendingPart}${queryPart}`;
+}

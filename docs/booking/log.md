@@ -2,6 +2,13 @@
 
 ## 2026-11-04
 
+* **Update**: [Bookings List](bookings-list.md) now documents the window
+  toolbar (folder title, back/forward folder history, 取得資訊, search
+  field with Enter to submit), sortable columns starting oldest date
+  first, the new column order, the row emphasis tiers, the blue
+  待確認/待付款 counts, and the status bar. The 外部客戶 line under a
+  renter's name is gone.
+
 * **Update**: [Bookings List](bookings-list.md) now documents the sidebar
   as three combinable facets (period, room, status) with faceted counts and
   toggle-off room/status folders, replacing the old single-selection

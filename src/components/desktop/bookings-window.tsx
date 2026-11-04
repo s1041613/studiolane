@@ -9,15 +9,17 @@ import { CORNER_RIGHT, CORNER_RESERVE_WIDTH } from "@/components/desktop/kobeyee
 
 export const BOOKINGS_WINDOW_ID = "bookings";
 
-const WINDOW_MARGIN = 16;
-// Dock height (70px) plus its own bottom offset and a little breathing room.
-const DOCK_CLEARANCE = 96;
+const TOP_GAP = 14;
+// Dock height plus its own bottom offset and a little breathing room.
+const DOCK_CLEARANCE = 100;
+// Each side keeps 6% of the viewport free.
+const SIDE_RATIO = 0.06;
 
 // Sized and centered against the current viewport; only meaningful once
 // mounted in a browser, so callers only reach for this on the client.
 export function defaultBookingsRect(): WindowRect {
-  const width = Math.min(1120, Math.max(640, window.innerWidth - WINDOW_MARGIN * 2));
-  const height = Math.max(360, window.innerHeight - MENU_BAR_HEIGHT - DOCK_CLEARANCE - WINDOW_MARGIN);
+  const width = Math.max(640, Math.round(window.innerWidth * (1 - SIDE_RATIO * 2)));
+  const height = Math.max(360, window.innerHeight - MENU_BAR_HEIGHT - TOP_GAP - DOCK_CLEARANCE);
   const centeredX = Math.round((window.innerWidth - width) / 2);
   // Stay clear of the idle Kobeyee cat's corner spot (bottom-right) instead
   // of letting this window's corner sit under it. The cat renders below
@@ -25,7 +27,7 @@ export function defaultBookingsRect(): WindowRect {
   const maxX = window.innerWidth - width - CORNER_RIGHT - CORNER_RESERVE_WIDTH;
   return {
     x: Math.max(0, Math.min(centeredX, maxX)),
-    y: MENU_BAR_HEIGHT + WINDOW_MARGIN,
+    y: MENU_BAR_HEIGHT + TOP_GAP,
     width,
     height,
   };
@@ -60,8 +62,9 @@ function BookingsWindow({ children }: BookingsWindowProps) {
       onRectChange={(rect) => setRect(BOOKINGS_WINDOW_ID, rect)}
       onClose={() => closeWindow(BOOKINGS_WINDOW_ID)}
       topInset={MENU_BAR_HEIGHT}
+      toolbar
     >
-      <div className="flex min-h-full flex-col gap-6 p-4">
+      <div className="flex min-h-0 flex-1 flex-col">
         {/* The window's title bar already shows 預約冊 (minimal copy: no
             second visible heading). This h1 stays for the accessibility
             tree and for the bookings-list e2e spec's heading assertion. */}

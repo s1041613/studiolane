@@ -28,8 +28,8 @@ sources:
     resource: https://github.com/s1041613/studiolane/blob/main/src/server/supabase/codecs.ts
     title: Status, room, and payment label codecs
   - id: search
-    resource: https://github.com/s1041613/studiolane/blob/main/src/components/bookings/booking-search.tsx
-    title: Booking search component
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/bookings/bookings-shelf.tsx
+    title: Bookings shelf toolbar search
   - id: row-actions
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/bookings/booking-actions.tsx
     title: Booking row actions component
@@ -91,24 +91,39 @@ touches.[^shelf-logic]
 
 The `撞單` folder shows every booking that currently overlaps another one in
 the same room — the same rule described in [Statuses and conflicts](#statuses-and-conflicts)
-below.[^shelf-logic] Its count is the only one shown in red, and only once
-it's above zero; the rest are quiet.[^shelf]
+below.[^shelf-logic] Its count is shown in red once it's above zero. The `待確認` and `待付款`
+counts are shown in bold blue once above zero, since those still need a
+decision; the rest are quiet.[^shelf]
 
 # What each row shows
 
-Each row shows the date, the time slot, the renter, the room, the purpose,
-the status, the payment state, and the amount.[^shelf] The date shows only
-month/day (for example `11/6`), with no weekday.[^shelf] A customer who is
-not on the roster is marked `外部客戶` under their name. A slot that ends
-after midnight is marked `跨日`.[^shelf] The room shows as `大教室` or
+Each row is one compact line: the date, the time slot, the renter, the
+purpose, the room, the status, the payment state, and the amount, in that
+column order.[^shelf] The date shows only month/day (for example `11/6`),
+with no weekday.[^shelf] A slot that ends after midnight is marked
+`跨日`.[^shelf] The renter reads bold unless the booking is closed; the
+status reads bold while it still needs a decision (`待確認`, `待付款`). A
+closed row (`已完成`, `延期`, `已取消`) reads in muted grey as a
+whole.[^shelf] The room shows as `大教室` or
 `小教室`, never the bare letter; the payment state shows `已付款` for a
 paid booking or the matching label otherwise (`未付款`,
 `無需付款`).[^codecs]
 
-Rows are sorted by date, newest first, within the current filter. Ties are
-broken by start time and then by when the booking was made, both newest
-first.[^sort][^shelf-logic] A search box above the grid filters further by
-renter name or rental ID, on top of the current filter.[^search][^shelf-logic]
+Rows start sorted by date and start time, oldest first. Clicking a column
+header sorts by that column, and clicking it again flips the order; the
+sorted header reads bold with a ▲ or ▼.[^shelf][^shelf-logic] Sorting by
+`狀態` puts clashing rows first within each status.[^shelf-logic] The
+search field in the window's toolbar filters further by renter name or
+rental ID, on top of the current filter.[^search][^shelf-logic]
+
+The window's title is the selected folder (for example `全部`, or
+`大教室・待確認` once a room or status narrows it). The back and forward
+buttons beside it walk the folder selections made in this window, like a
+browser's history. The gear button (`取得資訊`) opens the info panel for
+the selected row, or the first row when none is selected. The status bar
+along the bottom reads `N 筆預約，M 筆待確認` for the current view, with
+the second half shown only when it singles out part of the
+view.[^shelf][^shelf-logic]
 
 # Statuses and conflicts
 
@@ -187,11 +202,12 @@ otherwise), `用途`, `付款`, `金額`, and `備註` (`—` when empty).[^shel
 
 # Search
 
-A search box above the shelf filters the current filter's rows by renter
-name or rental ID. It matches part of the text, ignores case, and trims
+The search field in the window's toolbar filters the current filter's rows
+by renter name or rental ID. It matches part of the text, ignores case, and trims
 spaces.[^search][^sort] The query lives in the URL as `?q=`, submitted
 through a GET form so it's shareable and works without JavaScript.[^page][^search]
-Submitting an empty box clears the filter; a `清除` link next to the box,
+Pressing Enter submits it; there is no separate submit button. Submitting
+an empty field clears the filter; a small `×` (`清除`) inside the field,
 shown only once a query is applied, clears it by going back to
 `/bookings`.[^search]
 
@@ -220,7 +236,7 @@ range and no payment-method or payment-state filter.[^shelf-logic]
 [^sort]: Booking list logic
 [^conflict]: Conflict ranking
 [^codecs]: Status, room, and payment label codecs
-[^search]: Booking search component
+[^search]: Bookings shelf toolbar search
 [^row-actions]: Booking row actions component
 [^actions]: Booking status-change server actions
 [^repo]: Rental repository
