@@ -155,10 +155,12 @@ line like `11/6 15:00–16:00 某某`.[^actions][^row-actions] A rival that was
 already paid shows the same refund warning that `延期…`/`取消…` use. The
 dialog
 has two buttons, `返回` and `確認並取消其他`.[^row-actions] Confirming sends
-back the exact rival list shown; the server re-checks it against a fresh
-read and, if it still matches, confirms this booking and cancels every
+back the exact rival list shown, with each rival's status and payment
+state; the server re-checks it against a fresh read and, if every rival
+still matches, confirms this booking and cancels every
 rival in one write, each rival's note gaining `【需要退款】` when it was
-paid.[^actions][^repo] If someone else changed the room in between, the
+paid.[^actions][^repo] If someone else changed the room in between
+(including a rival's status or payment), the
 dialog stays open with the same "please refresh" refusal a lost write
 elsewhere in this menu uses.[^actions]
 
