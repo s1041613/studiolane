@@ -5,6 +5,11 @@ import { Client } from "pg";
 // Row actions on /bookings: confirm, mark paid, mark done, postpone,
 // cancel. Like bookings.write.spec.ts these mutate rentals directly, so
 // they only run when E2E_WRITES=1 and the app talks to a local Supabase.
+//
+// E-60: every test opens its row through ?day=<its own date> rather than
+// plain /bookings, so the row stays visible under the all-statuses filter
+// that opens even once the action under test moves it off 待確認 (the
+// default list's status), e.g. registered, completed, cancelled, postponed.
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
@@ -116,7 +121,7 @@ test("confirming an onsite pending booking registers it and swaps the row's butt
   });
 
   try {
-    await page.goto("/bookings");
+    await page.goto(`/bookings?day=${CONFIRM_ONSITE_DATE}`);
     const row = rowFor(page, id);
     await expect(row).toHaveAttribute("data-status", "pending");
     await expect(row.getByRole("button", { name: "確認", exact: true })).toBeVisible();
@@ -165,7 +170,7 @@ test("confirming a pending booking that overlaps another pending rival is refuse
   });
 
   try {
-    await page.goto("/bookings");
+    await page.goto(`/bookings?day=${CONFIRM_RIVALS_DATE}`);
     const row = rowFor(page, id);
     const rivalRow = rowFor(page, rivalId);
 
@@ -202,7 +207,7 @@ test("marking a transfer booking paid then done removes the row's buttons", asyn
   });
 
   try {
-    await page.goto("/bookings");
+    await page.goto(`/bookings?day=${PAID_THEN_DONE_DATE}`);
     const row = rowFor(page, id);
     await expect(row).toHaveAttribute("data-status", "awaiting_payment");
 
@@ -246,7 +251,7 @@ test("cancelling a paid booking warns about the refund before it goes through", 
   });
 
   try {
-    await page.goto("/bookings");
+    await page.goto(`/bookings?day=${CANCEL_PAID_DATE}`);
     const row = rowFor(page, id);
 
     const menu = page.locator('[data-slot="popover-content"]');
@@ -287,7 +292,7 @@ test("postponing an unpaid booking shows no refund warning", async ({ page }) =>
   });
 
   try {
-    await page.goto("/bookings");
+    await page.goto(`/bookings?day=${POSTPONE_UNPAID_DATE}`);
     const row = rowFor(page, id);
 
     const menu = page.locator('[data-slot="popover-content"]');

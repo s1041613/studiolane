@@ -4,7 +4,7 @@ title: Creating a Booking
 description: "How staff create a booking: the form, server validation, conflict checks against other renters, and the all-or-nothing batch write."
 tags: [bookings, validation, conflicts, concurrency]
 status: draft
-generated: { by: claude-code/claude-sonnet-5, at: 2026-10-31T07:01:39Z }
+generated: { by: claude-code/claude-sonnet-5, at: 2026-11-03T09:30:45Z }
 sources:
   - id: types
     resource: https://github.com/s1041613/studiolane/blob/main/src/server/logic/booking.ts
@@ -172,9 +172,10 @@ then a table with one row per date: date, time, hours, status, and amount.
 The status column is dropped and shown once at the top instead when every row
 shares the same status.[^summary] A totals row at the bottom adds up the
 hours and the amount. Two links follow: `再預約一筆` back to the new booking
-page, and `前往預約追蹤` to the bookings list, filtered to that renter
-(`/bookings?q=<renter>`; see [Bookings List](bookings-list.md) for how the
-filter matches).
+page, and `前往預約追蹤` to the bookings list. The new booking is `待確認`
+(pending confirmation), the same as every other walk-in, so it shows up in
+that list's default view rather than one filtered to this renter; see
+[Bookings List](bookings-list.md) for that default and its filters.
 
 The batch id in the URL means a refresh shows the same page, and pressing
 Back after submitting can't resubmit the form.[^sheet]

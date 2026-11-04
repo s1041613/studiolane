@@ -49,7 +49,6 @@ export default async function BookingBatchPage(props: PageProps<"/bookings/batch
     ["付款方式", summary.paymentLabel],
     ["備註", summary.note || "—"],
   ];
-  const personName = section.data[0].person;
 
   return (
     <main className="w-full flex-1 space-y-5">
@@ -107,7 +106,7 @@ export default async function BookingBatchPage(props: PageProps<"/bookings/batch
         <Link href="/bookings/new" className={buttonVariants({ variant: "outline", size: "lg" })}>
           再預約一筆
         </Link>
-        <Link href={`/bookings?q=${encodeURIComponent(personName)}`} className={buttonVariants({ size: "lg" })}>
+        <Link href="/bookings" className={buttonVariants({ size: "lg" })}>
           前往預約追蹤
         </Link>
       </div>

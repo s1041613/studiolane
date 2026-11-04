@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { RentalRepository } from "@/server/repositories/rental-repository";
 import { loadSection } from "@/server/services/section";
-import { bookingListFilters } from "@/server/logic/bookings";
+import { initialBookingFilters } from "@/server/logic/bookings";
 import { BookingsView } from "@/components/bookings/bookings-view";
 import { requirePageAccess } from "@/server/auth/require-staff";
 import { DesktopShell } from "@/components/desktop/desktop-shell";
@@ -14,14 +14,14 @@ export default async function BookingsPage(props: PageProps<"/bookings">) {
   await connection();
   const section = await loadSection(() => new RentalRepository().listAll());
 
-  // A repeated ?q= makes this a string[]; only a single string value is
-  // treated as a query.
-  const rawQuery = (await props.searchParams).q;
-  const filters = bookingListFilters(typeof rawQuery === "string" ? rawQuery : undefined);
+  // A repeated ?day= makes this a string[]; only a single string value
+  // seeds the initial filters (HM21).
+  const rawDay = (await props.searchParams).day;
+  const initialFilters = initialBookingFilters(typeof rawDay === "string" ? rawDay : undefined);
 
   return (
     <DesktopShell>
-      <BookingsView section={section} filters={filters} />
+      <BookingsView section={section} initialFilters={initialFilters} />
     </DesktopShell>
   );
 }

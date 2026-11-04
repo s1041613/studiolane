@@ -1,31 +1,53 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { Result } from "@/lib/result";
-import { bookingListFilters, selectBookingRows, sortBookingsNewestFirst } from "@/server/logic/bookings";
+import { selectBookingRows } from "@/server/logic/bookings";
 import type { BookingFilterDraft } from "@/server/logic/bookings";
+import { PaymentMethod } from "@/server/types/home";
 import type { RentalSummary } from "@/server/types/home";
 import { Card } from "@/components/ui/card";
+import { BookingFilters } from "@/components/bookings/booking-filters";
 import { BookingTable, BookingTableHeader } from "@/components/bookings/booking-table";
-import { BookingSearch } from "@/components/bookings/booking-search";
 import { Table, TableFrame } from "@/components/ui/table";
 import { SectionFailure } from "@/components/shared/failures/section-failure";
 
-interface BookingsViewProps {
-  // Every rental, or why they couldn't be read; failure and empty states
-  // take priority over the query.
-  section: Result<RentalSummary[]>;
-  // From ?q=; only q is used until the other BookingFilterDraft fields are
-  // wired up.
-  filters?: BookingFilterDraft;
+function payFilter(pay: string): PaymentMethod | "none" | undefined {
+  if (pay === "none") return "none";
+  return Object.values(PaymentMethod).includes(pay as PaymentMethod) ? (pay as PaymentMethod) : undefined;
 }
 
-export function BookingsView({ section, filters = bookingListFilters() }: BookingsViewProps) {
-  // allRentals stays unfiltered: conflict ranking (撞單 · 第 N 位) counts
-  // against every rental, not just the ones a query happens to match.
-  const allRentals = section.ok ? section.data : null;
-  const rows = allRentals === null ? [] : sortBookingsNewestFirst(selectBookingRows(allRentals, { q: filters.q }));
+interface BookingsViewProps {
+  // Every rental, or why they couldn't be read; filtering happens here.
+  section: Result<RentalSummary[]>;
+  initialFilters: BookingFilterDraft;
+}
+
+// 預約追蹤's filters live only on the page: a reload or coming back through
+// the rail starts from the default again. A day passed by 首頁's ↗ seeds
+// the first view and is then dropped from the URL, so reloading after it
+// also lands on the default.
+export function BookingsView({ section, initialFilters }: BookingsViewProps) {
+  const rentals = section.ok ? section.data : null;
+  const [filters, setFilters] = useState(initialFilters);
+
+  useEffect(() => {
+    if (window.location.search) window.history.replaceState(null, "", "/bookings");
+  }, []);
+
+  const rows = rentals
+    ? selectBookingRows(rentals, {
+        q: filters.q,
+        pay: payFilter(filters.pay),
+        statuses: filters.statuses,
+        from: filters.from || undefined,
+        to: filters.to || undefined,
+      })
+    : [];
 
   return (
     <>
-      <BookingSearch query={filters.q} />
+      <BookingFilters initial={filters} onApply={setFilters} />
       {/* DESIGN.md §8.3: the table is one card; rows split by hairlines. */}
       <Card padding="none" className="flex flex-col overflow-hidden px-1 pb-1 [--card-pad:0.25rem] md:min-h-0 md:flex-1">
         {!section.ok && (
@@ -39,15 +61,15 @@ export function BookingsView({ section, filters = bookingListFilters() }: Bookin
             <SectionFailure message="預約列表暫時讀不到" failure={section.error} />
           </>
         )}
-        {allRentals !== null && allRentals.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">目前沒有預約</div>
+        {rentals !== null && rows.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground">沒有符合條件的預約</div>
         )}
-        {allRentals !== null && allRentals.length > 0 && rows.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">找不到符合的預約</div>
-        )}
-        {allRentals !== null && rows.length > 0 && (
-          // Keyed on q so a new search starts back on page 1.
-          <BookingTable key={filters.q} rows={rows} allRentals={allRentals} />
+        {rows.length > 0 && rentals && (
+          // Keyed on the filters so changing a filter remounts the table
+          // (and so its page resets to 1), while an action-driven refresh
+          // of `rentals` — same filters, new rows — keeps the same instance
+          // and stays on the same page.
+          <BookingTable key={JSON.stringify(filters)} rows={rows} allRentals={rentals} />
         )}
       </Card>
     </>

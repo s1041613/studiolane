@@ -47,7 +47,8 @@ export function BookingTableHeader() {
 }
 
 interface BookingTableProps {
-  // Already sorted newest first, not yet paginated.
+  // Already sorted by status priority, then date, then start time; not yet
+  // paginated.
   rows: RentalSummary[];
   allRentals: RentalSummary[];
 }

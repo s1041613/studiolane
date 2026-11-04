@@ -60,6 +60,12 @@ sources:
   - id: input
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/input.tsx
     title: Input component
+  - id: select
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/select.tsx
+    title: Select component
+  - id: date-range-field
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/date-range-field.tsx
+    title: DateRangeField component
   - id: page-failure
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/page-failure.tsx
     title: PageFailure component
@@ -230,6 +236,11 @@ and the id of its error message to components such as `Input` through
 component's own function, for the same reason given above for
 `SegmentedControl`.[^field][^input]
 
+`Select` wraps the Base UI select and accepts `multiple` for a
+multi-select, as the bookings list's status filter does.[^select]
+`DateRangeField` is one popover field for a single day or a date range,
+with a clear button once a date is chosen.[^date-range-field]
+
 # Load Failure and Read-Only Notice
 
 `PageFailure` is the full-page failure screen, shared by every `error.tsx`
@@ -297,6 +308,8 @@ desktop shell that `/bookings` renders inside of.
 [^table]: Table component
 [^card]: Card component
 [^input]: Input component
+[^select]: Select component
+[^date-range-field]: DateRangeField component
 [^page-failure]: PageFailure component
 [^error-code]: ErrorCode component
 [^read-only-notice]: ReadOnlyNotice component
