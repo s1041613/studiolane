@@ -3,7 +3,10 @@ import type { KobeyeeParse, KobeyeeTask, ParsedSlot } from "@/server/logic/kobey
 // How one field compares to what a fixture expects. "missing" (the model
 // said null, or omitted a slot/task entirely) scores better than "wrong" (a
 // concrete, different value) — a guess that's wrong is worse than staff
-// being asked to fill in a blank. Only "wrong" fails the eval run.
+// being asked to fill in a blank. A "wrong" field fails the case, and so
+// does a dropped task or slot: losing a whole slot means a booking silently
+// goes unregistered. A null field is only counted, so it shows up in the
+// report instead of passing unseen.
 export type FieldVerdict = "correct" | "missing" | "wrong";
 
 export type SlotScore = { date: FieldVerdict; start: FieldVerdict; end: FieldVerdict };
@@ -23,6 +26,9 @@ export type CaseScore = {
   taskCount: FieldVerdict;
   tasks: TaskScore[]; // one per expected task, paired with the actual task at the same index
   wrongFieldCount: number;
+  // Null fields where the fixture has a value. Not a failure, but reported.
+  missingFieldCount: number;
+  passed: boolean;
 };
 
 // Scoped to the plain JSON-shaped fields this module compares (numbers,
@@ -88,6 +94,23 @@ function isWrong(verdict: FieldVerdict): boolean {
   return verdict === "wrong";
 }
 
+function isMissing(verdict: FieldVerdict): boolean {
+  return verdict === "missing";
+}
+
+function countMissingInTask(task: TaskScore): number {
+  const slotMissing = (s: SlotScore) => [s.date, s.start, s.end].filter(isMissing).length;
+  return (
+    [task.intent, task.room, task.purpose].filter(isMissing).length +
+    task.slots.reduce((sum, s) => sum + slotMissing(s), 0) +
+    task.oldSlots.reduce((sum, s) => sum + slotMissing(s), 0)
+  );
+}
+
+function dropsTaskOrSlot(taskCount: FieldVerdict, tasks: readonly TaskScore[]): boolean {
+  return taskCount === "missing" || tasks.some((t) => t.slotCount === "missing" || t.oldSlotCount === "missing");
+}
+
 function countWrongInTask(task: TaskScore): number {
   const slotWrong = (s: SlotScore) => [s.date, s.start, s.end].filter(isWrong).length;
   return (
@@ -105,5 +128,7 @@ export function scoreKobeyeeParse(expected: KobeyeeParse, actual: KobeyeeParse):
   const taskCount = countVerdict(expected.tasks.length, actual.tasks.length);
   const tasks = expected.tasks.map((task, i) => scoreTask(task, actual.tasks[i]));
   const wrongFieldCount = (taskCount === "wrong" ? 1 : 0) + tasks.reduce((sum, t) => sum + countWrongInTask(t), 0);
-  return { taskCount, tasks, wrongFieldCount };
+  const missingFieldCount = tasks.reduce((sum, t) => sum + countMissingInTask(t), 0);
+  const passed = wrongFieldCount === 0 && !dropsTaskOrSlot(taskCount, tasks);
+  return { taskCount, tasks, wrongFieldCount, missingFieldCount, passed };
 }

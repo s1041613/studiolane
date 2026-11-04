@@ -39,7 +39,8 @@ describe("scoreKobeyeeParse: null vs wrong", () => {
     };
     const score = scoreKobeyeeParse(expected, actual);
     expect(score.tasks[0].room).toBe("missing");
-    expect(score.wrongFieldCount).toBe(0);
+    expect(score.missingFieldCount).toBe(1);
+    expect(score.passed).toBe(true);
   });
 
   it("a different, non-null room scores wrong", () => {
@@ -71,7 +72,7 @@ describe("scoreKobeyeeParse: null vs wrong", () => {
 });
 
 describe("scoreKobeyeeParse: task and slot counts", () => {
-  it("fewer tasks than expected is missing, not wrong", () => {
+  it("fewer tasks than expected fails the case", () => {
     const expected: KobeyeeParse = {
       tasks: [
         { intent: "new_rental", room: "A", purpose: null, slots: [slot(ABSOLUTE_11_10, null, null)] },
@@ -81,7 +82,19 @@ describe("scoreKobeyeeParse: task and slot counts", () => {
     const actual: KobeyeeParse = { tasks: [expected.tasks[0]] };
     const score = scoreKobeyeeParse(expected, actual);
     expect(score.taskCount).toBe("missing");
-    expect(score.wrongFieldCount).toBe(0);
+    expect(score.passed).toBe(false);
+  });
+
+  it("fewer slots than expected fails the case", () => {
+    const expected: KobeyeeParse = {
+      tasks: [{ intent: "new_rental", room: "A", purpose: null, slots: [slot(ABSOLUTE_11_10, null, null), slot(ABSOLUTE_11_11, null, null)] }],
+    };
+    const actual: KobeyeeParse = {
+      tasks: [{ intent: "new_rental", room: "A", purpose: null, slots: [slot(ABSOLUTE_11_10, null, null)] }],
+    };
+    const score = scoreKobeyeeParse(expected, actual);
+    expect(score.tasks[0].slotCount).toBe("missing");
+    expect(score.passed).toBe(false);
   });
 
   it("more tasks than expected is wrong (a hallucinated extra task)", () => {
@@ -94,7 +107,7 @@ describe("scoreKobeyeeParse: task and slot counts", () => {
     expect(score.wrongFieldCount).toBe(1);
   });
 
-  it("an unreadable result (tasks: []) scores every expected task missing, not wrong", () => {
+  it("an unreadable result (tasks: []) fails a case that expects tasks", () => {
     const expected: KobeyeeParse = {
       tasks: [{ intent: "new_rental", room: "A", purpose: null, slots: [slot(ABSOLUTE_11_10, "20:00", "21:00")] }],
     };
@@ -102,6 +115,6 @@ describe("scoreKobeyeeParse: task and slot counts", () => {
     expect(score.taskCount).toBe("missing");
     expect(score.tasks[0].room).toBe("missing");
     expect(score.tasks[0].slots[0].date).toBe("missing");
-    expect(score.wrongFieldCount).toBe(0);
+    expect(score.passed).toBe(false);
   });
 });
