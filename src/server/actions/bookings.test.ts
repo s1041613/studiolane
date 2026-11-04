@@ -11,6 +11,7 @@ const data = vi.hoisted(() => ({
   rules: [] as RentalRule[],
   transition: vi.fn<(id: string, expected: StatusSnapshot, patch: StatusPatch) => Promise<boolean>>(),
   lockRoom: vi.fn<(room: "A" | "B") => Promise<void>>(),
+  confirmWithCancellations: vi.fn<(id: string, nextStatus: RentalStatus, cancellations: Array<{ id: string; note: string }>) => Promise<void>>(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -30,6 +31,7 @@ vi.mock("@/server/repositories/rental-repository", () => ({
     findById = async (id: string) => data.rentals.find((r) => r.id === id) ?? null;
     transition = data.transition;
     lockRoom = data.lockRoom;
+    confirmWithCancellations = data.confirmWithCancellations;
   },
 }));
 vi.mock("@/server/repositories/rules-repository", () => ({
@@ -55,6 +57,7 @@ beforeEach(() => {
   data.rentals = [];
   data.rules = [];
   data.transition.mockResolvedValue(true);
+  data.confirmWithCancellations.mockResolvedValue(undefined);
 });
 
 describe("confirmBooking", () => {
@@ -131,6 +134,47 @@ describe("confirmBooking", () => {
       },
     });
     expect(data.transition).not.toHaveBeenCalled();
+  });
+
+  it("with cancelIds matching the fresh rivals, confirms and cancels them in one write", async () => {
+    const rival = makeRental({
+      id: "rival",
+      date: FUTURE_DATE,
+      start: "10:00",
+      end: "11:00",
+      room: "A",
+      status: RentalStatus.Registered,
+      paymentState: PaymentState.Paid,
+      amount: 600,
+      note: "老客人",
+    });
+    const mine = makeRental({ id: "r1", date: FUTURE_DATE, start: "10:30", end: "11:30", room: "A", status: RentalStatus.Pending });
+    data.rentals = [rival, mine];
+
+    const result = unseal(await confirmBooking("r1", ["rival"]));
+
+    expect(result).toEqual({ ok: true, data: null });
+    expect(data.confirmWithCancellations).toHaveBeenCalledWith("r1", RentalStatus.Registered, [
+      { id: "rival", note: "老客人【需要退款】" },
+    ]);
+    expect(data.transition).not.toHaveBeenCalled();
+    expect(revalidatePath).toHaveBeenCalledExactlyOnceWith("/bookings");
+  });
+
+  it("with cancelIds that no longer match the fresh rivals, refuses ABORTED and writes nothing", async () => {
+    const rival = makeRental({ id: "rival", date: FUTURE_DATE, start: "10:00", end: "11:00", room: "A", status: RentalStatus.Pending });
+    const mine = makeRental({ id: "r1", date: FUTURE_DATE, start: "10:30", end: "11:30", room: "A", status: RentalStatus.Pending });
+    data.rentals = [rival, mine];
+
+    const result = unseal(await confirmBooking("r1", ["some-other-id"]));
+
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: "message", code: "ABORTED", message: "這筆預約的狀態已經變動，請重新整理後再試一次", errorId: ERROR_ID },
+    });
+    expect(data.confirmWithCancellations).not.toHaveBeenCalled();
+    expect(data.transition).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   it("refuses NOT_FOUND for an unknown id", async () => {

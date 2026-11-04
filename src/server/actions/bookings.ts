@@ -82,10 +82,13 @@ function withRoomLock<T>(room: "A" | "B", run: () => Promise<T>): Promise<T> {
 export type BookingActionResult = Sealed;
 export type ConfirmBookingResult = Sealed<null, { blockers: { conflicts: RentalSummary[] } }>;
 
-// T-確認: no rivals -> confirm; rivals -> reject with the read-only list.
-// Reject-only: there is no cancelIds parameter and no path here that
-// cancels a rival.
-export async function confirmBooking(id: string): Promise<ConfirmBookingResult> {
+// T-確認: no rivals -> confirm; rivals and no cancelIds -> report them for
+// the dialog; rivals and matching cancelIds -> confirm this one and cancel
+// the rest in one write (RentalRepository.confirmWithCancellations). If the
+// fresh rivals no longer match cancelIds — someone else acted on this room
+// in between — this refuses the same way a lost transition() race does,
+// rather than opening yet another dialog.
+export async function confirmBooking(id: string, cancelIds?: string[]): Promise<ConfirmBookingResult> {
   return runAction({ attempted: "確認預約", access: "staff", revalidate: REVALIDATE }, async () => {
     const existing = await rentalRepo.findById(id);
     if (!existing) return fail("NOT_FOUND", "找不到這筆預約");
@@ -96,15 +99,18 @@ export async function confirmBooking(id: string): Promise<ConfirmBookingResult> 
       const { rental, all } = loaded.data;
       if (!(await stillRentable(rental))) return fail("FAILED_PRECONDITION", NO_LONGER_RENTABLE);
 
-      const plan = planConfirm(rental, all);
+      const plan = planConfirm(rental, all, cancelIds);
       if (plan.kind === "conflicts") {
+        if (cancelIds) return fail("ABORTED", STALE_BOOKING);
         return failBlockers(
           "FAILED_PRECONDITION",
           `跟 ${plan.conflicts.length} 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認`,
           { conflicts: plan.conflicts },
         );
       }
-      return applyTransition(rental, { status: plan.nextStatus });
+      if (plan.cancellations.length === 0) return applyTransition(rental, { status: plan.nextStatus });
+      await rentalRepo.confirmWithCancellations(rental.id, plan.nextStatus, plan.cancellations);
+      return ok();
     });
   });
 }

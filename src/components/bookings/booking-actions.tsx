@@ -10,10 +10,10 @@ import {
   markBookingPaid,
   postponeBooking,
 } from "@/server/actions/bookings";
-import { allowedActions, needsRefund } from "@/server/logic/bookings";
+import { allowedActions, conflictDialogRows, needsRefund } from "@/server/logic/bookings";
 import type { BookingAction } from "@/server/logic/bookings";
-import { conflictInfo, money, roomLabel, slotText } from "@/server/logic/home-selectors";
-import { rivalText } from "@/server/logic/shelf";
+import { money, roomLabel, slotText } from "@/server/logic/home-selectors";
+import { shortDateParts } from "@/server/logic/date";
 import { statusToLabel } from "@/server/supabase/codecs";
 import type { RentalStatusCode } from "@/server/supabase/codecs";
 import type { RentalSummary } from "@/server/types/home";
@@ -25,9 +25,6 @@ import { ActionFailure, type ShownFailure } from "@/components/shared/failures/a
 
 interface BookingActionsProps {
   rental: RentalSummary;
-  // For conflictInfo/rivalText: a clash depends on every other rental, not
-  // just this row.
-  allRentals: RentalSummary[];
   // Controlled by the row: a click on the trigger or a right-click
   // anywhere on the row opens the same menu, so the open state lives one
   // level up (bookings-shelf.tsx), not here.
@@ -45,14 +42,15 @@ const PRIMARY_LABEL: Record<PrimaryAction, string> = {
   markDone: "標記完成",
 };
 
-// Each server action declares its own Reactions (confirmBooking alone adds
-// blockers), so the menu normalizes every call to the same shape here
-// rather than exposing that mismatch to runPrimary.
-const PRIMARY_ACTION: Record<PrimaryAction, (id: string) => Promise<ShownFailure | null>> = {
-  confirm: async (id) => {
-    const result = await settle(confirmBooking(id));
-    return result.ok ? null : result.error;
-  },
+function isPrimaryAction(action: BookingAction): action is PrimaryAction {
+  return action in PRIMARY_LABEL;
+}
+
+// markPaid/markDone each write just that one change, so both read as a
+// plain ShownFailure | null; confirm's own blockers drive the clash dialog
+// below instead, so it has its own dispatch (runConfirm) rather than living
+// in this map.
+const PRIMARY_ACTION: Record<"markPaid" | "markDone", (id: string) => Promise<ShownFailure | null>> = {
   markPaid: async (id) => {
     const result = await settle(markBookingPaid(id));
     return result.ok ? null : result.error;
@@ -69,22 +67,19 @@ const PRIMARY_ACTION: Record<PrimaryAction, (id: string) => Promise<ShownFailure
 const END_MENU_LABEL: Record<EndAction, string> = { postpone: "延期…", cancel: "取消…" };
 const END_LABEL: Record<EndAction, string> = { postpone: "延期", cancel: "取消" };
 
-function isPrimaryAction(action: BookingAction): action is PrimaryAction {
-  return action in PRIMARY_ACTION;
-}
-
 // The 狀態 cell: plain text at rest (bookings-shelf.tsx's row owns the
 // hover/selected styling that turns this into blue text with a ⌄). Opening
 // it — by click or by the row's right-click — lists exactly what
 // allowedActions(rental) permits, the same rule the server re-checks on
-// every call. A clashing row's 確認 item is disabled and reads the rival
-// instead of "確認", so staff see who to deal with first without opening
-// the row's info panel. Every refusal — a plain message, or confirm's
-// overlapping-rivals blockers — surfaces through the same NoticeDialog +
-// ActionFailure pair: there is exactly one way this component says "no."
-export function BookingActions({ rental, allRentals, open, onOpenChange }: BookingActionsProps) {
+// every call. Every refusal — a plain message, confirm's own clash list, or
+// the end actions' refund warning — surfaces through ConfirmDialog or
+// NoticeDialog plus the same ActionFailure, so there is exactly one way
+// this component says "no."
+export function BookingActions({ rental, open, onOpenChange }: BookingActionsProps) {
   const [endDialog, setEndDialog] = useState<EndAction | null>(null);
   const [endError, setEndError] = useState<ShownFailure | null>(null);
+  const [clashRivals, setClashRivals] = useState<RentalSummary[] | null>(null);
+  const [clashError, setClashError] = useState<ShownFailure | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
 
   const actions = allowedActions(rental);
@@ -94,10 +89,26 @@ export function BookingActions({ rental, allRentals, open, onOpenChange }: Booki
     return <span>{label}</span>;
   }
 
-  const clashing = conflictInfo(rental, allRentals) != null;
+  // 確認 with no rivals goes straight through; with rivals, the server
+  // reports them as blockers instead of writing anything, and this opens
+  // the clash dialog below to ask whether to cancel them.
+  async function runConfirm() {
+    const result = await settle(confirmBooking(rental.id));
+    if (result.ok) return;
+    if (result.error.kind === "blockers") {
+      setClashError(null);
+      setClashRivals(result.error.blockers.conflicts);
+      return;
+    }
+    setNotice({ title: "不能確認", failure: result.error });
+  }
 
   async function runPrimary(action: PrimaryAction) {
     onOpenChange(false);
+    if (action === "confirm") {
+      await runConfirm();
+      return;
+    }
     const failure = await PRIMARY_ACTION[action](rental.id);
     if (failure) setNotice({ title: `不能${PRIMARY_LABEL[action]}`, failure });
   }
@@ -121,6 +132,25 @@ export function BookingActions({ rental, allRentals, open, onOpenChange }: Booki
     if (result.ok) setEndDialog(null);
     // Dialog stays open, same context, so retrying doesn't lose the refund warning.
     else setEndError(result.error);
+  }
+
+  function changeClashDialogOpen(nextOpen: boolean) {
+    if (!nextOpen) {
+      setClashRivals(null);
+      setClashError(null);
+    }
+  }
+
+  // The user already saw and accepted this exact rival list; sending their
+  // ids back is what tells the server to cancel them alongside confirming.
+  // A stale mismatch (someone else acted on the room meanwhile) comes back
+  // as a plain refusal, shown inline same as the end dialog's.
+  async function runClashConfirm() {
+    if (!clashRivals) return;
+    setClashError(null);
+    const result = await settle(confirmBooking(rental.id, clashRivals.map((r) => r.id)));
+    if (result.ok) setClashRivals(null);
+    else setClashError(result.error);
   }
 
   return (
@@ -147,10 +177,9 @@ export function BookingActions({ rental, allRentals, open, onOpenChange }: Booki
         <MenuContent>
           {actions.map((action) => {
             if (isPrimaryAction(action)) {
-              const disabled = action === "confirm" && clashing;
               return (
-                <MenuItem key={action} disabled={disabled} onClick={() => runPrimary(action)}>
-                  {disabled ? rivalText(rental, allRentals) : PRIMARY_LABEL[action]}
+                <MenuItem key={action} onClick={() => runPrimary(action)}>
+                  {PRIMARY_LABEL[action]}
                 </MenuItem>
               );
             }
@@ -187,6 +216,21 @@ export function BookingActions({ rental, allRentals, open, onOpenChange }: Booki
         }
       />
 
+      <ConfirmDialog
+        open={clashRivals !== null}
+        onOpenChange={changeClashDialogOpen}
+        title="確認並取消重疊的預約？"
+        cancelLabel="返回"
+        confirmLabel="確認並取消其他"
+        destructive
+        onConfirm={runClashConfirm}
+        description={
+          clashRivals && (
+            <ClashRivalList rental={rental} rivals={clashRivals} error={clashError} />
+          )
+        }
+      />
+
       <NoticeDialog
         open={notice !== null}
         onOpenChange={(nextOpen) => !nextOpen && setNotice(null)}
@@ -196,5 +240,42 @@ export function BookingActions({ rental, allRentals, open, onOpenChange }: Booki
         {notice && <ActionFailure variant="notice" failure={notice.failure} />}
       </NoticeDialog>
     </>
+  );
+}
+
+// This booking and its rivals, oldest submission first, with the one being
+// kept marked — conflictDialogRows is the same ordering the server used to
+// decide which rivals to list.
+function ClashRivalList({
+  rental,
+  rivals,
+  error,
+}: {
+  rental: RentalSummary;
+  rivals: RentalSummary[];
+  error: ShownFailure | null;
+}) {
+  // ConfirmDialog renders this inside AlertDialogDescription, which base-ui
+  // renders as a <p> — a <ul>/<li>/<div> here would be invalid HTML nested
+  // in a <p> (and a hydration error), so every row stays a <span> styled
+  // as a block, same as the refund warning below and ActionFailure's
+  // "inline" variant.
+  return (
+    <span className="block space-y-1.5">
+      {conflictDialogRows(rental, rivals).map(({ rental: row, keep }) => (
+        <span key={row.id} className="block">
+          {shortDateParts(row.date).monthDay} {row.start}–{row.end} {row.person}
+          <span className={keep ? "ml-1.5 text-muted-foreground" : "ml-1.5 text-destructive"}>
+            {keep ? "保留" : "取消"}
+          </span>
+          {!keep && needsRefund(row) && (
+            <span className="mt-1 block rounded-lg bg-inset p-2 text-warn">
+              這筆已付款 {money(row.amount ?? 0)}，取消後需要退款。備註會加上「【需要退款】」。
+            </span>
+          )}
+        </span>
+      ))}
+      {error && <ActionFailure variant="inline" failure={error} />}
+    </span>
   );
 }

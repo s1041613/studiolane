@@ -59,9 +59,9 @@ function blockers(): ServerResult<null, { blockers: { conflicts: RentalSummary[]
 
 // BookingActions' open state is controlled by its row (bookings-shelf.tsx);
 // this harness plays that role for the test.
-function Harness({ rental, allRentals = [rental] }: { rental: RentalSummary; allRentals?: RentalSummary[] }) {
+function Harness({ rental }: { rental: RentalSummary }) {
   const [open, setOpen] = useState(false);
-  return <BookingActions rental={rental} allRentals={allRentals} open={open} onOpenChange={setOpen} />;
+  return <BookingActions rental={rental} open={open} onOpenChange={setOpen} />;
 }
 
 function openMenu(label: string) {
@@ -103,33 +103,13 @@ describe("BookingActions: the 狀態 trigger follows allowedActions", () => {
     }
   });
 
-  it("a clashing row's 確認 item is disabled and reads the rival instead", async () => {
-    const rental = makeRental({
-      id: "r1",
-      date: "2099-06-01",
-      start: "08:00",
-      end: "09:00",
-      room: "A",
-      status: RentalStatus.Pending,
-      createdAt: "2026-01-02T00:00:00Z",
-    });
-    const rival = makeRental({
-      id: "r2",
-      person: "示範對手",
-      date: "2099-06-01",
-      start: "08:30",
-      end: "09:30",
-      room: "A",
-      status: RentalStatus.Pending,
-      createdAt: "2026-01-01T00:00:00Z",
-    });
+  it("a clashing row's 確認 item is enabled and reads 確認, same as any other row", async () => {
+    render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
 
-    render(<Harness rental={rental} allRentals={[rental, rival]} />);
     openMenu("待確認");
 
-    const rivalItem = await screen.findByRole("menuitem", { name: /示範對手/ });
-    expect(rivalItem).toHaveAttribute("aria-disabled", "true");
-    expect(screen.queryByRole("menuitem", { name: "確認" })).not.toBeInTheDocument();
+    const confirmItem = await screen.findByRole("menuitem", { name: "確認" });
+    expect(confirmItem).not.toHaveAttribute("aria-disabled");
   });
 });
 
@@ -145,18 +125,79 @@ describe("BookingActions: primary menu items", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it("a blockers failure from confirmBooking opens a NoticeDialog listing the rival, OK only", async () => {
+  it("a blockers failure from confirmBooking opens a ConfirmDialog naming the rival, with 返回 / 確認並取消其他", async () => {
     actions.confirmBooking.mockResolvedValue(blockers());
     render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
 
     openMenu("待確認");
     fireEvent.click(await screen.findByRole("menuitem", { name: "確認" }));
 
-    const dialog = await screen.findByRole("alertdialog", { name: "不能確認" });
-    expect(dialog).toHaveTextContent("跟 1 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認");
+    const dialog = await screen.findByRole("alertdialog", { name: "確認並取消重疊的預約？" });
     expect(dialog).toHaveTextContent("示範對手");
-    expect(screen.queryByRole("button", { name: /確認這筆/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "確定" })).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("保留");
+    expect(dialog).toHaveTextContent("取消");
+    expect(screen.getByRole("button", { name: "返回" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "確認並取消其他" })).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog", { name: "不能確認" })).not.toBeInTheDocument();
+  });
+
+  it("confirming the clash dialog calls confirmBooking again with the rival's id and closes on success", async () => {
+    actions.confirmBooking.mockResolvedValueOnce(blockers()).mockResolvedValueOnce(OK);
+    render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
+
+    openMenu("待確認");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "確認" }));
+    await screen.findByRole("alertdialog", { name: "確認並取消重疊的預約？" });
+    fireEvent.click(screen.getByRole("button", { name: "確認並取消其他" }));
+
+    await waitFor(() => expect(actions.confirmBooking).toHaveBeenNthCalledWith(2, "r1", ["rival"]));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+  });
+
+  it("a stale clash confirm keeps the dialog open with the refresh notice inline", async () => {
+    actions.confirmBooking
+      .mockResolvedValueOnce(blockers())
+      .mockResolvedValueOnce(errored("ABORTED", "這筆預約的狀態已經變動，請重新整理後再試一次"));
+    render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
+
+    openMenu("待確認");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "確認" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "確認並取消重疊的預約？" });
+    fireEvent.click(screen.getByRole("button", { name: "確認並取消其他" }));
+
+    await waitFor(() => expect(dialog).toHaveTextContent("這筆預約的狀態已經變動"));
+    expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
+  });
+
+  it("a paid rival in the clash dialog shows the existing refund warning", async () => {
+    const paidRival = makeRental({
+      id: "rival",
+      date: "2099-06-01",
+      start: "10:00",
+      end: "11:00",
+      person: "示範對手",
+      status: RentalStatus.Registered,
+      paymentState: PaymentState.Paid,
+      amount: 600,
+    });
+    actions.confirmBooking.mockResolvedValue({
+      ok: false,
+      error: {
+        kind: "blockers",
+        code: "FAILED_PRECONDITION",
+        message: "跟 1 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認",
+        blockers: { conflicts: [paidRival] },
+        errorId: "abcd1234",
+      },
+    } satisfies ServerResult<null, { blockers: { conflicts: RentalSummary[] } }>);
+    render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
+
+    openMenu("待確認");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "確認" }));
+
+    const dialog = await screen.findByRole("alertdialog", { name: "確認並取消重疊的預約？" });
+    expect(dialog).toHaveTextContent("需要退款");
+    expect(dialog).toHaveTextContent("600");
   });
 
   it("a plain-message failure from markBookingPaid opens a NoticeDialog with that sentence", async () => {
