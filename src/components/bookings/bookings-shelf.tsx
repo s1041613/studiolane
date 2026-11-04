@@ -8,7 +8,7 @@
 import { useMemo, useState } from "react";
 import { conflictInfo, isNextDay, money, paymentTag } from "@/server/logic/home-selectors";
 import { shortDateParts } from "@/server/logic/date";
-import { folderKey, rivalText, searchShelfRows, shelfCount, shelfRows, SHELF_SECTIONS } from "@/server/logic/shelf";
+import { DEFAULT_SHELF_FOLDER, folderKey, rivalText, searchShelfRows, shelfCount, shelfRows, SHELF_SECTIONS } from "@/server/logic/shelf";
 import type { ShelfFolder } from "@/server/logic/shelf";
 import { roomToLabel, statusToLabel } from "@/server/supabase/codecs";
 import type { RentalStatusCode, RoomCode } from "@/server/supabase/codecs";
@@ -31,7 +31,7 @@ interface BookingsShelfProps {
 const DEFAULT_INFO_POSITION: InfoPanelPosition = { x: 48, y: 44 };
 
 export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
-  const [folder, setFolder] = useState<ShelfFolder>(SHELF_SECTIONS[0].items[2].folder);
+  const [folder, setFolder] = useState<ShelfFolder>(DEFAULT_SHELF_FOLDER);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [infoId, setInfoId] = useState<string | null>(null);
@@ -206,7 +206,7 @@ function BookingRow({
           <Tooltip>
             <TooltipTrigger
               render={<span tabIndex={-1} />}
-              className="ml-1.5 cursor-default text-xs font-semibold text-warn"
+              className="ml-1.5 cursor-default text-xs font-semibold text-destructive"
             >
               撞單
             </TooltipTrigger>
