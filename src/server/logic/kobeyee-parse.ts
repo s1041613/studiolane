@@ -34,7 +34,7 @@ const DATE_MENTION = z.union([
   z
     .object({
       kind: z.literal("weekday"),
-      week: z.enum(["this", "next"]),
+      week: z.enum(["this", "next", "after_next"]),
       weekday: z.number().int().min(1).max(7),
     })
     .strict(),
@@ -82,6 +82,15 @@ function kobeyeeTask(slots: SlotsSchema) {
         intent: z.literal("availability_question"),
         room: ROOM.nullable(),
         slots,
+      })
+      .strict(),
+    // Staff confirm the listed bookings and press 取消 themselves; the model
+    // only points at them.
+    z
+      .object({
+        intent: z.literal("cancellation"),
+        room: ROOM.nullable(),
+        oldSlots: slots,
       })
       .strict(),
   ]);

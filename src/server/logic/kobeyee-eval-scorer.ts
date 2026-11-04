@@ -69,7 +69,11 @@ function scoreSlots(expected: readonly ParsedSlot[], actual: readonly ParsedSlot
 }
 
 function oldSlotsOf(task: KobeyeeTask | undefined): readonly ParsedSlot[] {
-  return task?.intent === "reschedule" ? task.oldSlots : [];
+  return task?.intent === "reschedule" || task?.intent === "cancellation" ? task.oldSlots : [];
+}
+
+function slotsOf(task: KobeyeeTask | undefined): readonly ParsedSlot[] {
+  return task === undefined || task.intent === "cancellation" ? [] : task.slots;
 }
 
 function purposeOf(task: KobeyeeTask | undefined): string | null | undefined {
@@ -83,8 +87,8 @@ function scoreTask(expected: KobeyeeTask, actual: KobeyeeTask | undefined): Task
     intent: fieldVerdict(expected.intent, actual?.intent),
     room: fieldVerdict(expected.room, actual?.room),
     purpose: expected.intent === "new_rental" ? fieldVerdict(expected.purpose, purposeOf(actual)) : "correct",
-    slotCount: countVerdict(expected.slots.length, actual?.slots.length ?? 0),
-    slots: scoreSlots(expected.slots, actual?.slots ?? []),
+    slotCount: countVerdict(slotsOf(expected).length, slotsOf(actual).length),
+    slots: scoreSlots(slotsOf(expected), slotsOf(actual)),
     oldSlotCount: countVerdict(expectedOldSlots.length, actualOldSlots.length),
     oldSlots: scoreSlots(expectedOldSlots, actualOldSlots),
   };
