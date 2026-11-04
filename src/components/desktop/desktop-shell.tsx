@@ -8,6 +8,7 @@ import { KobeyeeWindow } from "@/components/desktop/kobeyee-window";
 import { KobeyeeCat } from "@/components/desktop/kobeyee-cat";
 import { DesktopWidgets } from "@/components/desktop/desktop-widgets";
 import { isAnyWindowOpen, useDesktopStore } from "@/components/desktop/desktop-store";
+import type { RentalSummary } from "@/server/types/home";
 
 // Blue gradient wallpaper, inspired by classic desktop UIs.
 const WALLPAPER_GRADIENT = [
@@ -17,13 +18,15 @@ const WALLPAPER_GRADIENT = [
 ].join(", ");
 
 interface DesktopShellProps {
+  // The widgets' data; null when the rentals failed to load.
+  rentals: readonly RentalSummary[] | null;
   children: ReactNode;
 }
 
 // Replaces /bookings' page shell: a full-viewport desktop with a menu bar,
 // wallpaper, widgets, a Dock, and the 預約冊 window. `children` is the existing
 // BookingsView, rendered unchanged inside the window.
-function DesktopShell({ children }: DesktopShellProps) {
+function DesktopShell({ rentals, children }: DesktopShellProps) {
   const windowOpen = useDesktopStore((state) => isAnyWindowOpen(state.windows));
 
   return (
@@ -33,7 +36,7 @@ function DesktopShell({ children }: DesktopShellProps) {
         className="absolute inset-0 transition-[filter] duration-300"
         style={{ background: WALLPAPER_GRADIENT, filter: windowOpen ? "blur(22px) brightness(0.75)" : "none" }}
       />
-      <DesktopWidgets hidden={windowOpen} />
+      <DesktopWidgets hidden={windowOpen} rentals={rentals} />
       <MenuBar />
       <BookingsWindow>{children}</BookingsWindow>
       <KobeyeeWindow />

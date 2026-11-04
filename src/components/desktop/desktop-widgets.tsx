@@ -9,6 +9,10 @@ import { MENU_BAR_HEIGHT } from "@/components/desktop/menu-bar";
 import { useDesktopStore } from "@/components/desktop/desktop-store";
 import { WIDGET_KINDS, WIDGET_NAME, WIDGET_SPAN, isWidgetKind } from "@/components/desktop/widget-kinds";
 import type { WidgetKind } from "@/components/desktop/widget-kinds";
+import { TodayWidget } from "@/components/desktop/today-widget";
+import { UnpaidWidget } from "@/components/desktop/unpaid-widget";
+import { useNow } from "@/components/desktop/use-now";
+import type { RentalSummary } from "@/server/types/home";
 
 // Where the grid starts, and the strip kept clear on the right.
 const GRID_LEFT = 32;
@@ -35,18 +39,33 @@ function useColumnCount(): number {
   return widgetColumnsForWidth(width - GRID_LEFT - GRID_RIGHT_CLEARANCE);
 }
 
-function WidgetBody({ kind }: { kind: WidgetKind }) {
-  return <WidgetEyebrow>{WIDGET_NAME[kind]}</WidgetEyebrow>;
+interface WidgetBodyProps {
+  kind: WidgetKind;
+  // Null when the rentals failed to load; each widget then shows —.
+  rentals: readonly RentalSummary[] | null;
+  now: Date | null;
+}
+
+function WidgetBody({ kind, rentals, now }: WidgetBodyProps) {
+  switch (kind) {
+    case "today":
+      return <TodayWidget rentals={rentals} now={now} />;
+    case "unpaid":
+      return <UnpaidWidget rentals={rentals} />;
+    case "free":
+      return <WidgetEyebrow tone="time">{WIDGET_NAME[kind]}</WidgetEyebrow>;
+  }
 }
 
 interface DesktopWidgetsProps {
   hidden: boolean;
+  rentals: readonly RentalSummary[] | null;
 }
 
 // The widget layer on the desktop. Right-click opens the edit menu; in edit
 // mode widgets wobble, drag between cells and show −, the + opens the
 // gallery, and a click on empty desktop (or Esc) ends editing.
-function DesktopWidgets({ hidden }: DesktopWidgetsProps) {
+function DesktopWidgets({ hidden, rentals }: DesktopWidgetsProps) {
   const widgets = useDesktopStore((state) => state.widgets);
   const editing = useDesktopStore((state) => state.editingWidgets);
   const setEditing = useDesktopStore((state) => state.setEditingWidgets);
@@ -54,6 +73,7 @@ function DesktopWidgets({ hidden }: DesktopWidgetsProps) {
   const removeWidget = useDesktopStore((state) => state.removeWidget);
   const moveWidget = useDesktopStore((state) => state.moveWidget);
   const columnCount = useColumnCount();
+  const now = useNow();
   const [hydrated, setHydrated] = React.useState(false);
   const [menuTarget, setMenuTarget] = React.useState<WidgetKind | null>(null);
   const [galleryOpen, setGalleryOpen] = React.useState(false);
@@ -91,7 +111,7 @@ function DesktopWidgets({ hidden }: DesktopWidgetsProps) {
         onRemove={() => removeWidget(kind)}
         removeLabel={`移除「${WIDGET_NAME[kind]}」`}
       >
-        <WidgetBody kind={kind} />
+        <WidgetBody kind={kind} rentals={rentals} now={now} />
       </Widget>
     ),
   }));
@@ -100,7 +120,10 @@ function DesktopWidgets({ hidden }: DesktopWidgetsProps) {
     <ContextMenu>
       <ContextMenuTrigger
         className="absolute inset-0 transition-opacity duration-300"
-        style={{ opacity: hidden || !hydrated ? 0 : 1, pointerEvents: hidden ? "none" : undefined }}
+        // Behind an open window the widgets are faded out and out of reach:
+        // no pointer, no focus, nothing for assistive tech.
+        inert={hidden}
+        style={{ opacity: hidden || !hydrated ? 0 : 1 }}
         onContextMenu={(event) => {
           const id = (event.target as HTMLElement).closest("[data-widget-id]")?.getAttribute("data-widget-id");
           setMenuTarget(isWidgetKind(id) ? id : null);
@@ -149,7 +172,7 @@ function DesktopWidgets({ hidden }: DesktopWidgetsProps) {
           preview: (
             <div style={widgetSlotSize(WIDGET_SPAN[kind])}>
               <Widget label={WIDGET_NAME[kind]} tone={WIDGET_TONE[kind]} editing={false} onRemove={() => {}} removeLabel="">
-                <WidgetBody kind={kind} />
+                <WidgetBody kind={kind} rentals={rentals} now={now} />
               </Widget>
             </div>
           ),

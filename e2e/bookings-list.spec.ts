@@ -137,5 +137,5 @@ test("the title stays 預約冊 across folders, and 上一頁 goes back to 全�
 
   await page.getByRole("button", { name: "上一頁" }).click();
   await expect(grid(page).getByText("林小雨")).toBeVisible();
-  await expect(page.getByText(/^\d+ 筆預約/)).toBeVisible();
+  await expect(window.getByText(/^\d+ 筆預約/)).toBeVisible();
 });

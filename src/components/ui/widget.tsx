@@ -78,9 +78,22 @@ function WidgetAddButton({ label, onClick }: { label: string; onClick: () => voi
   );
 }
 
+// Each widget's label colour: red for today's date, amber on the dark cards
+// for money, violet on the dark cards for time.
+const EYEBROW_TONE = {
+  today: "text-[#ff3b30]",
+  money: "text-[#ffc46b]",
+  time: "text-[#b9b8ff]",
+} as const;
+
 // The small coloured label at a widget's top-left (今日教室's date, 待付款, …).
-function WidgetEyebrow({ className, children }: { className?: string; children: ReactNode }) {
-  return <p className={cn("text-[12.5px] leading-tight font-semibold", className)}>{children}</p>;
+function WidgetEyebrow({ tone, children }: { tone: keyof typeof EYEBROW_TONE; children: ReactNode }) {
+  return <p className={cn("text-[12.5px] leading-tight font-semibold", EYEBROW_TONE[tone])}>{children}</p>;
 }
 
-export { Widget, WidgetAddButton, WidgetEyebrow };
+// A status word that needs staff attention (待確認, 待付款) inside a widget row.
+function WidgetFlag({ children }: { children: ReactNode }) {
+  return <span className="flex-none text-[12px] font-semibold text-[#b85200]">{children}</span>;
+}
+
+export { Widget, WidgetAddButton, WidgetEyebrow, WidgetFlag };
