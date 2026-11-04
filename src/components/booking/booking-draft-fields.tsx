@@ -1,22 +1,19 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { PersonPicker } from "@/components/shared/people/person-picker";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
-import { calendarDateToIso, isoToCalendarDate } from "@/lib/calendar-dates";
-import { checkBooking, isDateDisabled } from "@/server/logic/booking-rules";
+import { checkBooking } from "@/server/logic/booking-rules";
 import { defaultPurposeFor, purposeOptions } from "@/server/logic/purpose-rules";
 import type { PurposeSetting } from "@/server/logic/purpose-rules";
 import { hourlyRate, quoteSlot } from "@/server/logic/pricing";
 import type { PricingPlan, RosterEntry } from "@/server/logic/pricing";
 import type { RentalRule } from "@/server/logic/booking-rules";
-import type { BookingDraft, IsoDate, PaymentChoice, Purpose, RenterSelection, SlotDraft } from "@/server/logic/booking";
+import type { BookingDraft, PaymentChoice, Purpose, RenterSelection, SlotDraft } from "@/server/logic/booking";
 import { DRAFT_FIELDS, type DraftField } from "@/server/logic/kobeyee";
-import { shortDateParts, todayIso } from "@/server/logic/date";
+import { shortDateParts } from "@/server/logic/date";
 import { money } from "@/server/logic/home-selectors";
 import { paymentMethodToLabel, purposeToLabel, roleToLabel } from "@/server/supabase/codecs";
 import type { RentalSummary } from "@/server/types/home";
@@ -68,25 +65,6 @@ function Divider() {
   return <div className="my-2.5 h-px bg-(--eb-desk-hair)" />;
 }
 
-function DateList({ dates, onChange, isDisabled }: { dates: IsoDate[]; onChange: (dates: IsoDate[]) => void; isDisabled: (date: IsoDate) => boolean }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger className="-ml-2 rounded-md px-2 py-1 text-left text-[15px] font-medium hover:bg-foreground/5">
-        {dates.length ? dates.map((d) => shortDateParts(d).monthDay).join("、") : <span className="font-normal text-muted-foreground">選擇日期</span>}
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-0">
-        <Calendar
-          mode="multiple"
-          selected={dates.map(isoToCalendarDate)}
-          disabled={(day) => isDisabled(calendarDateToIso(day))}
-          onSelect={(days) => onChange((days ?? []).map(calendarDateToIso).sort())}
-        />
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 // Times come from the read message, so they show as text, not inputs.
 function SlotRow({ slot, error, amount }: { slot: SlotDraft; error: string | null; amount: number | null }) {
   const { monthDay, weekday } = shortDateParts(slot.date);
@@ -114,7 +92,6 @@ function renterLabel(renter: RenterSelection | null): string {
 export function BookingDraftFields({ draft, onDraftChange, revealed, data }: BookingDraftFieldsProps) {
   const { renter, room, slots, purpose } = draft;
   const ctx = data;
-  const today = todayIso();
   const role = renter ? (renter.type === "roster" ? renter.role : "customer") : null;
   const purposeChoices = role ? purposeOptions(data.purposeSettings, role) : null;
   const rate = renter && purpose ? hourlyRate({ renter, purpose, room }, ctx) : null;
@@ -130,15 +107,10 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
 
   const change = (patch: Partial<BookingDraft>) => onDraftChange({ ...draft, ...patch });
 
-  function changeDates(dates: IsoDate[]) {
-    const byDate = new Map(slots.map((slot) => [slot.date, slot]));
-    change({ slots: dates.map((date) => byDate.get(date) ?? { date, start: "", end: "", isCrossMidnight: false }) });
-  }
-
   return (
     <div className="px-[34px] pt-[22px] pb-6">
       <Row field="renter" label="租借人" revealed={revealed} skeleton={<Bar className="h-7 w-40" />}>
-        <div className="flex items-baseline [&>button]:-ml-2 [&>button]:h-auto [&>button]:w-auto [&>button]:max-w-[340px] [&>button]:py-0.5 [&>button]:text-xl [&>button]:font-semibold">
+        <div className={`flex items-baseline [&>button]:-ml-2 [&>button]:h-auto [&>button]:w-auto [&>button]:max-w-[340px] [&>button]:py-0.5 ${renter ? "[&>button]:text-xl [&>button]:font-semibold" : "[&>button]:text-[15px]"}`}>
           <PersonPicker
             variant="inline"
             people={data.roster}
@@ -160,7 +132,7 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
         <SegmentedControl look="gel" aria-label="教室" options={ROOMS} value={room} onValueChange={(next) => change({ room: next })} />
       </Row>
       <Row field="dates" label="日期" revealed={revealed} skeleton={<Bar className="h-3.5 w-72" />}>
-        <DateList dates={slots.map((slot) => slot.date)} onChange={changeDates} isDisabled={(date) => isDateDisabled(date, today, ctx)} />
+        <p className="pt-1 text-[15px] font-medium">{slots.map((slot) => shortDateParts(slot.date).monthDay).join("、")}</p>
       </Row>
       <Row
         field="times"
