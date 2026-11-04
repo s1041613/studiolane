@@ -20,11 +20,15 @@ const UNREADABLE: KobeyeeExtraction = { status: "unreadable" };
 // that isn't about the model's output — a network failure, a missing or
 // rejected API key — is not one of those cases and is left to throw, so a
 // real outage doesn't masquerade as "nothing to extract".
-export async function extractKobeyeeParse(text: string, today: IsoDate): Promise<KobeyeeExtraction> {
+export async function extractKobeyeeParse(
+  text: string,
+  today: IsoDate,
+  modelId: string = KOBEYEE_MODEL_ID,
+): Promise<KobeyeeExtraction> {
   let output: unknown;
   try {
     const result = await generateText({
-      model: openai(KOBEYEE_MODEL_ID),
+      model: openai(modelId),
       prompt: buildKobeyeePrompt(text, today),
       output: Output.object({ schema: kobeyeeParseSchema }),
     });
