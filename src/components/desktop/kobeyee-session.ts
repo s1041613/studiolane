@@ -14,7 +14,10 @@ export type KobeyeePhase =
   | { kind: "filled"; review: KobeyeeReview }
   // Opened from the Dock: an empty form staff fill in by hand.
   | { kind: "manual" }
-  | { kind: "unreadable" };
+  | { kind: "unreadable" }
+  // The read itself didn't finish; `message` on the session is kept so
+  // `retry` can resend it.
+  | { kind: "failed" };
 
 export interface KobeyeeSession {
   open: boolean;
@@ -36,6 +39,8 @@ export type KobeyeeEvent =
   | { type: "open"; layout: KobeyeeLayout; defaultChatRect: WindowRect }
   | { type: "close" }
   | { type: "send"; text: string }
+  // Resends the kept message after a failed read; only valid from "failed".
+  | { type: "retry" }
   | { type: "resolved"; requestId: number; result: KobeyeeResult }
   | { type: "revealTick" }
   | { type: "revealFinish" }
@@ -89,10 +94,13 @@ export function reduceKobeyee(s: KobeyeeSession, e: KobeyeeEvent): KobeyeeSessio
     }
     case "resolved": {
       if (s.phase.kind !== "reading" || s.phase.requestId !== e.requestId) return s;
+      if (e.result.status === "failed") return { ...s, layout: "chat", phase: { kind: "failed" } };
       const review = e.result.status === "ok" ? e.result.reviews[0] : undefined;
       if (!review) return { ...s, layout: "chat", phase: { kind: "unreadable" } };
       return { ...s, phase: { kind: "filling", review, revealed: 0 }, draft: review.draft };
     }
+    case "retry":
+      return s.phase.kind === "failed" && s.message !== null ? reduceKobeyee(s, { type: "send", text: s.message }) : s;
     case "revealTick": {
       if (s.phase.kind !== "filling") return s;
       const revealed = s.phase.revealed + 1;
@@ -123,10 +131,14 @@ export function revealedCount(phase: KobeyeePhase): number {
 /** Kobeyee's one line in the chat, or null while it has nothing to say. */
 export function kobeyeeLine(phase: KobeyeePhase): string | null {
   if (phase.kind === "unreadable") return "看不懂這則訊息";
+  if (phase.kind === "failed") return "讀取失敗";
   if (phase.kind !== "filling" && phase.kind !== "filled") return null;
   const legal = phase.review.slots.filter((slot) => slot.state === "legal").length;
-  const rest = phase.review.slots.length - legal;
-  return rest > 0 ? `${legal} 段可以，${rest} 段不行` : `${legal} 段可以`;
+  // "incomplete" has no SlotDraft yet (needs a `time` question): it's
+  // neither legal nor rejected, so it's left out of both counts rather
+  // than counted as "不行".
+  const rejected = phase.review.slots.filter((slot) => slot.state === "blocked" || slot.state === "overlap").length;
+  return rejected > 0 ? `${legal} 段可以，${rejected} 段不行` : `${legal} 段可以`;
 }
 
 export const FORM_WIDTH = 600;

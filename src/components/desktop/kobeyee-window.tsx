@@ -46,6 +46,7 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
   const session = useDesktopStore((state) => state.kobeyee);
   const dispatch = useDesktopStore((state) => state.dispatchKobeyee);
   const send = useDesktopStore((state) => state.sendToKobeyee);
+  const retry = useDesktopStore((state) => state.retryKobeyee);
   const reduceMotion = useReducedMotion();
   const [text, setText] = useState("");
 
@@ -65,6 +66,7 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
   const viewport = { width: window.innerWidth };
   const booking = layout === "booking";
   const line = kobeyeeLine(phase);
+  const reading = phase.kind === "reading";
 
   function submit() {
     const trimmed = text.trim();
@@ -134,6 +136,11 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">Kobeyee 說：</p>
                   <p className="text-[15px] font-semibold">{line}</p>
+                  {phase.kind === "failed" && (
+                    <Button type="button" variant="bevel" size="xs" className="mt-2" onClick={() => void retry(reader)}>
+                      再試一次
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -151,7 +158,7 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
                 <Button type="button" variant="ghost" size="xs" className="font-normal text-text-secondary">
                   <ClipboardPasteIcon /> 貼上
                 </Button>
-                <Button type="button" variant="gel" size="icon-xs" className="size-7 rounded-full" aria-label="送出" disabled={!text.trim()} onClick={submit}>
+                <Button type="button" variant="gel" size="icon-xs" className="size-7 rounded-full" aria-label="送出" disabled={reading || !text.trim()} onClick={submit}>
                   <ArrowUpIcon />
                 </Button>
               </div>
