@@ -24,6 +24,7 @@ import {
   kobeyeeLine,
   kobeyeeWindowRect,
   overlapQuestions,
+  needsRenterQuestion,
   readyToCreate,
   renterReply,
   revealedCount,
@@ -235,7 +236,7 @@ function KobeyeeWindow({ reader, submitter, draftTotal, renderBookingForm }: Kob
                     </Said>
                   );
                 })}
-              {review && phase.kind !== "filling" && (
+              {needsRenterQuestion(session) && (
                 <Said>
                   <p className={draft?.renter ? "text-muted-foreground" : undefined}>
                     租借人是誰？在左邊選一下

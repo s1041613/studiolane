@@ -8,6 +8,7 @@ import {
   blockedSlots,
   kobeyeeLead,
   overlapQuestions,
+  needsRenterQuestion,
   readyToCreate,
   renterReply,
   reduceKobeyee,
@@ -193,4 +194,11 @@ describe("creating", () => {
     expect(s.phase).toMatchObject({ kind: "created", count: 1, reply: "r" });
     expect(s.layout).toBe("booking");
   });
+});
+
+it("stops asking for the renter once nothing is left to book", () => {
+  const onlyOverlap: KobeyeeReview = { ...MIXED, slots: [MIXED.slots[3]], draft: { ...REVIEW.draft, slots: [] } };
+  const s = filledWith(onlyOverlap);
+  expect(needsRenterQuestion(s)).toBe(true);
+  expect(needsRenterQuestion(run([{ type: "answerOverlap", slotIndex: 0, answer: "skip" }], s))).toBe(false);
 });
