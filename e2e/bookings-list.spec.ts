@@ -128,12 +128,12 @@ test("rows start oldest date first, and the 日期 header flips the order", asyn
   expect(await dates()).toEqual([...ascending].reverse());
 });
 
-test("picking a folder retitles the window, and 上一頁 goes back to 全部", async ({ page }) => {
+test("the title stays 預約冊 across folders, and 上一頁 goes back to 全部", async ({ page }) => {
   await page.goto("/bookings");
   const window = page.getByRole("dialog", { name: "預約冊" });
 
   await page.getByRole("navigation", { name: "預約冊資料夾" }).getByRole("button", { name: "小教室" }).click();
-  await expect(window.getByText("小教室", { exact: true }).first()).toBeVisible();
+  await expect(window.getByText("預約冊", { exact: true }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "上一頁" }).click();
   await expect(grid(page).getByText("林小雨")).toBeVisible();

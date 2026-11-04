@@ -229,16 +229,6 @@ export function nextShelfSort(current: ShelfSort, key: ShelfSortKey): ShelfSort 
   return { key, direction: current.direction === "ascending" ? "descending" : "ascending" };
 }
 
-// The window title: the selected folders' names. 全部 drops out once a
-// room or status narrows it, since it no longer says anything.
-export function shelfTitle(filter: ShelfFilter): string {
-  const labels = [entryFor("period", filter.period), entryFor("room", filter.room), entryFor("status", filter.status)]
-    .filter((entry): entry is ShelfFolderEntry => entry !== undefined)
-    .map((entry) => entry.label);
-  const narrowed = filter.room !== null || filter.status !== null;
-  return (narrowed && filter.period === "all" ? labels.slice(1) : labels).join("・");
-}
-
 // The status bar: "N 筆預約，M 筆待確認", the second half only when it
 // singles out part of the view.
 export function shelfStatusText(rows: RentalSummary[], q: string): string {

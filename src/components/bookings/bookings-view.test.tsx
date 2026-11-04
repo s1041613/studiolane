@@ -59,18 +59,19 @@ describe("BookingsView", () => {
     expect(headers).toEqual(["日期", "時段", "租借人", "用途", "教室", "狀態", "付款", "金額"]);
   });
 
-  it("titles the toolbar with the folder and walks folder history with 上一頁/下一頁", () => {
+  it("keeps the 預約冊 title and walks folder history with 上一頁/下一頁", () => {
     render(<BookingsView section={{ ok: true, data: [makeRental({ id: "a", date: "2026-11-04", room: "B" })] }} today={TODAY} />);
-    const title = () => screen.getByText((_, el) => el?.tagName === "P" && /^(全部|小教室)$/.test(el.textContent ?? ""));
+    const title = () => screen.getByText((_, el) => el?.tagName === "P" && /^預約冊$/.test(el.textContent ?? ""));
 
-    expect(title()).toHaveTextContent("全部");
+    expect(title()).toHaveTextContent("預約冊");
     expect(screen.getByRole("button", { name: "上一頁" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: /小教室/ }));
-    expect(title()).toHaveTextContent("小教室");
+    expect(title()).toHaveTextContent("預約冊");
+    expect(screen.getByRole("button", { name: "上一頁" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "上一頁" }));
-    expect(title()).toHaveTextContent("全部");
+    expect(title()).toHaveTextContent("預約冊");
     expect(screen.getByRole("button", { name: "下一頁" })).toBeEnabled();
   });
 

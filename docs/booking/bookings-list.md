@@ -116,9 +116,8 @@ sorted header reads bold with a ▲ or ▼.[^shelf][^shelf-logic] Sorting by
 search field in the window's toolbar filters further by renter name or
 rental ID, on top of the current filter.[^search][^shelf-logic]
 
-The window's title is the selected folder (for example `全部`, or
-`大教室・待確認` once a room or status narrows it). The back and forward
-buttons beside it walk the folder selections made in this window, like a
+The window's title is always `預約冊`; the highlighted sidebar folders
+show the current filter. The back and forward buttons beside it walk the folder selections made in this window, like a
 browser's history. The gear button (`取得資訊`) opens the info panel for
 the selected row, or the first row when none is selected. The status bar
 along the bottom reads `N 筆預約，M 筆待確認` for the current view, with
