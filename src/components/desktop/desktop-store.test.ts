@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import { isAnyWindowOpen, useDesktopStore } from "@/components/desktop/desktop-store";
+import { DEFAULT_WIDGETS } from "@/components/desktop/widget-kinds";
 
 const RECT = { x: 10, y: 20, width: 800, height: 600 };
 
 beforeEach(() => {
-  useDesktopStore.setState({ windows: {} });
+  useDesktopStore.setState({ windows: {}, widgets: DEFAULT_WIDGETS, editingWidgets: false });
 });
 
 describe("useDesktopStore", () => {
@@ -48,5 +49,68 @@ describe("useDesktopStore", () => {
 
     useDesktopStore.getState().closeWindow("bookings");
     expect(isAnyWindowOpen(useDesktopStore.getState().windows)).toBe(false);
+  });
+});
+
+describe("desktop widgets", () => {
+  it("starts with the default left two-column stack", () => {
+    expect(useDesktopStore.getState().widgets).toEqual([
+      { kind: "today", column: 0, row: 0 },
+      { kind: "unpaid", column: 0, row: 2 },
+      { kind: "free", column: 1, row: 2 },
+    ]);
+  });
+
+  it("removeWidget takes the widget off the desktop", () => {
+    useDesktopStore.getState().removeWidget("unpaid");
+
+    expect(useDesktopStore.getState().widgets.map((widget) => widget.kind)).toEqual(["today", "free"]);
+  });
+
+  it("addWidget puts the widget in the first free cell", () => {
+    useDesktopStore.getState().removeWidget("unpaid");
+
+    useDesktopStore.getState().addWidget("unpaid", 4);
+
+    expect(useDesktopStore.getState().widgets.at(-1)).toEqual({ kind: "unpaid", column: 2, row: 0 });
+  });
+
+  it("addWidget ignores a widget that is already on the desktop", () => {
+    useDesktopStore.getState().addWidget("today", 4);
+
+    expect(useDesktopStore.getState().widgets).toEqual(DEFAULT_WIDGETS);
+  });
+
+  it("moveWidget changes only that widget's cell", () => {
+    useDesktopStore.getState().moveWidget("free", { column: 3, row: 1 });
+
+    expect(useDesktopStore.getState().widgets).toEqual([
+      { kind: "today", column: 0, row: 0 },
+      { kind: "unpaid", column: 0, row: 2 },
+      { kind: "free", column: 3, row: 1 },
+    ]);
+  });
+
+  it("persists only the widget layout", () => {
+    useDesktopStore.getState().openWindow("bookings", RECT);
+    useDesktopStore.getState().moveWidget("free", { column: 3, row: 1 });
+
+    const stored = JSON.parse(localStorage.getItem("studiolane-desktop") ?? "{}");
+    expect(Object.keys(stored.state)).toEqual(["widgets"]);
+    expect(stored.state.widgets.at(-1)).toEqual({ kind: "free", column: 3, row: 1 });
+  });
+
+  it("drops stored widgets of an unknown kind when rehydrating", async () => {
+    localStorage.setItem(
+      "studiolane-desktop",
+      JSON.stringify({
+        state: { widgets: [{ kind: "week", column: 0, row: 0 }, { kind: "free", column: 2, row: 0 }] },
+        version: 1,
+      }),
+    );
+
+    await useDesktopStore.persist.rehydrate();
+
+    expect(useDesktopStore.getState().widgets).toEqual([{ kind: "free", column: 2, row: 0 }]);
   });
 });
