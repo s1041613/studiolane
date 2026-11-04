@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Window, type WindowRect } from "@/components/ui/window";
 import { useDesktopStore } from "@/components/desktop/desktop-store";
 import { MENU_BAR_HEIGHT } from "@/components/desktop/menu-bar";
+import { CORNER_RIGHT, CORNER_RESERVE_WIDTH } from "@/components/desktop/kobeyee";
 
 export const BOOKINGS_WINDOW_ID = "bookings";
 
@@ -17,8 +18,13 @@ const DOCK_CLEARANCE = 96;
 export function defaultBookingsRect(): WindowRect {
   const width = Math.min(1120, Math.max(640, window.innerWidth - WINDOW_MARGIN * 2));
   const height = Math.max(360, window.innerHeight - MENU_BAR_HEIGHT - DOCK_CLEARANCE - WINDOW_MARGIN);
+  const centeredX = Math.round((window.innerWidth - width) / 2);
+  // Stay clear of the idle Kobeyee cat's corner spot (bottom-right) instead
+  // of letting this window's corner sit under it. The cat renders below
+  // windows in z-order, so an overlap here would cover it.
+  const maxX = window.innerWidth - width - CORNER_RIGHT - CORNER_RESERVE_WIDTH;
   return {
-    x: Math.round((window.innerWidth - width) / 2),
+    x: Math.max(0, Math.min(centeredX, maxX)),
     y: MENU_BAR_HEIGHT + WINDOW_MARGIN,
     width,
     height,
