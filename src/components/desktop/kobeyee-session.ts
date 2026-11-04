@@ -215,6 +215,9 @@ export function readyToRegister(session: KobeyeeSession): boolean {
 
 const ROOM_LABEL = { A: "大教室", B: "小教室" } as const;
 
+// Fictional placeholder until the studio's real account has a settings home.
+const TRANSFER_DETAILS = ["範例銀行（000）", "戶名：範例舞蹈教室", "帳號：000-000-000000", "匯款完成請提供末五碼以利對帳"];
+
 /** The reply staff copy to the renter after 確認登記; never sent by Kobeyee. */
 export function renterReply(session: KobeyeeSession, total: number | null): string {
   const { phase, draft } = session;
@@ -229,6 +232,7 @@ export function renterReply(session: KobeyeeSession, total: number | null): stri
   ];
   if (refused.length > 0) lines.push("", "以下時段不行：", ...refused);
   if (draft.payment === "on_site") lines.push("", "費用當天到櫃檯繳交即可");
+  else if (total !== null && total > 0) lines.push("", ...TRANSFER_DETAILS);
   return lines.join("\n");
 }
 
