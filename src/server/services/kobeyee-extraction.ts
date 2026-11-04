@@ -3,6 +3,7 @@ import { generateText, NoObjectGeneratedError, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import type { IsoDate } from "@/server/logic/booking";
 import { kobeyeeParseSchema, kobeyeeParseWithCapSchema, type KobeyeeParse } from "@/server/logic/kobeyee-parse";
+import { dedupeKobeyeeParse } from "@/server/logic/kobeyee-parse-dedupe";
 import { buildKobeyeePrompt } from "@/server/services/kobeyee-prompt";
 
 // Cheap and fast; the eval harness (pnpm eval:ai) is how a stronger model
@@ -44,5 +45,5 @@ export async function extractKobeyeeParse(
   const capped = kobeyeeParseWithCapSchema.safeParse(output);
   if (!capped.success) return UNREADABLE;
   if (capped.data.tasks.length === 0) return UNREADABLE;
-  return { status: "ok", parse: capped.data };
+  return { status: "ok", parse: dedupeKobeyeeParse(capped.data) };
 }
