@@ -25,6 +25,10 @@ const PURPOSE_LABEL: Record<PurposeCode, string> = {
   yoga: "瑜珈",
 };
 
+// The single source for "every PurposeCode" — a Zod enum or a <select>'s
+// option list reads this instead of hand-copying the union above.
+export const PURPOSE_CODES = Object.keys(PURPOSE_LABEL) as [PurposeCode, ...PurposeCode[]];
+
 export function purposeToLabel(code: PurposeCode): string {
   return PURPOSE_LABEL[code];
 }
