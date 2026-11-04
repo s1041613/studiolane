@@ -194,7 +194,8 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
           aria-label="備註"
           value={draft.note ?? ""}
           onChange={(e) => change({ note: e.target.value || undefined })}
-          className="-ml-2 min-h-0 resize-none border-transparent bg-transparent px-2 py-1 text-[14.5px] hover:border-transparent hover:bg-foreground/5 focus-visible:border-(--eb-desk-accent-edge) focus-visible:bg-(--eb-desk-field)"
+          // A visible field at rest: staff should see it takes typing without hovering.
+          className="min-h-0 resize-none rounded-md border-0 bg-(--eb-desk-field) px-2.5 py-1.5 text-sm shadow-[inset_0_1px_2px_rgb(40_60_90/.2),0_0_0_1px_var(--eb-desk-edge)] hover:border-0 focus-visible:shadow-[inset_0_1px_2px_rgb(40_60_90/.2),0_0_0_1px_var(--eb-desk-accent-edge),0_0_0_3px_rgb(31_111_214/.25)] focus-visible:ring-0"
         />
       </Row>
       <Divider />
