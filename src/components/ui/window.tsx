@@ -31,13 +31,13 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
-// A floating, draggable, resizable panel with Finder-style chrome (traffic
-// lights, centered title). Position and size are read from `rect` and
-// written back only when a drag or resize ends; while one is in progress
-// this mutates the DOM node directly instead of round-tripping through React
-// state, the same approach the step1 mockup's drag script uses. All of that
-// imperative DOM work is wired up inside an effect — the escape hatch the
-// React Compiler expects for anything that isn't pure rendering.
+// A floating, draggable, resizable panel with file-browser-style chrome
+// (traffic lights, centered title). Position and size are read from `rect`
+// and written back only when a drag or resize ends; while one is in
+// progress this mutates the DOM node directly instead of round-tripping
+// through React state. All of that imperative DOM work is wired up inside
+// an effect — the escape hatch the React Compiler expects for anything that
+// isn't pure rendering.
 function Window({
   title,
   open,
@@ -186,10 +186,9 @@ function Window({
           exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.97 }}
           transition={{ duration: reduceMotion ? 0.05 : 0.22, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* Finder-style toolbar (`.f-tb`): brushed-metal gradient, gel
-              traffic lights, left-aligned title — the step1 mockup's
-              `.win.finder .f-tb`, trimmed to just lights + title (no
-              sidebar/search/nav buttons; those aren't part of v1). */}
+          {/* File-browser-style toolbar: brushed-metal gradient, gel
+              traffic lights, left-aligned title (no sidebar/search/nav
+              buttons; those aren't part of v1). */}
           <div
             ref={titleBarRef}
             className="relative z-[3] flex h-10 flex-none items-center gap-2 py-0 pr-2.5 pl-3 select-none"
@@ -207,9 +206,8 @@ function Window({
             </p>
           </div>
           <div className="min-h-0 flex-1 overflow-auto">{children}</div>
-          {/* `.win::after`'s inset gloss hairline, ported as a sibling
-              overlay (z-50) instead of a pseudo-element so it still shows
-              over the opaque toolbar, same as the mockup. */}
+          {/* Inset gloss hairline, as a sibling overlay (z-50) instead of
+              a pseudo-element so it still shows over the opaque toolbar. */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-50 rounded-[10px]"

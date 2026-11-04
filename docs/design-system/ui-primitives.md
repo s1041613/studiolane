@@ -268,7 +268,7 @@ bar.[^nav-items]
 
 # Window, Traffic Lights, and Dock
 
-`Window` is a floating, draggable, resizable panel with Finder-style
+`Window` is a floating, draggable, resizable panel with file-browser-style
 chrome: a title bar with `TrafficLights` and a centered title, three resize
 handles, and Esc-to-close.[^window] Position and size are read from a
 `rect` prop and written back only when a drag or resize ends.

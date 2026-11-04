@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import { cn } from "cn";
 
-// The floating icon bar at the bottom of the desktop: the step1 mockup's
-// resolved "current macOS" `.dock` override (frosted glass, one hairline
-// edge, no pinstripes).
+// The floating icon bar at the bottom of the desktop: frosted glass, one
+// hairline edge, no pinstripes.
 function Dock({ children }: { children: ReactNode }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-2.5 z-40 flex justify-center">
