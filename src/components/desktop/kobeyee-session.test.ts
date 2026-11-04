@@ -3,7 +3,6 @@ import {
   FORM_WIDTH,
   INITIAL_KOBEYEE_SESSION,
   kobeyeeLine,
-  rejectedSlotLines,
   kobeyeeWindowRect,
   reduceKobeyee,
   type KobeyeeEvent,
@@ -120,7 +119,7 @@ describe("kobeyeeLine", () => {
         { state: "blocked", slot: SLOT, reason: "x", quote: "q", inferred: { year: false } },
       ],
     };
-    expect(kobeyeeLine({ kind: "filled", review })).toBe("1 段可以，1 段不行");
+    expect(kobeyeeLine({ kind: "filled", review })).toBe("1 段可以，1 段x");
   });
 });
 
@@ -145,17 +144,15 @@ describe("kobeyeeWindowRect", () => {
   });
 });
 
-describe("rejectedSlotLines", () => {
-  it("lists blocked and overlapping slots with their reason, skipping legal and incomplete", () => {
-    const review: KobeyeeReview = {
-      ...REVIEW,
-      slots: [
-        { state: "legal", slot: SLOT, quote: "q", inferred: { year: false } },
-        { state: "incomplete", date: "2026-01-01", start: null, end: null, quote: "q", inferred: { year: false } },
-        { state: "blocked", slot: SLOT, reason: "已過期", quote: "q", inferred: { year: false } },
-        { state: "overlap", slot: SLOT, conflicts: [], quote: "q", inferred: { year: false } },
-      ],
-    };
-    expect(rejectedSlotLines({ kind: "filled", review })).toEqual(["1/1 10:00-11:00 已過期", "1/1 10:00-11:00 時間重疊"]);
-  });
+
+it("counts rejected slots per reason", () => {
+  const review: KobeyeeReview = {
+    ...REVIEW,
+    slots: [
+      { state: "blocked", slot: SLOT, reason: "已過期", quote: "q", inferred: { year: false } },
+      { state: "blocked", slot: SLOT, reason: "已過期", quote: "q", inferred: { year: false } },
+      { state: "overlap", slot: SLOT, conflicts: [], quote: "q", inferred: { year: false } },
+    ],
+  };
+  expect(kobeyeeLine({ kind: "filled", review })).toBe("0 段可以，2 段已過期，1 段時間重疊");
 });
