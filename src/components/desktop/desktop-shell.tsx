@@ -6,7 +6,7 @@ import { DockBar } from "@/components/desktop/dock-bar";
 import { BookingsWindow } from "@/components/desktop/bookings-window";
 import { isAnyWindowOpen, useDesktopStore } from "@/components/desktop/desktop-store";
 
-// Aqua blue, ported from the step1 mockup's `--wall-aqua` token.
+// Blue gradient wallpaper, inspired by classic desktop UIs.
 const WALLPAPER_GRADIENT = [
   "radial-gradient(120% 60% at 30% 120%, rgba(120,200,255,.55), rgba(120,200,255,0) 60%)",
   "radial-gradient(90% 40% at 80% 30%, rgba(90,170,255,.45), rgba(90,170,255,0) 70%)",

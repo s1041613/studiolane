@@ -29,9 +29,9 @@ interface BookingsWindowProps {
   children: ReactNode;
 }
 
-// The one v1 window: Finder-style chrome around the existing BookingsView,
-// unchanged. Opens by default so /bookings reads the same as before the
-// desktop shell existed.
+// The one v1 window: file-browser-style chrome around the existing
+// BookingsView, unchanged. Opens by default so /bookings reads the same as
+// before the desktop shell existed.
 function BookingsWindow({ children }: BookingsWindowProps) {
   const windowState = useDesktopStore((state) => state.windows[BOOKINGS_WINDOW_ID]);
   const openWindow = useDesktopStore((state) => state.openWindow);
@@ -56,9 +56,9 @@ function BookingsWindow({ children }: BookingsWindowProps) {
       topInset={MENU_BAR_HEIGHT}
     >
       <div className="flex min-h-full flex-col gap-6 p-4">
-        {/* The Finder titlebar already shows 預約冊 (minimal copy: no second
-            visible heading). This h1 stays for the accessibility tree and
-            for the bookings-list e2e spec's heading assertion. */}
+        {/* The window's title bar already shows 預約冊 (minimal copy: no
+            second visible heading). This h1 stays for the accessibility
+            tree and for the bookings-list e2e spec's heading assertion. */}
         <h1 className="sr-only">預約列表</h1>
         {children}
       </div>

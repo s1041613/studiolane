@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/ui/logo";
 
-// The menu bar's height in pixels (the step1 mockup's resolved `.menubar`
-// height, after its Aqua override); Dock/Window layout reads this constant
+// The menu bar's height in pixels; Dock/Window layout reads this constant
 // so a window can never be dragged above it.
 export const MENU_BAR_HEIGHT = 24;
 

@@ -1,13 +1,9 @@
 import { cn } from "cn";
 
-// The three window-control dots in a title bar, styled as the Aqua
-// (2001-2003) metallic gel spheres from the step1 mockup's `.light` override
-// (docs/desktop-booking-v1/mockups/step1-shell.html). Values below are the
-// browser's resolved background/box-shadow for `.light.close/.min/.max`,
-// not the mockup's `color-mix()` source — the cascade already settled which
-// override wins, so this ports the computed result. Only close does
-// anything in v1; min/max are decorative placeholders until a later step
-// gives them a job (minimize, full screen).
+// The three window-control dots in a title bar, styled as glossy gel
+// spheres (red/yellow/green roles). Only close does anything in v1;
+// min/max are decorative placeholders until a later step gives them a job
+// (minimize, full screen).
 interface TrafficLightsProps {
   onClose: () => void;
   closeLabel?: string;
@@ -19,21 +15,21 @@ type LightTone = "close" | "min" | "max";
 const LIGHT_STYLE: Record<LightTone, { background: string; boxShadow: string }> = {
   close: {
     background:
-      "radial-gradient(circle at 35% 28%, #fff 0, #fff 8%, oklch(0.86212 0.0884098 26.3652) 22%, #ff5f57 55%, oklch(0.485526 0.137484 26.3652) 100%)",
+      "radial-gradient(circle at 35% 28%, #fff 0, #fff 8%, oklch(0.85012 0.08841 33.3644) 22%, #fa5e3e 55%, oklch(0.473526 0.137484 33.3644) 100%)",
     boxShadow:
-      "inset 0 0 0 0.6px oklch(0.381484 0.108023 26.3652), inset 0 -1.5px 2px oklch(0.816162 0.117863 26.3652), inset 0 1px 1.5px rgba(0,0,0,0.18), 0 0.5px 1px rgba(0,0,0,0.3)",
+      "inset 0 0 0 0.6px oklch(0.381484 0.108023 33.3644), inset 0 -1.5px 2px oklch(0.816162 0.117863 33.3644), inset 0 1px 1.5px rgba(0,0,0,0.18), 0 0.5px 1px rgba(0,0,0,0.3)",
   },
   min: {
     background:
-      "radial-gradient(circle at 35% 28%, #fff 0, #fff 8%, oklch(0.925649 0.0725765 80.8979) 22%, #febc2e 55%, oklch(0.584348 0.112854 80.8979) 100%)",
+      "radial-gradient(circle at 35% 28%, #fff 0, #fff 8%, oklch(0.937649 0.072577 73.9111) 22%, #ffbb3c 55%, oklch(0.471131 0.088671 73.9111) 100%)",
     boxShadow:
-      "inset 0 0 0 0.6px oklch(0.459131 0.0886711 80.8979), inset 0 -1.5px 2px oklch(0.900868 0.096752 80.8979), inset 0 1px 1.5px rgba(0,0,0,0.18), 0 0.5px 1px rgba(0,0,0,0.3)",
+      "inset 0 0 0 0.6px oklch(0.459131 0.0886711 73.9111), inset 0 -1.5px 2px oklch(0.900868 0.096752 73.9111), inset 0 1px 1.5px rgba(0,0,0,0.18), 0 0.5px 1px rgba(0,0,0,0.3)",
   },
   max: {
     background:
-      "radial-gradient(circle at 35% 28%, #fff 0, #fff 8%, oklch(0.877609 0.0978174 144.705) 22%, #28c840 55%, oklch(0.50962 0.152118 144.705) 100%)",
+      "radial-gradient(circle at 35% 28%, #fff 0, #fff 8%, oklch(0.865609 0.097817 152.7116) 22%, #00c75a 55%, oklch(0.388415 0.119521 152.7116) 100%)",
     boxShadow:
-      "inset 0 0 0 0.6px oklch(0.400415 0.119521 144.705), inset 0 -1.5px 2px oklch(0.836814 0.130407 144.705), inset 0 1px 1.5px rgba(0,0,0,0.18), 0 0.5px 1px rgba(0,0,0,0.3)",
+      "inset 0 0 0 0.6px oklch(0.400415 0.119521 152.7116), inset 0 -1.5px 2px oklch(0.836814 0.130407 152.7116), inset 0 1px 1.5px rgba(0,0,0,0.18), 0 0.5px 1px rgba(0,0,0,0.3)",
   },
 };
 
