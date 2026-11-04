@@ -4,7 +4,6 @@ import { useState, type ReactNode } from "react";
 import { PersonPicker } from "@/components/shared/people/person-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,17 +87,16 @@ function DateList({ dates, onChange, isDisabled }: { dates: IsoDate[]; onChange:
   );
 }
 
-function SlotRow({ slot, error, amount, onChange }: { slot: SlotDraft; error: string | null; amount: number | null; onChange: (slot: SlotDraft) => void }) {
+// Times come from the read message, so they show as text, not inputs.
+function SlotRow({ slot, error, amount }: { slot: SlotDraft; error: string | null; amount: number | null }) {
   const { monthDay, weekday } = shortDateParts(slot.date);
   return (
-    <div className={`grid h-[35px] grid-cols-[118px_150px_1fr_auto] items-center text-sm ${error ? "font-semibold" : ""}`}>
+    <div data-slot-row className={`grid h-[35px] grid-cols-[118px_150px_1fr_auto] items-center text-sm ${error ? "font-semibold" : ""}`}>
       <span>
         {monthDay} <small className="text-[13px] text-muted-foreground">{weekday}</small>
       </span>
-      <span className="flex items-center">
-        <Input variant="inline" controlSize="inline" className="w-[52px] px-1" aria-label={`${monthDay} 開始`} value={slot.start} onChange={(e) => onChange({ ...slot, start: e.target.value })} />
-        <span>–</span>
-        <Input variant="inline" controlSize="inline" className="w-[52px] px-1" aria-label={`${monthDay} 結束`} value={slot.end} onChange={(e) => onChange({ ...slot, end: e.target.value })} />
+      <span>
+        {slot.start} – {slot.end}
       </span>
       <span className="ml-2.5 text-[11.5px] font-bold text-warn">{error}</span>
       <span className="text-right text-text-secondary">{amount !== null && money(amount)}</span>
@@ -186,7 +184,6 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
               slot={slot}
               error={error}
               amount={amount}
-              onChange={(next) => change({ slots: slots.map((s) => (s.date === slot.date ? next : s)) })}
             />
           ))}
         </div>
