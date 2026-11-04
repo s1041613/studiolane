@@ -178,6 +178,18 @@ describe("confirmBooking", () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
+  it("with a paid rival whose amount changed since review, refuses ABORTED and writes nothing", async () => {
+    const reviewed = makeRental({ id: "rival", date: FUTURE_DATE, start: "10:00", end: "11:00", room: "A", status: RentalStatus.Registered, paymentState: PaymentState.Paid, amount: 0 });
+    const mine = makeRental({ id: "r1", date: FUTURE_DATE, start: "10:30", end: "11:30", room: "A", status: RentalStatus.Pending });
+    data.rentals = [{ ...reviewed, amount: 600 }, mine];
+
+    const result = unseal(await confirmBooking("r1", [rivalSnapshot(reviewed)]));
+
+    expect(result).toMatchObject({ ok: false, error: { code: "ABORTED" } });
+    expect(data.confirmWithCancellations).not.toHaveBeenCalled();
+    expect(data.transition).not.toHaveBeenCalled();
+  });
+
   it("refuses NOT_FOUND for an unknown id", async () => {
     const result = unseal(await confirmBooking("missing"));
     expect(result).toEqual({ ok: false, error: { kind: "message", code: "NOT_FOUND", message: "找不到這筆預約", errorId: ERROR_ID } });
