@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { RentalRepository } from "@/server/repositories/rental-repository";
 import { loadSection } from "@/server/services/section";
 import { bookingListFilters } from "@/server/logic/bookings";
+import { todayIso } from "@/server/logic/date";
 import { BookingsView } from "@/components/bookings/bookings-view";
 import { requirePageAccess } from "@/server/auth/require-staff";
 import { DesktopShell } from "@/components/desktop/desktop-shell";
@@ -21,7 +22,7 @@ export default async function BookingsPage(props: PageProps<"/bookings">) {
 
   return (
     <DesktopShell>
-      <BookingsView section={section} filters={filters} />
+      <BookingsView section={section} filters={filters} today={todayIso()} />
     </DesktopShell>
   );
 }

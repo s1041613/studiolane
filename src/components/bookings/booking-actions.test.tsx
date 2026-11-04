@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { BookingActions } from "@/components/bookings/booking-actions";
@@ -7,9 +8,9 @@ import { PaymentState, RentalStatus } from "@/server/types/home";
 import type { RentalSummary } from "@/server/types/home";
 import type { ServerResult } from "@/lib/result";
 
-// base-ui's Popover (the "⋯" menu) positions via ResizeObserver, which
-// jsdom lacks; see src/components/shared/people/person-picker.test.tsx for
-// the same stub.
+// base-ui's Menu (the 狀態 trigger's dropdown) positions via ResizeObserver,
+// which jsdom lacks; see src/components/shared/people/person-picker.test.tsx
+// for the same stub.
 class StubResizeObserver {
   observe() {}
   unobserve() {}
@@ -35,14 +36,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((res) => {
-    resolve = res;
-  });
-  return { promise, resolve };
-}
-
 const OK: ServerResult<null> = { ok: true, data: null };
 
 function errored(code: string, message: string): ServerResult<null> {
@@ -64,8 +57,15 @@ function blockers(): ServerResult<null, { blockers: { conflicts: RentalSummary[]
   };
 }
 
-function openEndMenu() {
-  fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
+// BookingActions' open state is controlled by its row (bookings-shelf.tsx);
+// this harness plays that role for the test.
+function Harness({ rental, allRentals = [rental] }: { rental: RentalSummary; allRentals?: RentalSummary[] }) {
+  const [open, setOpen] = useState(false);
+  return <BookingActions rental={rental} allRentals={allRentals} open={open} onOpenChange={setOpen} />;
+}
+
+function openMenu(label: string) {
+  fireEvent.click(screen.getByRole("button", { name: `狀態 ${label}` }));
 }
 
 beforeEach(() => {
@@ -76,44 +76,81 @@ beforeEach(() => {
   actions.cancelBooking.mockResolvedValue(OK);
 });
 
-describe("BookingActions: visibility follows allowedActions", () => {
-  it("a pending booking shows 確認 and a ⋯ menu with 延期/取消", async () => {
-    render(<BookingActions rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
-    expect(screen.getByRole("button", { name: "確認" })).toBeInTheDocument();
-    openEndMenu();
-    expect(await screen.findByText("延期")).toBeInTheDocument();
-    expect(screen.getByText("取消")).toBeInTheDocument();
+describe("BookingActions: the 狀態 trigger follows allowedActions", () => {
+  it("a pending booking's menu offers 確認, 延期… and 取消…", async () => {
+    render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
+
+    openMenu("待確認");
+
+    expect(await screen.findByRole("menuitem", { name: "確認" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "延期…" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "取消…" })).toBeInTheDocument();
   });
 
-  it("an awaiting-payment booking shows 標記已付款", () => {
-    render(<BookingActions rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.AwaitingPayment })} />);
-    expect(screen.getByRole("button", { name: "標記已付款" })).toBeInTheDocument();
+  it("an awaiting-payment booking's menu offers 標記已付款", async () => {
+    render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.AwaitingPayment })} />);
+
+    openMenu("待付款");
+
+    expect(await screen.findByRole("menuitem", { name: "標記已付款" })).toBeInTheDocument();
   });
 
-  it("renders nothing for a completed, postponed or cancelled booking", () => {
+  it("a completed, postponed or cancelled booking shows plain text with no trigger", () => {
     for (const status of [RentalStatus.Completed, RentalStatus.Postponed, RentalStatus.Cancelled]) {
-      const { container, unmount } = render(<BookingActions rental={makeRental({ id: "r1", date: "2099-06-01", status })} />);
-      expect(container).toBeEmptyDOMElement();
+      const { unmount } = render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status })} />);
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
       unmount();
     }
   });
+
+  it("a clashing row's 確認 item is disabled and reads the rival instead", async () => {
+    const rental = makeRental({
+      id: "r1",
+      date: "2099-06-01",
+      start: "08:00",
+      end: "09:00",
+      room: "A",
+      status: RentalStatus.Pending,
+      createdAt: "2026-01-02T00:00:00Z",
+    });
+    const rival = makeRental({
+      id: "r2",
+      person: "示範對手",
+      date: "2099-06-01",
+      start: "08:30",
+      end: "09:30",
+      room: "A",
+      status: RentalStatus.Pending,
+      createdAt: "2026-01-01T00:00:00Z",
+    });
+
+    render(<Harness rental={rental} allRentals={[rental, rival]} />);
+    openMenu("待確認");
+
+    const rivalItem = await screen.findByRole("menuitem", { name: /示範對手/ });
+    expect(rivalItem).toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByRole("menuitem", { name: "確認" })).not.toBeInTheDocument();
+  });
 });
 
-describe("BookingActions: primary button", () => {
-  it("確認 success calls confirmBooking and shows no dialog", async () => {
-    render(<BookingActions rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
+describe("BookingActions: primary menu items", () => {
+  it("確認 success calls confirmBooking and closes the menu with no dialog", async () => {
+    render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "確認" }));
+    openMenu("待確認");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "確認" }));
 
     await waitFor(() => expect(actions.confirmBooking).toHaveBeenCalledWith("r1"));
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
   it("a blockers failure from confirmBooking opens a NoticeDialog listing the rival, OK only", async () => {
     actions.confirmBooking.mockResolvedValue(blockers());
-    render(<BookingActions rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
+    render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "確認" }));
+    openMenu("待確認");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "確認" }));
 
     const dialog = await screen.findByRole("alertdialog", { name: "不能確認" });
     expect(dialog).toHaveTextContent("跟 1 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認");
@@ -124,9 +161,10 @@ describe("BookingActions: primary button", () => {
 
   it("a plain-message failure from markBookingPaid opens a NoticeDialog with that sentence", async () => {
     actions.markBookingPaid.mockResolvedValue(errored("FAILED_PRECONDITION", "跟已登記的預約重疊：示範小明 2099-06-01 10:00–11:00"));
-    render(<BookingActions rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.AwaitingPayment })} />);
+    render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.AwaitingPayment })} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "標記已付款" }));
+    openMenu("待付款");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "標記已付款" }));
 
     const dialog = await screen.findByRole("alertdialog", { name: "不能標記已付款" });
     expect(dialog).toHaveTextContent("跟已登記的預約重疊");
@@ -134,7 +172,7 @@ describe("BookingActions: primary button", () => {
 });
 
 describe("BookingActions: postpone / cancel", () => {
-  it("取消 opens a ConfirmDialog with the refund warning when the booking is paid", async () => {
+  it("取消… opens a ConfirmDialog with the refund warning when the booking is paid", async () => {
     const rental = makeRental({
       id: "r1",
       date: "2099-06-01",
@@ -142,22 +180,22 @@ describe("BookingActions: postpone / cancel", () => {
       paymentState: PaymentState.Paid,
       amount: 600,
     });
-    render(<BookingActions rental={rental} />);
+    render(<Harness rental={rental} />);
 
-    openEndMenu();
-    fireEvent.click(await screen.findByText("取消"));
+    openMenu("已登記");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "取消…" }));
 
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("需要退款");
     expect(dialog).toHaveTextContent("600");
   });
 
-  it("取消 opens a ConfirmDialog with no refund warning for an unpaid booking", async () => {
+  it("取消… opens a ConfirmDialog with no refund warning for an unpaid booking", async () => {
     const rental = makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending });
-    render(<BookingActions rental={rental} />);
+    render(<Harness rental={rental} />);
 
-    openEndMenu();
-    fireEvent.click(await screen.findByText("取消"));
+    openMenu("待確認");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "取消…" }));
 
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).not.toHaveTextContent("需要退款");
@@ -166,10 +204,10 @@ describe("BookingActions: postpone / cancel", () => {
   it("a failed cancelBooking keeps the ConfirmDialog open with the error inline, not a NoticeDialog", async () => {
     actions.cancelBooking.mockResolvedValue(errored("ABORTED", "這筆預約的狀態已經變動，請重新整理後再試一次"));
     const rental = makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending });
-    render(<BookingActions rental={rental} />);
+    render(<Harness rental={rental} />);
 
-    openEndMenu();
-    fireEvent.click(await screen.findByText("取消"));
+    openMenu("待確認");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "取消…" }));
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(screen.getByRole("button", { name: /確定取消/ }));
 
@@ -179,35 +217,12 @@ describe("BookingActions: postpone / cancel", () => {
 
   it("a successful postponeBooking closes the dialog", async () => {
     const rental = makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending });
-    render(<BookingActions rental={rental} />);
+    render(<Harness rental={rental} />);
 
-    openEndMenu();
-    fireEvent.click(await screen.findByText("延期"));
+    openMenu("待確認");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "延期…" }));
     fireEvent.click(screen.getByRole("button", { name: /確定延期/ }));
 
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
-  });
-});
-
-describe("BookingActions: the primary button's own click guard", () => {
-  // The ActionGroup wrapper matters once a row has more than one
-  // ActionButton sharing it; today the primary button is the only one
-  // (ConfirmDialog's confirm button owns its own pending separately), so
-  // this exercises action-button.tsx's guard through this component rather
-  // than in isolation (already covered by action-button.test.tsx).
-  it("disables itself and ignores a repeat click while the action is in flight", async () => {
-    const work = deferred<ServerResult<null>>();
-    actions.confirmBooking.mockReturnValue(work.promise);
-    render(<BookingActions rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
-
-    const confirmButton = screen.getByRole("button", { name: "確認" });
-    fireEvent.click(confirmButton);
-    await waitFor(() => expect(confirmButton).toBeDisabled());
-
-    fireEvent.click(confirmButton);
-    expect(actions.confirmBooking).toHaveBeenCalledTimes(1);
-
-    work.resolve(OK);
-    await waitFor(() => expect(confirmButton).not.toBeDisabled());
   });
 });
