@@ -164,14 +164,15 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
       setSelectedId(rows[next === -1 ? 0 : next].id);
       return;
     }
-    if (event.key === "Enter" && selectedId) {
+    if (event.key === "Enter" && selectedId && rows.some((r) => r.id === selectedId)) {
       event.preventDefault();
       openInfo(selectedId);
       return;
     }
-    if (event.key === "Escape") {
+    if (event.key === "Escape" && (openMenuId || infoId)) {
+      event.preventDefault();
       if (openMenuId) setOpenMenuId(null);
-      else if (infoId) setInfoId(null);
+      else setInfoId(null);
     }
   }
 
@@ -319,7 +320,7 @@ function BookingRow({
         {clashing && (
           <Tooltip>
             <TooltipTrigger
-              render={<span tabIndex={-1} />}
+              render={<span tabIndex={0} />}
               className="ml-[7px] cursor-default text-[11px] font-semibold tracking-[.01em] text-destructive"
             >
               撞單
