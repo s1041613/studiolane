@@ -4,12 +4,18 @@ import {
   INITIAL_KOBEYEE_SESSION,
   kobeyeeLine,
   kobeyeeWindowRect,
-  missingDraftFields,
+  acknowledgedConflictIds,
+  blockedSlots,
+  kobeyeeLead,
+  overlapQuestions,
+  readyToRegister,
+  renterReply,
   reduceKobeyee,
   type KobeyeeEvent,
   type KobeyeeSession,
 } from "@/components/desktop/kobeyee-session";
 import type { SlotDraft } from "@/server/logic/booking";
+import { RentalStatus } from "@/server/types/home";
 import { DRAFT_FIELDS, type KobeyeeResult, type KobeyeeReview } from "@/server/logic/kobeyee";
 
 const CHAT = { x: 1000, y: 120, width: 440, height: 560 };
@@ -111,17 +117,6 @@ describe("kobeyeeLine", () => {
     expect(kobeyeeLine({ kind: "failed" })).toBe("讀取失敗");
   });
 
-  it("leaves incomplete slots out of both the legal and rejected counts", () => {
-    const review: KobeyeeReview = {
-      ...REVIEW,
-      slots: [
-        { state: "legal", slot: SLOT, quote: "q", inferred: { year: false } },
-        { state: "incomplete", date: "2026-01-01", start: null, end: null, quote: "q", inferred: { year: false } },
-        { state: "blocked", slot: SLOT, reason: "x", quote: "q", inferred: { year: false } },
-      ],
-    };
-    expect(kobeyeeLine({ kind: "filled", review })).toBe("1 段可以，1 段x");
-  });
 });
 
 describe("kobeyeeWindowRect", () => {
@@ -146,40 +141,56 @@ describe("kobeyeeWindowRect", () => {
 });
 
 
-it("counts rejected slots per reason", () => {
-  const review: KobeyeeReview = {
-    ...REVIEW,
-    slots: [
-      { state: "blocked", slot: SLOT, reason: "已過期", quote: "q", inferred: { year: false } },
-      { state: "blocked", slot: SLOT, reason: "已過期", quote: "q", inferred: { year: false } },
-      { state: "overlap", slot: SLOT, conflicts: [], quote: "q", inferred: { year: false } },
-    ],
-  };
-  expect(kobeyeeLine({ kind: "filled", review })).toBe("0 段可以，2 段已過期，1 段時間重疊");
+const RIVAL = { id: "h1", date: "2026-01-01", start: "09:30", end: "10:30", renterName: "陳大樹", status: RentalStatus.Pending };
+const MIXED: KobeyeeReview = {
+  ...REVIEW,
+  slots: [
+    { state: "legal", slot: SLOT, quote: "q", inferred: { year: false } },
+    { state: "incomplete", date: "2026-01-01", start: null, end: null, quote: "q", inferred: { year: false } },
+    { state: "blocked", slot: { ...SLOT, date: "2026-01-03" }, reason: "場地保養", quote: "q", inferred: { year: false } },
+    { state: "overlap", slot: { ...SLOT, date: "2026-01-02" }, conflicts: [RIVAL], quote: "q", inferred: { year: false } },
+  ],
+  draft: { ...REVIEW.draft, slots: [SLOT] },
+};
+const RENTER = { type: "roster", id: "p1", name: "林小雨", role: "teacher" } as const;
+
+function filledWith(review: KobeyeeReview): KobeyeeSession {
+  const s = run([{ type: "send", text: "hi" }], opened);
+  return run([{ type: "resolved", requestId: s.requestSeq, result: { status: "ok", reviews: [review] } }, { type: "revealFinish" }], s);
+}
+
+describe("conversation lines", () => {
+  it("leads with bookable and blocked counts, leaving overlap and incomplete out", () => {
+    expect(kobeyeeLead(MIXED)).toBe("1 段可以，1 段不行");
+    expect(blockedSlots(MIXED)).toEqual([{ label: "1/3（六）10:00–11:00", reason: "場地保養" }]);
+    expect(overlapQuestions(MIXED)).toEqual([{ slotIndex: 3, text: "1/2（五）10:00–11:00 跟 陳大樹 09:30–10:30 待確認重疊" }]);
+  });
 });
 
 describe("registering", () => {
-  it("clears the form back to chat and says 已登記", () => {
-    const registered = run([{ type: "revealFinish" }, { type: "registered" }], filling);
-    expect(registered.layout).toBe("chat");
-    expect(registered.draft).toBeNull();
-    expect(kobeyeeLine(registered.phase)).toBe("已登記");
+  it("waits for the renter and every overlap answer", () => {
+    let s = filledWith(MIXED);
+    s = run([{ type: "editDraft", draft: { ...s.draft!, renter: RENTER } }], s);
+    expect(readyToRegister(s)).toBe(false);
+    s = run([{ type: "answerOverlap", slotIndex: 3, answer: "include" }], s);
+    expect(readyToRegister(s)).toBe(true);
+    expect(s.draft!.slots).toHaveLength(2);
+    expect(acknowledgedConflictIds(s)).toEqual(["h1"]);
   });
 
-  it("lists the required fields a draft still lacks, in form order", () => {
-    expect(missingDraftFields({ room: "B", renter: null, slots: [], purpose: null, payment: "transfer" })).toEqual([
-      "租借人",
-      "時段",
-      "用途",
-    ]);
-    expect(
-      missingDraftFields({
-        room: "B",
-        renter: { type: "roster", id: "p1", name: "x", role: "teacher" },
-        slots: [SLOT],
-        purpose: "dance",
-        payment: "transfer",
-      }),
-    ).toEqual([]);
+  it("a skipped overlap stays out of the draft and shows as refused in the reply", () => {
+    let s = filledWith(MIXED);
+    s = run([{ type: "editDraft", draft: { ...s.draft!, renter: RENTER } }, { type: "answerOverlap", slotIndex: 3, answer: "skip" }], s);
+    expect(s.draft!.slots).toHaveLength(1);
+    expect(acknowledgedConflictIds(s)).toEqual([]);
+    expect(renterReply(s, 300)).toBe(
+      ["你好～幫你登記好小教室了：", "・1/1（四）10:00–11:00", "共 300 元", "", "以下時段不行：", "・1/3（六）10:00–11:00 場地保養", "・1/2（五）10:00–11:00 已有人預約"].join("\n"),
+    );
+  });
+
+  it("keeps the review and slot count once registered", () => {
+    const s = run([{ type: "registered", reply: "r" }], filledWith(MIXED));
+    expect(s.phase).toMatchObject({ kind: "registered", count: 1, reply: "r" });
+    expect(s.layout).toBe("booking");
   });
 });

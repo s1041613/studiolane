@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use, type ComponentProps, type ReactNode } from "react";
+import { Suspense, use, useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { DesktopShell } from "@/components/desktop/desktop-shell";
 import { fixtureReader } from "@/components/desktop/kobeyee-fixture";
 import type { BookingFormSlotProps } from "@/components/desktop/kobeyee-window";
@@ -9,7 +9,7 @@ import { settle } from "@/lib/settle";
 import { readKobeyeeMessage } from "@/server/actions/kobeyee";
 import { submitBooking } from "@/server/actions/submit-booking";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookingDraftFields, type BookingDraftFieldsData } from "@/components/booking/booking-draft-fields";
+import { BookingDraftFields, draftTotal, type BookingDraftFieldsData } from "@/components/booking/booking-draft-fields";
 
 type DesktopBookingsProps = Pick<ComponentProps<typeof DesktopShell>, "sectionsPromise"> & {
   formDataPromise: Promise<BookingDraftFieldsData>;
@@ -53,11 +53,19 @@ function ResolvedBookingForm({ formDataPromise, ...form }: BookingFormSlotProps 
 // window's form slot to the booking fields. A client file because a render
 // prop can't cross from a server component.
 export function DesktopBookings({ sectionsPromise, formDataPromise, children }: DesktopBookingsProps) {
+  // The 建立預約 label prices the draft outside the form's Suspense boundary,
+  // so it reads the same request-time data once it resolves.
+  const [formData, setFormData] = useState<BookingDraftFieldsData | null>(null);
+  useEffect(() => {
+    void formDataPromise.then(setFormData);
+  }, [formDataPromise]);
+
   return (
     <DesktopShell
       sectionsPromise={sectionsPromise}
       reader={kobeyeeReader}
       submitter={kobeyeeSubmitter}
+      draftTotal={(draft) => (formData ? draftTotal(draft, formData) : null)}
       renderBookingForm={(form) => (
         <Suspense fallback={<BookingFormSkeleton />}>
           <ResolvedBookingForm formDataPromise={formDataPromise} {...form} />

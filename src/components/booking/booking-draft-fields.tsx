@@ -31,6 +31,8 @@ interface BookingDraftFieldsProps {
   onDraftChange: (draft: BookingDraft) => void;
   // Rows at or past this index in DRAFT_FIELDS render as skeletons.
   revealed: number;
+  // Shown after 確認登記: what was written, no longer editable.
+  locked: boolean;
   data: BookingDraftFieldsData;
 }
 
@@ -93,7 +95,18 @@ function renterLabel(renter: RenterSelection | null): string {
 
 // A controlled BookingDraft editor laid out as label/value rows. Prices and
 // the payment row wait for a renter, since the rate depends on who rents.
-export function BookingDraftFields({ draft, onDraftChange, revealed, data }: BookingDraftFieldsProps) {
+/** The draft's price total, or null until a renter and purpose are picked. */
+export function draftTotal(draft: BookingDraft, data: BookingDraftFieldsData): number | null {
+  const { renter, purpose, room } = draft;
+  if (!renter || !purpose) return null;
+  return draft.slots.reduce((sum, slot) => {
+    const check = checkBooking(slot, room, data);
+    const quote = check.ok ? quoteSlot({ renter, purpose, room, slot }, data) : null;
+    return sum + (quote?.ok ? quote.amount : 0);
+  }, 0);
+}
+
+export function BookingDraftFields({ draft, onDraftChange, revealed, locked, data }: BookingDraftFieldsProps) {
   const { renter, room, slots, purpose } = draft;
   const ctx = data;
   const role = renter ? (renter.type === "roster" ? renter.role : "customer") : null;
@@ -112,7 +125,7 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
   const change = (patch: Partial<BookingDraft>) => onDraftChange({ ...draft, ...patch });
 
   return (
-    <div className="px-[34px] pt-[22px] pb-6">
+    <div className="px-[34px] pt-[22px] pb-6" inert={locked}>
       <Row field="renter" label="租借人" revealed={revealed} skeleton={<Bar className="h-7 w-40" />}>
         <div className={`flex items-baseline [&>button]:-ml-2 [&>button]:h-auto [&>button]:w-auto [&>button]:max-w-[340px] [&>button]:py-0.5 ${renter ? "[&>button]:text-xl [&>button]:font-semibold" : "[&>button]:text-[15px]"}`}>
           <PersonPicker

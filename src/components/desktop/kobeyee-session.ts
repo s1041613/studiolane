@@ -2,7 +2,8 @@
 // that derives the window rect from the chat column's rect. No React here:
 // the store wraps reduceKobeyee, timers live in kobeyee-window.tsx.
 import type { WindowRect } from "@/components/ui/window";
-import type { BookingDraft } from "@/server/logic/booking";
+import type { BookingDraft, SlotDraft } from "@/server/logic/booking";
+import { shortDateParts } from "@/server/logic/date";
 import { DRAFT_FIELDS, type KobeyeeResult, type KobeyeeReview } from "@/server/logic/kobeyee";
 
 export type KobeyeeLayout = "chat" | "booking";
@@ -18,8 +19,12 @@ export type KobeyeePhase =
   // The read itself didn't finish; `message` on the session is kept so
   // `retry` can resend it.
   | { kind: "failed" }
-  // Staff pressed 確認登記 and the booking was written; the form is cleared.
-  | { kind: "registered" };
+  // Staff pressed 確認登記 and the booking was written; the form stays,
+  // read-only, next to the reply staff can copy to the renter.
+  | { kind: "registered"; review: KobeyeeReview; count: number; reply: string };
+
+// Staff's answer to one 待確認重疊 question, keyed by SlotReview index.
+type OverlapAnswer = "include" | "skip";
 
 export interface KobeyeeSession {
   open: boolean;
@@ -31,6 +36,7 @@ export interface KobeyeeSession {
   draft: BookingDraft | null;
   message: string | null;
   requestSeq: number;
+  overlapAnswers: Record<number, OverlapAnswer>;
 }
 
 interface Viewport {
@@ -48,7 +54,8 @@ export type KobeyeeEvent =
   | { type: "revealFinish" }
   | { type: "editDraft"; draft: BookingDraft }
   | { type: "clear" }
-  | { type: "registered" }
+  | { type: "answerOverlap"; slotIndex: number; answer: OverlapAnswer }
+  | { type: "registered"; reply: string }
   | { type: "moveWindow"; windowRect: WindowRect; viewport: Viewport };
 
 /** Reader seam: the AI action, or the fixture under e2e. */
@@ -71,6 +78,7 @@ export const INITIAL_KOBEYEE_SESSION: KobeyeeSession = {
   draft: null,
   message: null,
   requestSeq: 0,
+  overlapAnswers: {},
 };
 
 export function blankDraft(): BookingDraft {
@@ -102,6 +110,7 @@ export function reduceKobeyee(s: KobeyeeSession, e: KobeyeeEvent): KobeyeeSessio
         draft: null,
         message: e.text,
         requestSeq: requestId,
+        overlapAnswers: {},
       };
     }
     case "resolved": {
@@ -126,9 +135,19 @@ export function reduceKobeyee(s: KobeyeeSession, e: KobeyeeEvent): KobeyeeSessio
     case "editDraft":
       return { ...s, draft: e.draft, phase: finishReveal(s.phase) };
     case "clear":
-      return { ...s, layout: "chat", phase: { kind: "empty" }, draft: null, message: null };
-    case "registered":
-      return { ...s, layout: "chat", phase: { kind: "registered" }, draft: null };
+      return { ...s, layout: "chat", phase: { kind: "empty" }, draft: null, message: null, overlapAnswers: {} };
+    case "answerOverlap": {
+      if (s.phase.kind !== "filling" && s.phase.kind !== "filled") return s;
+      if (s.overlapAnswers[e.slotIndex] || !s.draft) return s;
+      const slot = s.phase.review.slots[e.slotIndex];
+      if (slot?.state !== "overlap") return s;
+      const draft = e.answer === "include" ? { ...s.draft, slots: [...s.draft.slots, slot.slot] } : s.draft;
+      return { ...s, draft, overlapAnswers: { ...s.overlapAnswers, [e.slotIndex]: e.answer } };
+    }
+    case "registered": {
+      if (s.phase.kind !== "filled" || !s.draft) return s;
+      return { ...s, phase: { kind: "registered", review: s.phase.review, count: s.draft.slots.length, reply: e.reply } };
+    }
     case "moveWindow":
       if (!s.chatRect) return s;
       return { ...s, chatRect: chatRectFrom(e.windowRect, s.layout, s.chatRect, e.viewport) };
@@ -142,36 +161,75 @@ export function revealedCount(phase: KobeyeePhase): number {
   return DRAFT_FIELDS.length;
 }
 
-/** Kobeyee's one line in the chat, or null while it has nothing to say. */
+/** Kobeyee's line for a read that produced no review, or null. */
 export function kobeyeeLine(phase: KobeyeePhase): string | null {
   if (phase.kind === "unreadable") return "看不懂這則訊息";
   if (phase.kind === "failed") return "讀取失敗";
-  if (phase.kind === "registered") return "已登記";
-  if (phase.kind !== "filling" && phase.kind !== "filled") return null;
-  const legal = phase.review.slots.filter((slot) => slot.state === "legal").length;
-  // "incomplete" has no SlotDraft yet (needs a `time` question): it's
-  // neither legal nor rejected, so it's left out of both counts rather
-  // than counted as "不行".
-  // Counted per reason, not listed per slot: the slots' times are already
-  // in the pasted message right above this line.
-  const rejectedByReason = new Map<string, number>();
-  for (const slot of phase.review.slots) {
-    if (slot.state !== "blocked" && slot.state !== "overlap") continue;
-    const reason = slot.state === "blocked" ? slot.reason : "時間重疊";
-    rejectedByReason.set(reason, (rejectedByReason.get(reason) ?? 0) + 1);
-  }
-  return [`${legal} 段可以`, ...[...rejectedByReason].map(([reason, count]) => `${count} 段${reason}`)].join("，");
+  return null;
 }
 
-const REQUIRED_LABELS = { renter: "租借人", slots: "時段", purpose: "用途" } as const;
+/** 11/14（六）16:00–17:30 */
+function slotLabel(slot: SlotDraft): string {
+  const { monthDay, weekday } = shortDateParts(slot.date);
+  return `${monthDay}${weekday}${slot.start}–${slot.end}`;
+}
 
-/** The required fields the draft still lacks, in form order. */
-export function missingDraftFields(draft: BookingDraft): string[] {
-  return [
-    ...(draft.renter === null ? [REQUIRED_LABELS.renter] : []),
-    ...(draft.slots.length === 0 ? [REQUIRED_LABELS.slots] : []),
-    ...(draft.purpose === null ? [REQUIRED_LABELS.purpose] : []),
+/** The lead line: bookable count, then blocked count when any. */
+export function kobeyeeLead(review: KobeyeeReview): string {
+  // "overlap" gets its own question below the lead and "incomplete" has
+  // no slot yet, so neither counts toward 可以 or 不行.
+  const legal = review.slots.filter((slot) => slot.state === "legal").length;
+  const blocked = review.slots.filter((slot) => slot.state === "blocked").length;
+  return blocked > 0 ? `${legal} 段可以，${blocked} 段不行` : `${legal} 段可以`;
+}
+
+export function blockedSlots(review: KobeyeeReview): Array<{ label: string; reason: string }> {
+  return review.slots.flatMap((slot) => (slot.state === "blocked" ? [{ label: slotLabel(slot.slot), reason: slot.reason }] : []));
+}
+
+export function overlapQuestions(review: KobeyeeReview): Array<{ slotIndex: number; text: string }> {
+  return review.slots.flatMap((slot, slotIndex) => {
+    if (slot.state !== "overlap") return [];
+    const rivals = slot.conflicts.map((c) => `${c.renterName} ${c.start}–${c.end}`).join("、");
+    return [{ slotIndex, text: `${slotLabel(slot.slot)} 跟 ${rivals} 待確認重疊` }];
+  });
+}
+
+/** Rival hold ids staff chose to book past (一起建立), for submitBooking. */
+export function acknowledgedConflictIds(session: KobeyeeSession): string[] {
+  if (session.phase.kind !== "filled") return [];
+  const { review } = session.phase;
+  return Object.entries(session.overlapAnswers).flatMap(([index, answer]) => {
+    const slot = review.slots[Number(index)];
+    return answer === "include" && slot?.state === "overlap" ? slot.conflicts.map((c) => c.id) : [];
+  });
+}
+
+/** 確認登記 appears once nothing is left for staff to answer. */
+export function readyToRegister(session: KobeyeeSession): boolean {
+  const { phase, draft } = session;
+  if (phase.kind !== "filled" || !draft) return false;
+  const unanswered = overlapQuestions(phase.review).some(({ slotIndex }) => !session.overlapAnswers[slotIndex]);
+  return draft.renter !== null && draft.purpose !== null && draft.slots.length > 0 && !unanswered;
+}
+
+const ROOM_LABEL = { A: "大教室", B: "小教室" } as const;
+
+/** The reply staff copy to the renter after 確認登記; never sent by Kobeyee. */
+export function renterReply(session: KobeyeeSession, total: number | null): string {
+  const { phase, draft } = session;
+  if (phase.kind !== "filled" || !draft) return "";
+  const lines = [`你好～幫你登記好${ROOM_LABEL[draft.room]}了：`, ...draft.slots.map((slot) => `・${slotLabel(slot)}`)];
+  if (total !== null && total > 0) lines.push(`共 ${total.toLocaleString("en-US")} 元`);
+  const refused = [
+    ...blockedSlots(phase.review).map(({ label, reason }) => `・${label} ${reason}`),
+    ...phase.review.slots.flatMap((slot, index) =>
+      slot.state === "overlap" && session.overlapAnswers[index] === "skip" ? [`・${slotLabel(slot.slot)} 已有人預約`] : [],
+    ),
   ];
+  if (refused.length > 0) lines.push("", "以下時段不行：", ...refused);
+  if (draft.payment === "on_site") lines.push("", "費用當天到櫃檯繳交即可");
+  return lines.join("\n");
 }
 
 export const FORM_WIDTH = 600;
