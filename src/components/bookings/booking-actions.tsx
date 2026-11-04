@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EllipsisIcon } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 import { settle } from "@/lib/settle";
 import {
   cancelBooking,
@@ -12,17 +12,27 @@ import {
 } from "@/server/actions/bookings";
 import { allowedActions, needsRefund } from "@/server/logic/bookings";
 import type { BookingAction } from "@/server/logic/bookings";
-import { money, roomLabel, slotText } from "@/server/logic/home-selectors";
+import { conflictInfo, money, roomLabel, slotText } from "@/server/logic/home-selectors";
+import { rivalText } from "@/server/logic/shelf";
+import { statusToLabel } from "@/server/supabase/codecs";
+import type { RentalStatusCode } from "@/server/supabase/codecs";
 import type { RentalSummary } from "@/server/types/home";
-import { ActionButton, ActionGroup } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
 import { NoticeDialog } from "@/components/ui/notice-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ActionFailure, type ShownFailure } from "@/components/shared/failures/action-failure";
 
 interface BookingActionsProps {
   rental: RentalSummary;
+  // For conflictInfo/rivalText: a clash depends on every other rental, not
+  // just this row.
+  allRentals: RentalSummary[];
+  // Controlled by the row: a click on the trigger or a right-click
+  // anywhere on the row opens the same menu, so the open state lives one
+  // level up (bookings-shelf.tsx), not here.
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 type EndAction = "postpone" | "cancel";
@@ -36,7 +46,7 @@ const PRIMARY_LABEL: Record<PrimaryAction, string> = {
 };
 
 // Each server action declares its own Reactions (confirmBooking alone adds
-// blockers), so the table normalizes every call to the same shape here
+// blockers), so the menu normalizes every call to the same shape here
 // rather than exposing that mismatch to runPrimary.
 const PRIMARY_ACTION: Record<PrimaryAction, (id: string) => Promise<ShownFailure | null>> = {
   confirm: async (id) => {
@@ -53,43 +63,53 @@ const PRIMARY_ACTION: Record<PrimaryAction, (id: string) => Promise<ShownFailure
   },
 };
 
+// The menu's own item text keeps the "…" (these always ask something
+// else first — the confirm dialog below); the dialog's own title, confirm
+// button, and refund note read the plain verb instead.
+const END_MENU_LABEL: Record<EndAction, string> = { postpone: "延期…", cancel: "取消…" };
 const END_LABEL: Record<EndAction, string> = { postpone: "延期", cancel: "取消" };
 
 function isPrimaryAction(action: BookingAction): action is PrimaryAction {
   return action in PRIMARY_ACTION;
 }
 
-// T-按鈕: shows exactly what allowedActions(rental) permits — the same
-// rule the server re-checks on every call. confirm/markPaid/markDone run
-// straight off the primary button; postpone/cancel always confirm first.
-// Every refusal — a plain message, or confirm's overlapping-rivals
-// blockers — surfaces through the same NoticeDialog + ActionFailure pair:
-// there is exactly one way this component says "no."
-export function BookingActions({ rental }: BookingActionsProps) {
+// The 狀態 cell: plain text at rest (bookings-shelf.tsx's row owns the
+// hover/selected styling that turns this into blue text with a ⌄). Opening
+// it — by click or by the row's right-click — lists exactly what
+// allowedActions(rental) permits, the same rule the server re-checks on
+// every call. A clashing row's 確認 item is disabled and reads the rival
+// instead of "確認", so staff see who to deal with first without opening
+// the row's info panel. Every refusal — a plain message, or confirm's
+// overlapping-rivals blockers — surfaces through the same NoticeDialog +
+// ActionFailure pair: there is exactly one way this component says "no."
+export function BookingActions({ rental, allRentals, open, onOpenChange }: BookingActionsProps) {
   const [endDialog, setEndDialog] = useState<EndAction | null>(null);
   const [endError, setEndError] = useState<ShownFailure | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const actions = allowedActions(rental);
-  const primary = actions.find(isPrimaryAction);
-  const endActions = actions.filter((a): a is EndAction => a === "postpone" || a === "cancel");
+  const label = statusToLabel(rental.status as RentalStatusCode);
 
-  if (actions.length === 0) return null;
+  if (actions.length === 0) {
+    return <span>{label}</span>;
+  }
+
+  const clashing = conflictInfo(rental, allRentals) != null;
 
   async function runPrimary(action: PrimaryAction) {
+    onOpenChange(false);
     const failure = await PRIMARY_ACTION[action](rental.id);
     if (failure) setNotice({ title: `不能${PRIMARY_LABEL[action]}`, failure });
   }
 
   function openEndDialog(action: EndAction) {
-    setMenuOpen(false);
+    onOpenChange(false);
     setEndError(null);
     setEndDialog(action);
   }
 
-  function changeEndDialogOpen(open: boolean) {
-    if (!open) {
+  function changeEndDialogOpen(nextOpen: boolean) {
+    if (!nextOpen) {
       setEndDialog(null);
       setEndError(null);
     }
@@ -104,33 +124,48 @@ export function BookingActions({ rental }: BookingActionsProps) {
   }
 
   return (
-    <ActionGroup>
-      <div className="flex items-center justify-end gap-1.5">
-        {primary && (
-          <ActionButton variant="secondary" size="sm" onClick={() => runPrimary(primary)}>
-            {PRIMARY_LABEL[primary]}
-          </ActionButton>
-        )}
-        {endActions.length > 0 && (
-          <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-            <PopoverTrigger render={<Button variant="secondary" size="icon" aria-label="更多操作" />}>
-              <EllipsisIcon />
-            </PopoverTrigger>
-            <PopoverContent align="end" surface="menu" className="w-28">
-              {endActions.map((action) => (
-                <Button
-                  key={action}
-                  variant="ghost"
-                  className={`justify-start ${action === "cancel" ? "text-destructive" : ""}`}
-                  onClick={() => openEndDialog(action)}
-                >
-                  {END_LABEL[action]}
-                </Button>
-              ))}
-            </PopoverContent>
-          </Popover>
-        )}
-      </div>
+    <>
+      <Menu open={open} onOpenChange={onOpenChange}>
+        <MenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              aria-label={`狀態 ${label}`}
+              // Plain text at rest, same as every other cell; the row's own
+              // "group" turns this blue on hover/selection (bookings-shelf.tsx).
+              className="-mx-1.5 h-auto gap-1 rounded-md border-none bg-transparent px-1.5 py-0.5 text-foreground hover:bg-transparent hover:text-link aria-expanded:bg-transparent group-hover:text-link group-aria-[selected=true]:text-link focus-visible:text-link data-popup-open:text-link"
+            />
+          }
+        >
+          {label}
+          <ChevronDownIcon
+            aria-hidden
+            className="size-3 opacity-0 transition-opacity group-hover:opacity-100 group-aria-[selected=true]:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100"
+          />
+        </MenuTrigger>
+        <MenuContent>
+          {actions.map((action) => {
+            if (isPrimaryAction(action)) {
+              const disabled = action === "confirm" && clashing;
+              return (
+                <MenuItem key={action} disabled={disabled} onClick={() => runPrimary(action)}>
+                  {disabled ? rivalText(rental, allRentals) : PRIMARY_LABEL[action]}
+                </MenuItem>
+              );
+            }
+            return (
+              <MenuItem
+                key={action}
+                className={action === "cancel" ? "text-destructive" : undefined}
+                onClick={() => openEndDialog(action)}
+              >
+                {END_MENU_LABEL[action]}
+              </MenuItem>
+            );
+          })}
+        </MenuContent>
+      </Menu>
 
       <ConfirmDialog
         open={endDialog !== null}
@@ -154,12 +189,12 @@ export function BookingActions({ rental }: BookingActionsProps) {
 
       <NoticeDialog
         open={notice !== null}
-        onOpenChange={(open) => !open && setNotice(null)}
+        onOpenChange={(nextOpen) => !nextOpen && setNotice(null)}
         title={notice?.title ?? ""}
         description={notice?.failure.message}
       >
         {notice && <ActionFailure variant="notice" failure={notice.failure} />}
       </NoticeDialog>
-    </ActionGroup>
+    </>
   );
 }
