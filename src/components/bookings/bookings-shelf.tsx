@@ -229,7 +229,7 @@ function BookingRow({
         {rental.purposeLabel}
       </TableCell>
       <TableCell label="狀態" className="whitespace-nowrap">
-        <BookingActions rental={rental} allRentals={allRentals} open={menuOpen} onOpenChange={onMenuOpenChange} />
+        <BookingActions rental={rental} open={menuOpen} onOpenChange={onMenuOpenChange} />
       </TableCell>
       <TableCell label="付款" className="whitespace-nowrap">
         {paymentTag(rental)}
