@@ -4,6 +4,7 @@ import {
   INITIAL_KOBEYEE_SESSION,
   kobeyeeLine,
   kobeyeeWindowRect,
+  missingDraftFields,
   reduceKobeyee,
   type KobeyeeEvent,
   type KobeyeeSession,
@@ -155,4 +156,30 @@ it("counts rejected slots per reason", () => {
     ],
   };
   expect(kobeyeeLine({ kind: "filled", review })).toBe("0 段可以，2 段已過期，1 段時間重疊");
+});
+
+describe("registering", () => {
+  it("clears the form back to chat and says 已登記", () => {
+    const registered = run([{ type: "revealFinish" }, { type: "registered" }], filling);
+    expect(registered.layout).toBe("chat");
+    expect(registered.draft).toBeNull();
+    expect(kobeyeeLine(registered.phase)).toBe("已登記");
+  });
+
+  it("lists the required fields a draft still lacks, in form order", () => {
+    expect(missingDraftFields({ room: "B", renter: null, slots: [], purpose: null, payment: "transfer" })).toEqual([
+      "租借人",
+      "時段",
+      "用途",
+    ]);
+    expect(
+      missingDraftFields({
+        room: "B",
+        renter: { type: "roster", id: "p1", name: "x", role: "teacher" },
+        slots: [SLOT],
+        purpose: "dance",
+        payment: "transfer",
+      }),
+    ).toEqual([]);
+  });
 });
