@@ -72,7 +72,7 @@ function SlotRow({ slot, error, amount }: { slot: SlotDraft; error: string | nul
     // Fixed columns so dates, weekdays and times line up whatever their width.
     <div
       data-slot-row
-      className={`grid h-[35px] grid-cols-[3rem_4.5rem_2.75rem_1rem_2.75rem_1fr_auto] items-center text-sm tabular-nums ${error ? "font-semibold" : ""}`}
+      className={`grid h-[35px] grid-cols-[3rem_3rem_2.75rem_1rem_2.75rem_1fr_auto] items-center text-sm tabular-nums ${error ? "font-semibold" : ""}`}
     >
       <span>{monthDay}</span>
       <small className="text-[13px] text-muted-foreground">{weekday}</small>
