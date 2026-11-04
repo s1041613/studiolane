@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { MenuBar } from "@/components/desktop/menu-bar";
 import { DockBar } from "@/components/desktop/dock-bar";
 import { BookingsWindow } from "@/components/desktop/bookings-window";
+import { KobeyeeWindow } from "@/components/desktop/kobeyee-window";
+import { KobeyeeCat } from "@/components/desktop/kobeyee-cat";
 import { isAnyWindowOpen, useDesktopStore } from "@/components/desktop/desktop-store";
 
 // Blue gradient wallpaper, inspired by classic desktop UIs.
@@ -32,6 +34,8 @@ function DesktopShell({ children }: DesktopShellProps) {
       />
       <MenuBar />
       <BookingsWindow>{children}</BookingsWindow>
+      <KobeyeeWindow />
+      <KobeyeeCat />
       <DockBar />
     </div>
   );

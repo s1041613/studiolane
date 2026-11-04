@@ -21,6 +21,9 @@ interface WindowProps {
   minHeight?: number;
   // The top edge can't be dragged above this (the menu bar's height).
   topInset?: number;
+  // Rendered at the title bar's right end, after the title's own
+  // `marginRight: auto` has pushed everything past it there.
+  titleAccessory?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -47,6 +50,7 @@ function Window({
   minWidth = DEFAULT_MIN_WIDTH,
   minHeight = DEFAULT_MIN_HEIGHT,
   topInset = 0,
+  titleAccessory,
   children,
 }: WindowProps) {
   const nodeRef = React.useRef<HTMLDivElement>(null);
@@ -204,6 +208,7 @@ function Window({
             >
               {title}
             </p>
+            {titleAccessory}
           </div>
           <div className="min-h-0 flex-1 overflow-auto">{children}</div>
           {/* Inset gloss hairline, as a sibling overlay (z-50) instead of

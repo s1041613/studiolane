@@ -31,8 +31,9 @@ feature UIs are the rental rules settings page (`/settings/rules`; see
 read-only batch detail page (`/bookings/batch/<batchId>`), and the
 read-only bookings list (`/bookings`); see `docs/booking/`. The bookings
 list now renders inside a desktop shell (menu bar, Dock, a draggable and
-resizable window) rather than the app shell. There is no real auth yet.
-Other features land in later PRs.
+resizable window) rather than the app shell. A corner cat on that shell
+opens a chat-only Kobeyee window with no AI wiring yet. There is no real
+auth yet. Other features land in later PRs.
 
 ## Working here
 
