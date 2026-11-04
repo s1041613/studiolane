@@ -17,7 +17,7 @@ Message: 「某學員約課 11/10 下午2：00-3：00 小教室」
 → one new_rental task, room B, purpose private_lesson, one slot (absolute 11/10, 14:00-15:00). The student's name is not extracted anywhere.
 
 Example 3 — a message with no booking content returns no tasks:
-Message: 「早安，今天教室很熱鬧」
+Message: 「收到，謝謝老師～」
 → { "tasks": [] }`;
 
 // Pure: the model prompt is a function of the message and "today", nothing

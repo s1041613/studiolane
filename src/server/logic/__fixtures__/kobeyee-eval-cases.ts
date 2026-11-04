@@ -34,6 +34,14 @@ function newRental(room: Room | null, purpose: PurposeCode | null, slots: Parsed
   return { intent: "new_rental", room, purpose, slots };
 }
 
+function reschedule(room: Room | null, oldSlots: ParsedSlot[], slots: ParsedSlot[]): KobeyeeTask {
+  return { intent: "reschedule", room, oldSlots, slots };
+}
+
+function availability(room: Room | null, slots: ParsedSlot[]): KobeyeeTask {
+  return { intent: "availability_question", room, slots };
+}
+
 const TODAY: IsoDate = "2026-11-04"; // a Wednesday
 
 export const kobeyeeEvalCases: KobeyeeEvalCase[] = [
@@ -165,5 +173,118 @@ export const kobeyeeEvalCases: KobeyeeEvalCase[] = [
     input: "2027/1/6 小教室 19:00-20:00",
     today: TODAY,
     expected: { tasks: [newRental("B", null, [slot(absolute(1, 6, 2027), "19:00", "20:00")])] },
+  },
+  // Messier phrasings that none of the prompt's examples mirror.
+  {
+    id: "messy-availability-then-book",
+    description: "asks if free and offers to book; still availability_question",
+    input: "哈囉～想問下週二晚上7點到9點小教室還有空嗎？可以的話想直接預約🙏",
+    today: TODAY,
+    expected: { tasks: [availability("B", [slot(weekday("next", 2), "19:00", "21:00")])] },
+  },
+  {
+    id: "messy-performance-purpose",
+    description: "成果展 maps to performance",
+    input: "這週六下午2點-5點我想借大教室排成果展～",
+    today: TODAY,
+    expected: { tasks: [newRental("A", "performance", [slot(weekday("this", 6), "14:00", "17:00")])] },
+  },
+  {
+    id: "messy-dotted-time",
+    description: "19.30 written with a dot",
+    input: "11/20 19.30-21.00 小教室 麻煩了",
+    today: TODAY,
+    expected: { tasks: [newRental("B", null, [slot(absolute(11, 20), "19:30", "21:00")])] },
+  },
+  {
+    id: "messy-half-hour-tilde",
+    description: "點半 and a tilde separator",
+    input: "11/21 晚上7點半～9點 大教室",
+    today: TODAY,
+    expected: { tasks: [newRental("A", null, [slot(absolute(11, 21), "19:30", "21:00")])] },
+  },
+  {
+    id: "messy-weekday-annotations",
+    description: "dates annotated with (二)/(四), room at the end",
+    input: "11/24(二) 18:00-20:00\n11/26(四) 18:00-20:00\n以上小教室 謝謝",
+    today: TODAY,
+    expected: {
+      tasks: [
+        newRental("B", null, [slot(absolute(11, 24), "18:00", "20:00"), slot(absolute(11, 26), "18:00", "20:00")]),
+      ],
+    },
+  },
+  {
+    id: "messy-date-range-every-day",
+    description: "12/1到12/3每天 expands to three slots",
+    input: "12/1到12/3 每天 10:00-12:00 大教室",
+    today: TODAY,
+    expected: {
+      tasks: [
+        newRental("A", null, [
+          slot(absolute(12, 1), "10:00", "12:00"),
+          slot(absolute(12, 2), "10:00", "12:00"),
+          slot(absolute(12, 3), "10:00", "12:00"),
+        ]),
+      ],
+    },
+  },
+  {
+    id: "messy-chinese-month-day",
+    description: "11月25號 and 三點到五點 in words",
+    input: "11月25號 下午三點到五點 小教室",
+    today: TODAY,
+    expected: { tasks: [newRental("B", null, [slot(absolute(11, 25), "15:00", "17:00")])] },
+  },
+  {
+    id: "messy-no-room",
+    description: "room not stated stays null",
+    input: "11/27 19:00-21:00 想租借教室",
+    today: TODAY,
+    expected: { tasks: [newRental(null, null, [slot(absolute(11, 27), "19:00", "21:00")])] },
+  },
+  {
+    id: "messy-day-after-tomorrow",
+    description: "後天 is offset 2",
+    input: "後天早上10點到12點 小教室可以嗎 我要租",
+    today: TODAY,
+    expected: { tasks: [newRental("B", null, [slot(relativeDay(2), "10:00", "12:00")])] },
+  },
+  {
+    id: "messy-reschedule-same-time",
+    description: "同時段 copies the old time to the new date",
+    input: "原本11/12 14:00-16:00 想改到11/19同時段",
+    today: TODAY,
+    expected: {
+      tasks: [reschedule(null, [slot(absolute(11, 12), "14:00", "16:00")], [slot(absolute(11, 19), "14:00", "16:00")])],
+    },
+  },
+  {
+    id: "messy-noon",
+    description: "中午12點到1點 is 12:00-13:00",
+    input: "11/28 中午12點到1點 小教室",
+    today: TODAY,
+    expected: { tasks: [newRental("B", null, [slot(absolute(11, 28), "12:00", "13:00")])] },
+  },
+  {
+    id: "messy-payment-note-is-not-booking",
+    description: "a transfer note full of digits returns no tasks",
+    input: "好的 已匯款 末五碼 48213 謝謝",
+    today: TODAY,
+    expected: { tasks: [] },
+  },
+  {
+    id: "messy-year-boundary",
+    description: "late December, 1/3 without a year stays year null",
+    input: "1/3 10:00-12:00 大教室",
+    today: "2026-12-28",
+    expected: { tasks: [newRental("A", null, [slot(absolute(1, 3), "10:00", "12:00")])] },
+  },
+  {
+    id: "messy-spaced-slashes",
+    description: "spaces inside the date and around the dash",
+    input: "11 / 30  19:00 - 21:00 小教室",
+    today: TODAY,
+    expected: { tasks: [newRental("B", null, [slot(absolute(11, 30), "19:00", "21:00")])] },
   },
 ];
