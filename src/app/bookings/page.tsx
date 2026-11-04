@@ -6,7 +6,8 @@ import { bookingListFilters } from "@/server/logic/bookings";
 import { todayIso } from "@/server/logic/date";
 import { BookingsView } from "@/components/bookings/bookings-view";
 import { requirePageAccess } from "@/server/auth/require-staff";
-import { DesktopShell } from "@/components/desktop/desktop-shell";
+import { getBookingFormData } from "@/server/services/booking-form";
+import { DesktopBookings } from "@/app/bookings/desktop-bookings";
 
 export default async function BookingsPage(props: PageProps<"/bookings">) {
   await requirePageAccess("/bookings");
@@ -14,11 +15,20 @@ export default async function BookingsPage(props: PageProps<"/bookings">) {
   // freezing the rental list; connection() forces per-request rendering so
   // it reflects the current bookings.
   await connection();
-  const [section, rules] = await Promise.all([
+  const [section, rules, data] = await Promise.all([
     loadSection(() => new RentalRepository().listAll()),
     // Only the 下一個空檔 widget reads these.
     loadSection(() => new RulesRepository().listAll()),
+    getBookingFormData(),
   ]);
+  // Each source degrades to empty, same as /bookings/new.
+  const formData = {
+    rules: data.rules.ok ? data.rules.data : [],
+    roster: data.roster.ok ? data.roster.data : [],
+    plans: data.plans.ok ? data.plans.data : [],
+    existingRentals: data.existingRentals.ok ? data.existingRentals.data : [],
+    purposeSettings: data.purposeSettings.ok ? data.purposeSettings.data : [],
+  };
 
   // A repeated ?q= makes this a string[]; only a single string value is
   // treated as a query.
@@ -26,8 +36,8 @@ export default async function BookingsPage(props: PageProps<"/bookings">) {
   const filters = bookingListFilters(typeof rawQuery === "string" ? rawQuery : undefined);
 
   return (
-    <DesktopShell rentals={section.ok ? section.data : null} rules={rules.ok ? rules.data : null}>
+    <DesktopBookings formData={formData} rentals={section.ok ? section.data : null} rules={rules.ok ? rules.data : null}>
       <BookingsView section={section} filters={filters} today={todayIso()} />
-    </DesktopShell>
+    </DesktopBookings>
   );
 }

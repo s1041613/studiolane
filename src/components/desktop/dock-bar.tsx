@@ -3,6 +3,7 @@
 import { Dock, DockItem } from "@/components/ui/dock";
 import { useDesktopStore } from "@/components/desktop/desktop-store";
 import { BOOKINGS_WINDOW_ID, defaultBookingsRect } from "@/components/desktop/bookings-window";
+import { defaultKobeyeeRect } from "@/components/desktop/kobeyee";
 
 function BookingLedgerIcon() {
   return (
@@ -20,10 +21,23 @@ function BookingLedgerIcon() {
   );
 }
 
+function NewBookingIcon() {
+  return (
+    <svg viewBox="0 0 56 56" className="size-full" aria-hidden="true">
+      <rect width="56" height="56" rx="12.5" className="fill-white" />
+      <rect x="12" y="15" width="32" height="28" rx="5" className="fill-none stroke-primary" strokeWidth="3" />
+      <path d="M12 23h32M20 11v8M36 11v8" className="stroke-primary" strokeWidth="3" strokeLinecap="round" />
+      <path d="M28 28v10M23 33h10" className="stroke-primary" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function DockBar() {
   const windows = useDesktopStore((state) => state.windows);
   const toggleWindow = useDesktopStore((state) => state.toggleWindow);
   const open = windows[BOOKINGS_WINDOW_ID]?.open ?? false;
+  const bookingOpen = useDesktopStore((state) => state.kobeyee.open && state.kobeyee.layout === "booking");
+  const dispatchKobeyee = useDesktopStore((state) => state.dispatchKobeyee);
 
   return (
     <Dock>
@@ -32,6 +46,12 @@ function DockBar() {
         active={open}
         icon={<BookingLedgerIcon />}
         onClick={() => toggleWindow(BOOKINGS_WINDOW_ID, defaultBookingsRect())}
+      />
+      <DockItem
+        label="預約教室"
+        active={bookingOpen}
+        icon={<NewBookingIcon />}
+        onClick={() => dispatchKobeyee({ type: "open", layout: "booking", defaultChatRect: defaultKobeyeeRect() })}
       />
     </Dock>
   );

@@ -11,8 +11,15 @@ import { firstFreeCell } from "@/components/ui/widget-grid-layout";
 import type { GridCell } from "@/components/ui/widget-grid-layout";
 import { DEFAULT_WIDGETS, WIDGET_SPAN, isWidgetKind, toGridPlacements } from "@/components/desktop/widget-kinds";
 import type { WidgetKind, WidgetPlacement } from "@/components/desktop/widget-kinds";
+import {
+  INITIAL_KOBEYEE_SESSION,
+  reduceKobeyee,
+  type KobeyeeEvent,
+  type KobeyeeReader,
+  type KobeyeeSession,
+} from "@/components/desktop/kobeyee-session";
 
-export interface WindowState {
+interface WindowState {
   id: string;
   open: boolean;
   rect: WindowRect;
@@ -34,6 +41,11 @@ interface DesktopStore {
   addWidget: (kind: WidgetKind, columnCount: number) => void;
   removeWidget: (kind: WidgetKind) => void;
   moveWidget: (kind: WidgetKind, cell: GridCell) => void;
+
+  // Kobeyee lives outside `windows`: its rect is derived from its session.
+  kobeyee: KobeyeeSession;
+  dispatchKobeyee: (event: KobeyeeEvent) => void;
+  sendToKobeyee: (text: string, reader: KobeyeeReader) => Promise<void>;
 }
 
 // Only the widget layout survives a reload; windows always start closed.
@@ -41,7 +53,7 @@ const STORAGE_KEY = "studiolane-desktop";
 
 export const useDesktopStore = create<DesktopStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       windows: {},
       openWindow: (id, defaultRect) =>
         set((state) => ({
@@ -87,6 +99,15 @@ export const useDesktopStore = create<DesktopStore>()(
         set((state) => ({
           widgets: state.widgets.map((widget) => (widget.kind === kind ? { kind, ...cell } : widget)),
         })),
+
+      kobeyee: INITIAL_KOBEYEE_SESSION,
+      dispatchKobeyee: (event) => set((state) => ({ kobeyee: reduceKobeyee(state.kobeyee, event) })),
+      sendToKobeyee: async (text, reader) => {
+        get().dispatchKobeyee({ type: "send", text });
+        const requestId = get().kobeyee.requestSeq;
+        const result = await reader(text);
+        get().dispatchKobeyee({ type: "resolved", requestId, result });
+      },
     }),
     {
       name: STORAGE_KEY,
@@ -116,6 +137,6 @@ function readStoredWidgets(persisted: unknown): WidgetPlacement[] | null {
   );
 }
 
-export function isAnyWindowOpen(windows: Record<string, WindowState>): boolean {
-  return Object.values(windows).some((w) => w.open);
+export function isAnyWindowOpen(state: Pick<DesktopStore, "windows" | "kobeyee">): boolean {
+  return state.kobeyee.open || Object.values(state.windows).some((w) => w.open);
 }
