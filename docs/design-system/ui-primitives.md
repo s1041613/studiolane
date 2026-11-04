@@ -81,6 +81,9 @@ sources:
   - id: window
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/window.tsx
     title: Window component
+  - id: window-toolbar
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/window-toolbar.tsx
+    title: Window toolbar controls
   - id: traffic-lights
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/traffic-lights.tsx
     title: TrafficLights component
@@ -226,6 +229,12 @@ table.[^table] With `stack="md"`, the whole table turns into a stack of
 two-column cards below the `md` breakpoint, but it still keeps the table's
 semantic role, so a screen reader can still read it correctly.
 
+With `density="compact"`, the table becomes a window's list pane: 35px
+single-line rows with no row dividers, a rounded blue selected row, and a
+small 11.5px header.[^table] A `TableHead` with a `sort` prop renders its
+label as a button and sets `aria-sort`; the sorted column reads bold with
+a ▲ or ▼.[^table]
+
 # Card and Form Fields
 
 `Card` is a card with a translucent white background and a large corner
@@ -284,6 +293,18 @@ bar.[^nav-items]
 chrome: a title bar with `TrafficLights` and a centered title, three resize
 handles, and Esc-to-close.[^window] Position and size are read from a
 `rect` prop and written back only when a drag or resize ends.
+With `toolbar`, the title bar shows no title. Instead, the content puts
+its own controls there through `WindowToolbar`, a portal into the title
+bar. Outside a `Window` (for example, in a unit test), `WindowToolbar`
+renders its children in place.[^window] `WindowPane` is an inset, rounded
+content pane inside a window. `WindowStatusBar` is the one line of
+centered summary text along the window's bottom edge.[^window]
+
+The title bar's controls live in `window-toolbar.tsx`: `ToolbarButton` (a
+glossy pill button), `ToolbarButtonGroup` (two buttons joined edge to
+edge, such as back and forward), `ToolbarTitle`, and `ToolbarSearch` (a
+rounded search field with a magnifier and an optional × clear
+link).[^window-toolbar]
 `TrafficLights` renders the three gel-sphere window-control dots; only the
 close light does anything today, min/max are decorative
 placeholders.[^traffic-lights] `Dock` is the floating icon bar pinned to
@@ -305,10 +326,12 @@ a 450ms open delay carried by its own `Provider` (base-ui's `Tooltip.Root`
 takes no delay prop directly).[^tooltip] It never opens from a touch tap,
 so it needs no extra wiring for a `(hover: none)` device.[^tooltip]
 
-`SidebarList` is a window's left-hand folder list: grouped sections, each
-item showing a quiet count. An item's count can be marked `danger` (shown
-in red) to make one folder, such as a clash count, stand out among
-otherwise-quiet numbers.[^sidebar-list]
+`SidebarList` is a window's left-hand folder list, in its own inset pane:
+grouped sections, each item a small blue folder icon (`glyph` picks the
+symbol on it), a label, and a quiet count. The selected item is a blue
+gradient pill with white text. An item's count can be marked `accent`
+(bold blue, for a folder that still needs a decision) or `danger` (red,
+for a live clash).[^sidebar-list]
 
 `InfoPanel` is a small floating panel for one item's detail: draggable by
 its own title strip only (no resize, no traffic lights — `Window` is for a
@@ -343,6 +366,7 @@ and the row's info panel).
 [^logo]: Logo component
 [^nav-items]: Navigation items
 [^window]: Window component
+[^window-toolbar]: Window toolbar controls
 [^traffic-lights]: TrafficLights component
 [^dock]: Dock component
 [^menu]: Menu component
