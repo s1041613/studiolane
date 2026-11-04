@@ -137,19 +137,15 @@ export function kobeyeeLine(phase: KobeyeePhase): string | null {
   // "incomplete" has no SlotDraft yet (needs a `time` question): it's
   // neither legal nor rejected, so it's left out of both counts rather
   // than counted as "不行".
-  const rejected = phase.review.slots.filter((slot) => slot.state === "blocked" || slot.state === "overlap").length;
-  return rejected > 0 ? `${legal} 段可以，${rejected} 段不行` : `${legal} 段可以`;
-}
-
-/** One line per slot that can't be booked, so staff see which ones and why. */
-export function rejectedSlotLines(phase: KobeyeePhase): string[] {
-  if (phase.kind !== "filling" && phase.kind !== "filled") return [];
-  return phase.review.slots.flatMap((slot) => {
-    if (slot.state !== "blocked" && slot.state !== "overlap") return [];
-    const { date, start, end } = slot.slot;
+  // Counted per reason, not listed per slot: the slots' times are already
+  // in the pasted message right above this line.
+  const rejectedByReason = new Map<string, number>();
+  for (const slot of phase.review.slots) {
+    if (slot.state !== "blocked" && slot.state !== "overlap") continue;
     const reason = slot.state === "blocked" ? slot.reason : "時間重疊";
-    return [`${Number(date.slice(5, 7))}/${Number(date.slice(8))} ${start}-${end} ${reason}`];
-  });
+    rejectedByReason.set(reason, (rejectedByReason.get(reason) ?? 0) + 1);
+  }
+  return [`${legal} 段可以`, ...[...rejectedByReason].map(([reason, count]) => `${count} 段${reason}`)].join("，");
 }
 
 export const FORM_WIDTH = 600;

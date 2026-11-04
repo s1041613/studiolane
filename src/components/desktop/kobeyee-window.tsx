@@ -19,7 +19,6 @@ import {
   FORM_MIN_WIDTH,
   blankDraft,
   kobeyeeLine,
-  rejectedSlotLines,
   kobeyeeWindowRect,
   revealedCount,
   type KobeyeeReader,
@@ -67,7 +66,6 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
   const viewport = { width: window.innerWidth };
   const booking = layout === "booking";
   const line = kobeyeeLine(phase);
-  const rejectedLines = rejectedSlotLines(phase);
   const reading = phase.kind === "reading";
 
   function submit() {
@@ -138,13 +136,6 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">Kobeyee 說：</p>
                   <p className="text-[15px] font-semibold">{line}</p>
-                  {rejectedLines.length > 0 && (
-                    <ul className="mt-1 text-xs text-muted-foreground tabular-nums">
-                      {rejectedLines.map((rejected, index) => (
-                        <li key={index}>{rejected}</li>
-                      ))}
-                    </ul>
-                  )}
                   {phase.kind === "failed" && (
                     <Button type="button" variant="bevel" size="xs" className="mt-2" onClick={() => void retry(reader)}>
                       再試一次
