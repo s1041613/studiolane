@@ -226,10 +226,10 @@ test("前往預約追蹤 on the batch page lists only that renter", async ({ pag
     await page.getByRole("link", { name: "前往預約追蹤" }).click();
 
     await expect(page).toHaveURL(`/bookings?q=${encodeURIComponent(renterName)}`);
-    const table = page.getByRole("table", { name: "預約列表" });
-    await expect(table.getByText(renterName)).toBeVisible();
-    await expect(table.getByText("林小雨")).toHaveCount(0);
-    await expect(table.getByText("周小貓")).toHaveCount(0);
+    const grid = page.getByRole("grid", { name: "預約" });
+    await expect(grid.getByText(renterName)).toBeVisible();
+    await expect(grid.getByText("林小雨")).toHaveCount(0);
+    await expect(grid.getByText("周小貓")).toHaveCount(0);
   } finally {
     await deleteRentalsNamed(db, renterName);
     await db.end();
