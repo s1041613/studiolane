@@ -28,6 +28,12 @@ const buttonVariants = cva(
         "row-action":
           "bg-row-action text-text-secondary hover:bg-icon-btn aria-expanded:bg-icon-btn",
         link: "text-primary underline-offset-4 hover:underline",
+        // Desktop windows: a raised grey button (清除) and the blue gel
+        // default action (送出).
+        bevel:
+          "rounded-md border-0 bg-(image:--eb-bevel) font-normal text-foreground shadow-(--eb-bevel-shadow)",
+        gel:
+          "rounded-full border-0 bg-(image:--eb-gel) text-white shadow-[var(--eb-gel-shadow),0_0_0_1px_var(--eb-desk-accent-edge)] [text-shadow:var(--eb-gel-ink-shadow)]",
         // Login screen only: the lime gradient in `default` is for in-app
         // actions (DESIGN.md §5.1), the login screenshot's button is solid dark.
         dark: "border-transparent bg-foreground text-background hover:opacity-90",

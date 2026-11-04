@@ -9,6 +9,10 @@ import { cn } from "cn"
 const trackClassName =
   "inline-flex w-fit gap-1 rounded-lg border border-surface-border bg-white/50 p-1"
 
+// Desktop windows: joined bevel buttons; the pressed one turns blue gel.
+const gelTrackClassName =
+  "inline-flex w-fit overflow-hidden rounded-md shadow-[0_0_0_1px_rgb(60_80_120/.42),0_1px_1px_rgb(40_60_90/.14)]"
+
 const toggleVariants = cva(
   "group/toggle inline-flex items-center justify-center gap-1 rounded-lg text-sm whitespace-nowrap transition-all outline-none focus-visible:ring-[1.5px] focus-visible:ring-foreground disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[1.5px] aria-invalid:ring-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
@@ -22,6 +26,8 @@ const toggleVariants = cva(
         // DESIGN.md §5.4 分段軌道: a block inside the track; pick one per ToggleGroup.
         track:
           "min-h-[34px] flex-1 rounded-md px-4 text-muted-foreground hover:bg-white/60 hover:text-foreground aria-pressed:bg-selected aria-pressed:font-medium aria-pressed:text-foreground aria-selected:bg-selected aria-selected:font-medium aria-selected:text-foreground",
+        gel:
+          "h-[26px] rounded-none bg-(image:--eb-bevel) px-3.5 text-[13px] text-foreground shadow-[inset_-1px_0_0_rgb(60_80_120/.3)] last:shadow-none aria-pressed:bg-(image:--eb-gel) aria-pressed:font-semibold aria-pressed:text-white aria-pressed:shadow-(--eb-gel-shadow) aria-pressed:[text-shadow:var(--eb-gel-ink-shadow)]",
       },
       size: {
         default:
@@ -54,4 +60,4 @@ function Toggle({
   )
 }
 
-export { Toggle, toggleVariants, trackClassName }
+export { Toggle, toggleVariants, trackClassName, gelTrackClassName }

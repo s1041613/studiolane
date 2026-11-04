@@ -123,4 +123,18 @@
   --eb-ease: cubic-bezier(.2, .7, .2, 1);
   --eb-dur-fast: 150ms;   /* hover 底色 */
   --eb-dur-slow: 350ms;   /* 主按鈕漸層移動 */
+
+  /* ---------- 13. 桌面視窗：內嵌面板、立體按鈕、藍色凝膠 ---------- */
+  --eb-desk-pane: #eef2f7;
+  --eb-desk-panel: rgb(244 248 252 / .78);
+  --eb-desk-field: #fbfdff;
+  --eb-desk-edge: rgb(60 80 120 / .32);
+  --eb-desk-hair: rgb(60 80 120 / .16);
+  --eb-desk-sel: rgb(31 111 214 / .18);
+  --eb-desk-accent-edge: #1d5fb8;
+  --eb-bevel: linear-gradient(180deg, #fdfeff 0%, #eef1f6 50%, #dfe4ea 51%, #eef1f6 100%);
+  --eb-bevel-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(60 80 120 / .36), 0 1px 1px rgb(40 60 90 / .16);
+  --eb-gel: linear-gradient(180deg, #cfe7ff 0%, #8cc6ff 46%, #4fa0f6 51%, #6fb2fa 85%, #a9d4ff 100%);
+  --eb-gel-shadow: inset 0 1px 1px rgb(255 255 255 / .85), inset 0 -2px 3px rgb(170 220 255 / .8);
+  --eb-gel-ink-shadow: 0 1px 0 rgb(0 40 110 / .55);
 }

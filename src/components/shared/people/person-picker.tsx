@@ -47,7 +47,8 @@ interface PersonPickerProps {
   // "pending": dashed border, transparent, muted text — a locked value,
   // not merely disabled (e.g. 代課's 原老師 once editing; same look
   // NativeSelect/Input use for that case).
-  variant?: "default" | "pending";
+  // "inline": plain text in a desktop window form row.
+  variant?: "default" | "pending" | "inline";
 }
 
 export function PersonPicker({ people, selectedLabel, placeholder, create, onChange, disabled, variant }: PersonPickerProps) {
@@ -69,7 +70,7 @@ export function PersonPicker({ people, selectedLabel, placeholder, create, onCha
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger {...control} disabled={disabled} className={`${controlVariants({ variant })} text-left`}>
+      <PopoverTrigger {...control} disabled={disabled} className={`${controlVariants({ variant, size: variant === "inline" ? "inline" : "default" })} text-left`}>
         {selectedLabel || <span className="text-muted-foreground">{placeholder}</span>}
       </PopoverTrigger>
       <PopoverContent surface="menu" className="w-(--anchor-width)">

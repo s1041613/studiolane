@@ -30,6 +30,8 @@ type SegmentedControlProps<T extends string> = FieldErrorAria & {
   value: T;
   onValueChange: (value: T) => void;
   disabled?: boolean;
+  // "gel": the desktop windows' joined bevel buttons.
+  look?: "track" | "gel";
   "aria-label": string;
 };
 
@@ -40,6 +42,7 @@ export function SegmentedControl<T extends string>({
   value,
   onValueChange,
   disabled,
+  look = "track",
   "aria-label": ariaLabel,
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedBy,
@@ -54,8 +57,8 @@ export function SegmentedControl<T extends string>({
       aria-label={ariaLabel}
       aria-invalid={(ariaInvalid ?? field["aria-invalid"]) || undefined}
       aria-describedby={ariaDescribedBy ?? field["aria-describedby"]}
-      variant="track"
-      spacing={1}
+      variant={look}
+      spacing={look === "gel" ? 0 : 1}
       value={[value]}
       onValueChange={(pressed) => onValueChange(singleSelection(pressedOptions(pressed, options), value))}
       disabled={disabled}

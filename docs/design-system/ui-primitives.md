@@ -372,6 +372,15 @@ action on the right.[^widget-gallery] `ContextMenu` is the right-click
 menu that opens at the pointer; the desktop uses it to enter edit
 mode.[^context-menu]
 
+Desktop windows have their own control look. `Window chrome="plain"` drops
+the toolbar band; the body holds `WindowPane`s (`tone="panel"` for a lighter
+side column).[^window] Inside them use `Button` `bevel` (清除) and `gel` (送出),
+`SegmentedControl look="gel"` (教室, 用途, 付款方式), `Input
+variant="inline"` for text that reads as plain until hovered or focused,
+and `Skeleton` for the fill-in placeholder.[^button][^input] Colours come
+from the `--eb-desk-*`, `--eb-bevel*` and `--eb-gel*` tokens in
+`src/app/tokens.css`.
+
 [^button]: Button component
 [^action-button]: ActionButton component
 [^dialog]: Dialog component

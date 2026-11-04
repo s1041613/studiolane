@@ -32,6 +32,8 @@ interface WindowProps {
   // Tween to a new `rect` from outside (e.g. the window growing to show
   // more content) instead of jumping. Drags and resizes stay live.
   animateRect?: boolean;
+  // "plain": no toolbar band; the body holds inset WindowPanes instead.
+  chrome?: "toolbar" | "plain";
   children: React.ReactNode;
 }
 
@@ -72,6 +74,7 @@ function Window({
   titleAccessory,
   toolbar = false,
   animateRect = false,
+  chrome = "toolbar",
   children,
 }: WindowProps) {
   const [toolbarSlot, setToolbarSlot] = React.useState<HTMLElement | null>(null);
@@ -226,10 +229,14 @@ function Window({
           <div
             ref={titleBarRef}
             className="relative z-[3] flex h-10 flex-none items-center gap-2 py-0 pr-2.5 pl-3 select-none"
-            style={{
-              backgroundImage: "linear-gradient(180deg, #fbfcfe 0%, #eef1f6 50%, #dfe4ea 51%, #eef1f6 100%)",
-              boxShadow: "inset 0 1px 0 #fff, 0 1px 0 #bba891",
-            }}
+            style={
+              chrome === "toolbar"
+                ? {
+                    backgroundImage: "linear-gradient(180deg, #fbfcfe 0%, #eef1f6 50%, #dfe4ea 51%, #eef1f6 100%)",
+                    boxShadow: "inset 0 1px 0 #fff, 0 1px 0 #bba891",
+                  }
+                : undefined
+            }
           >
             <TrafficLights onClose={onClose} className="mr-1.5" />
             {toolbar ? (
@@ -272,12 +279,21 @@ function WindowTitle({ children }: { children: React.ReactNode }) {
 }
 
 // An inset, rounded content pane inside a window (a list, a sidebar's
-// neighbour).
-function WindowPane({ className, style, ...props }: React.ComponentProps<"div">) {
+// neighbour). "panel" is the lighter tone for a side column such as a chat.
+function WindowPane({
+  tone = "pane",
+  className,
+  style,
+  ...props
+}: React.ComponentProps<"div"> & { tone?: "pane" | "panel" }) {
   return (
     <div
       className={cn("relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[7px]", className)}
-      style={{ background: "#eef2f7", boxShadow: "inset 0 0 0 1px rgba(120,95,70,0.32)", ...style }}
+      style={{
+        background: tone === "pane" ? "#eef2f7" : "rgba(244,248,252,0.78)",
+        boxShadow: "inset 0 0 0 1px rgba(120,95,70,0.32)",
+        ...style,
+      }}
       {...props}
     />
   );

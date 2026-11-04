@@ -68,7 +68,7 @@ export const KOBEYEE_TOP_INSET = MENU_BAR_HEIGHT + PERCH_HEAD_ROOM;
 export const KOBEYEE_MIN_WIDTH = 360;
 export const KOBEYEE_MIN_HEIGHT = 420;
 const KOBEYEE_DEFAULT_WIDTH = 440;
-const KOBEYEE_DEFAULT_HEIGHT = 560;
+const KOBEYEE_DEFAULT_HEIGHT = 696;
 const WINDOW_MARGIN = 16;
 // Dock height (70px) plus its own bottom offset and a little breathing room,
 // same clearance the bookings window uses.
