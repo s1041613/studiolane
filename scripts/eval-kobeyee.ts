@@ -6,6 +6,7 @@
 // "server-only", which otherwise throws outside a React Server Component).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { kobeyeeEvalCases } from "@/server/logic/__fixtures__/kobeyee-eval-cases";
+import { kobeyeeBlindEvalCases } from "@/server/logic/__fixtures__/kobeyee-eval-cases-blind";
 import { scoreKobeyeeParse, type CaseScore } from "@/server/logic/kobeyee-eval-scorer";
 import type { KobeyeeParse } from "@/server/logic/kobeyee-parse";
 import { extractKobeyeeParse, KOBEYEE_MODEL_ID } from "@/server/services/kobeyee-extraction";
@@ -16,7 +17,8 @@ function rowFor(caseId: string, description: string, score: CaseScore): Record<s
     description,
     tasks: score.taskCount,
     wrongFields: score.wrongFieldCount,
-    result: score.wrongFieldCount === 0 ? "pass" : "FAIL",
+    missingFields: score.missingFieldCount,
+    result: score.passed ? "pass" : "FAIL",
   };
 }
 
@@ -30,22 +32,32 @@ async function main(): Promise<void> {
   const modelId = process.env.KOBEYEE_EVAL_MODEL ?? KOBEYEE_MODEL_ID;
   const transcript: unknown[] = [];
   const rows: Record<string, string | number>[] = [];
-  let wrongFieldTotal = 0;
+  let failedCases = 0;
+  let missingFieldTotal = 0;
+  const evalCases = [
+    ...kobeyeeEvalCases,
+    ...kobeyeeBlindEvalCases.map((evalCase) => ({
+      ...evalCase,
+      id: evalCase.id.startsWith("blind-") ? evalCase.id : `blind-${evalCase.id}`,
+    })),
+  ];
 
-  for (const evalCase of kobeyeeEvalCases) {
+  for (const evalCase of evalCases) {
     const result = await extractKobeyeeParse(evalCase.input, evalCase.today, modelId);
     // "unreadable" is scored as nothing extracted, the same as the model
     // itself returning `{ tasks: [] }` — see kobeyee-extraction.ts.
     const actual: KobeyeeParse = result.status === "ok" ? result.parse : { tasks: [] };
     const score = scoreKobeyeeParse(evalCase.expected, actual);
-    wrongFieldTotal += score.wrongFieldCount;
+    if (!score.passed) failedCases += 1;
+    missingFieldTotal += score.missingFieldCount;
     rows.push(rowFor(evalCase.id, evalCase.description, score));
     console.log(
-      `\n[${score.wrongFieldCount === 0 ? "pass" : "FAIL"}] ${evalCase.id}\n  input:  ${evalCase.input.replace(/\n/g, " / ")}\n  output: ${JSON.stringify(result.status === "ok" ? result.parse : result)}`,
+      `\n[${score.passed ? "pass" : "FAIL"}${score.missingFieldCount > 0 ? `, ${score.missingFieldCount} null` : ""}] ${evalCase.id}\n  input:  ${evalCase.input.replace(/\n/g, " / ")}\n  output: ${JSON.stringify(result.status === "ok" ? result.parse : result)}`,
     );
     transcript.push({
       id: evalCase.id,
-      result: score.wrongFieldCount === 0 ? "pass" : "FAIL",
+      result: score.passed ? "pass" : "FAIL",
+      missingFields: score.missingFieldCount,
       today: evalCase.today,
       input: evalCase.input,
       expected: evalCase.expected,
@@ -58,8 +70,8 @@ async function main(): Promise<void> {
   const file = `eval-results/kobeyee-${modelId}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
   writeFileSync(file, JSON.stringify(transcript, null, 2));
   console.log(`Inputs and model outputs: ${file}`);
-  console.log(`${modelId}: ${kobeyeeEvalCases.length} cases, ${wrongFieldTotal} wrong field(s) total.`);
-  if (wrongFieldTotal > 0) process.exitCode = 1;
+  console.log(`${modelId}: ${evalCases.length} cases, ${failedCases} failed, ${missingFieldTotal} null field(s).`);
+  if (failedCases > 0) process.exitCode = 1;
 }
 
 main().catch((error: unknown) => {
