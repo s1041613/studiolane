@@ -24,10 +24,8 @@ const CAT_PERCH_HEIGHT = Math.round(CAT_NATURAL_HEIGHT / 4);
 // z-index to hide an overlap.
 export const CORNER_RIGHT = 44;
 export const CORNER_BOTTOM = 112;
-// The clickable spot is taller and slightly wider than the sprite alone.
-// The "Kobeyee" label sits below it, plus the button's own padding.
+// The clickable spot is slightly wider than the sprite alone.
 export const CORNER_RESERVE_WIDTH = CAT_CORNER_WIDTH + 8;
-export const CORNER_RESERVE_HEIGHT = CAT_CORNER_HEIGHT + 32;
 
 // Where the perched cat sits on its window. Its horizontal center is this
 // far in from the window's right edge, with its feet dipping this far
