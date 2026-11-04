@@ -39,7 +39,7 @@ function ResolvedDesktopWidgets({ hidden, sectionsPromise }: { hidden: boolean; 
 // `children` is BookingsView on /bookings, rendered unchanged inside the
 // window; null on `/`, where the window stays closed. The booking form
 // comes in as a render prop because desktop/ can't import booking/.
-function DesktopShell({ sectionsPromise, children, reader, submitter, renderBookingForm }: DesktopShellProps) {
+function DesktopShell({ sectionsPromise, children, reader, submitter, draftTotal, renderBookingForm }: DesktopShellProps) {
   // A layout's `children` is never null (Next wraps every page in its own
   // boundary), so the pathname, not the page's output, is the open state.
   const pathname = usePathname();
@@ -61,7 +61,7 @@ function DesktopShell({ sectionsPromise, children, reader, submitter, renderBook
       <MenuBar />
       <BookingsWindow open={bookingsOpen}>{children}</BookingsWindow>
       <PreparingWindow title={preparing} />
-      <KobeyeeWindow reader={reader} submitter={submitter} renderBookingForm={renderBookingForm} />
+      <KobeyeeWindow reader={reader} submitter={submitter} draftTotal={draftTotal} renderBookingForm={renderBookingForm} />
       <KobeyeeCat />
       <DockBar bookingsOpen={bookingsOpen} />
     </div>

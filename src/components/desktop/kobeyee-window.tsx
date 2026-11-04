@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useReducedMotion } from "motion/react";
-import { ArrowUpIcon, ClipboardPasteIcon } from "lucide-react";
+import { ArrowUpIcon, CheckIcon, ClipboardPasteIcon, CopyIcon, PlusIcon, XIcon } from "lucide-react";
 import { Window, WindowPane } from "@/components/ui/window";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,9 +18,14 @@ import {
 import {
   FORM_MIN_WIDTH,
   blankDraft,
+  acknowledgedConflictIds,
+  blockedSlots,
+  kobeyeeLead,
   kobeyeeLine,
   kobeyeeWindowRect,
-  missingDraftFields,
+  overlapQuestions,
+  readyToRegister,
+  renterReply,
   revealedCount,
   type KobeyeeReader,
   type KobeyeeSubmitter,
@@ -32,12 +37,16 @@ export interface BookingFormSlotProps {
   draft: BookingDraft;
   // Rows at or past this index in DRAFT_FIELDS render as skeletons.
   revealed: number;
+  // After 確認登記 the form only shows what was written.
+  locked: boolean;
   onDraftChange: (draft: BookingDraft) => void;
 }
 
 export interface KobeyeeWindowProps {
   reader: KobeyeeReader;
   submitter: KobeyeeSubmitter;
+  // The draft's price total, or null until it can be priced (no renter yet).
+  draftTotal: (draft: BookingDraft) => number | null;
   renderBookingForm: (props: BookingFormSlotProps) => ReactNode;
 }
 
@@ -45,16 +54,25 @@ const REVEAL_MS = 1500;
 // The chat pane sits inside the window's 8px side gutters.
 const CHAT_PANE_INSET = 16;
 
-// What the last 確認登記 press left to say, cleared once the draft changes.
-type SubmitState =
-  | { kind: "idle" }
-  | { kind: "submitting" }
-  | { kind: "conflicts"; conflictIds: string[] }
-  | { kind: "error"; message: string };
+// The last 確認登記 press, cleared once the draft changes.
+type SubmitState = { kind: "idle" } | { kind: "submitting" } | { kind: "error"; message: string };
 
 const IDLE: SubmitState = { kind: "idle" };
 
-function KobeyeeWindow({ reader, submitter, renderBookingForm }: KobeyeeWindowProps) {
+function Said({ children }: { children: ReactNode }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs text-muted-foreground">Kobeyee 說：</p>
+      {children}
+    </div>
+  );
+}
+
+function Answered({ children }: { children: ReactNode }) {
+  return <span className="ml-1.5 text-success">✓ {children}</span>;
+}
+
+function KobeyeeWindow({ reader, submitter, draftTotal, renderBookingForm }: KobeyeeWindowProps) {
   const session = useDesktopStore((state) => state.kobeyee);
   const dispatch = useDesktopStore((state) => state.dispatchKobeyee);
   const send = useDesktopStore((state) => state.sendToKobeyee);
@@ -62,6 +80,7 @@ function KobeyeeWindow({ reader, submitter, renderBookingForm }: KobeyeeWindowPr
   const reduceMotion = useReducedMotion();
   const [text, setText] = useState("");
   const [submitState, setSubmitState] = useState<SubmitState>(IDLE);
+  const [copied, setCopied] = useState(false);
 
   const filling = session.phase.kind === "filling";
   useEffect(() => {
@@ -81,20 +100,29 @@ function KobeyeeWindow({ reader, submitter, renderBookingForm }: KobeyeeWindowPr
   const line = kobeyeeLine(phase);
   const reading = phase.kind === "reading";
   const draft = session.draft;
-  const editable = phase.kind === "filled" || phase.kind === "manual";
-  const missing = draft && editable ? missingDraftFields(draft) : [];
-  const canRegister = draft !== null && editable && missing.length === 0;
+  const review = phase.kind === "filling" || phase.kind === "filled" || phase.kind === "registered" ? phase.review : null;
+  const registered = phase.kind === "registered";
+  const total = draft ? draftTotal(draft) : null;
+  const ready = readyToRegister(session);
 
-  async function register(acknowledgedIds: string[]) {
-    if (!draft) return;
+  async function register() {
+    if (!draft || !ready) return;
     setSubmitState({ kind: "submitting" });
-    const outcome = await submitter(draft, acknowledgedIds);
+    const outcome = await submitter(draft, acknowledgedConflictIds(session));
     if (outcome.status === "registered") {
       setSubmitState(IDLE);
-      dispatch({ type: "registered" });
+      dispatch({ type: "registered", reply: renterReply(session, total) });
     } else {
-      setSubmitState(outcome.status === "conflicts" ? { kind: "conflicts", conflictIds: outcome.conflictIds } : { kind: "error", message: outcome.message });
+      // A hold that appeared after the read: the overlap question is gone,
+      // so say so rather than writing past it.
+      setSubmitState({ kind: "error", message: outcome.status === "conflicts" ? "有新的預約跟這些時段重疊，請重新貼一次" : outcome.message });
     }
+  }
+
+  async function copyReply(reply: string) {
+    await navigator.clipboard.writeText(reply).catch(() => undefined);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
   }
 
   function submit() {
@@ -132,18 +160,12 @@ function KobeyeeWindow({ reader, submitter, renderBookingForm }: KobeyeeWindowPr
             {renderBookingForm({
               draft: session.draft ?? blankDraft(),
               revealed: revealedCount(phase),
+              locked: registered,
               onDraftChange: (next) => {
                 setSubmitState(IDLE);
                 dispatch({ type: "editDraft", draft: next });
               },
             })}
-            {canRegister && (
-              <div className="flex justify-end px-10 pb-8">
-                <Button type="button" variant="gel" disabled={submitState.kind === "submitting"} onClick={() => void register([])}>
-                  確認登記
-                </Button>
-              </div>
-            )}
           </WindowPane>
         )}
         <WindowPane
@@ -172,33 +194,82 @@ function KobeyeeWindow({ reader, submitter, renderBookingForm }: KobeyeeWindowPr
                 {message}
               </p>
               {line && (
-                <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Kobeyee 說：</p>
+                <Said>
                   <p className="text-[15px] font-semibold">{line}</p>
-                  {missing.length > 0 && phase.kind === "filled" && (
-                    <p className="mt-1 text-[13px] text-muted-foreground">還要選{missing.join("、")}</p>
-                  )}
-                  {submitState.kind === "error" && <p className="mt-1 text-[13px] text-danger">{submitState.message}</p>}
-                  {submitState.kind === "conflicts" && (
-                    <div className="mt-1">
-                      <p className="text-[13px] text-danger">跟別人的預約時間重疊</p>
-                      <Button
-                        type="button"
-                        variant="bevel"
-                        size="xs"
-                        className="mt-2"
-                        onClick={() => void register(submitState.conflictIds)}
-                      >
-                        仍要登記
-                      </Button>
-                    </div>
-                  )}
                   {phase.kind === "failed" && (
                     <Button type="button" variant="bevel" size="xs" className="mt-2" onClick={() => void retry(reader)}>
                       再試一次
                     </Button>
                   )}
-                </div>
+                </Said>
+              )}
+              {review && (
+                <Said>
+                  <p className="text-[15px] font-semibold">{kobeyeeLead(review)}</p>
+                  {blockedSlots(review).map(({ label, reason }, index) => (
+                    <p key={index} className="tabular-nums">
+                      {label} <span className="text-warn">{reason}</span>
+                    </p>
+                  ))}
+                </Said>
+              )}
+              {review &&
+                overlapQuestions(review).map(({ slotIndex, text: question }) => {
+                  const answer = session.overlapAnswers[slotIndex];
+                  return (
+                    <Said key={slotIndex}>
+                      <p className={answer ? "text-muted-foreground" : undefined}>
+                        {question}
+                        {answer && <Answered>{answer === "include" ? "一起建立" : "不要"}</Answered>}
+                      </p>
+                      {!answer && !registered && (
+                        <div className="mt-2 flex gap-2">
+                          <Button type="button" variant="bevel" size="xs" onClick={() => dispatch({ type: "answerOverlap", slotIndex, answer: "include" })}>
+                            <PlusIcon /> 一起建立
+                          </Button>
+                          <Button type="button" variant="bevel" size="xs" onClick={() => dispatch({ type: "answerOverlap", slotIndex, answer: "skip" })}>
+                            <XIcon /> 不要
+                          </Button>
+                        </div>
+                      )}
+                    </Said>
+                  );
+                })}
+              {review && phase.kind !== "filling" && (
+                <Said>
+                  <p className={draft?.renter ? "text-muted-foreground" : undefined}>
+                    租借人是誰？在左邊選一下
+                    {draft?.renter && <Answered>{draft.renter.name}</Answered>}
+                  </p>
+                </Said>
+              )}
+              {(ready || registered) && (
+                <Said>
+                  <Button
+                    type="button"
+                    variant="gel"
+                    size="sm"
+                    disabled={registered || submitState.kind === "submitting"}
+                    onClick={() => void register()}
+                  >
+                    <CheckIcon />
+                    {registered
+                      ? `已登記 ${phase.count} 筆`
+                      : `確認登記 ${draft?.slots.length ?? 0} 筆${total ? `・${total.toLocaleString("en-US")}` : ""}`}
+                  </Button>
+                  {submitState.kind === "error" && <p className="mt-1 text-[13px] text-danger">{submitState.message}</p>}
+                </Said>
+              )}
+              {registered && (
+                <Said>
+                  <p>給租借人的回覆：</p>
+                  <p className="mt-2 rounded-md bg-(--eb-desk-field) px-3 py-2.5 text-[13px] whitespace-pre-wrap shadow-[inset_0_0_0_1px_var(--eb-desk-edge)]">
+                    {phase.reply}
+                  </p>
+                  <Button type="button" variant="bevel" size="xs" className="mt-2" onClick={() => void copyReply(phase.reply)}>
+                    <CopyIcon /> {copied ? "已複製" : "複製回覆"}
+                  </Button>
+                </Said>
               )}
             </div>
           )}
