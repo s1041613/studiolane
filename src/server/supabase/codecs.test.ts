@@ -9,10 +9,18 @@ import {
   paymentStateToLabel,
   purposeFromLabel,
   purposeToLabel,
+  roomToLabel,
   statusFromLabel,
   statusToLabel,
   toStartsEndsAt,
 } from "@/server/supabase/codecs";
+
+describe("room codec", () => {
+  it("labels each room without the letter", () => {
+    expect(roomToLabel("A")).toBe("大教室");
+    expect(roomToLabel("B")).toBe("小教室");
+  });
+});
 
 describe("purpose codec", () => {
   it("round-trips every DB code through its Chinese label", () => {

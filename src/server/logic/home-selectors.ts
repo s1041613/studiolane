@@ -53,17 +53,24 @@ const CONFLICT_ELIGIBLE_STATUSES: RentalStatus[] = [
 // F4/B2/D4: only pending/awaiting-payment rentals participate in conflict
 // ranking — registered, completed, postponed, and cancelled rentals never
 // count as (or against) a conflict, regardless of what's in `list`.
-export function conflictInfo(
+export function conflictRivals(
   rental: RentalSummary,
   list: RentalSummary[],
-): number | null {
-  if (!CONFLICT_ELIGIBLE_STATUSES.includes(rental.status)) return null;
-  const rivals = list.filter(
+): RentalSummary[] {
+  if (!CONFLICT_ELIGIBLE_STATUSES.includes(rental.status)) return [];
+  return list.filter(
     (o) =>
       o !== rental &&
       CONFLICT_ELIGIBLE_STATUSES.includes(o.status) &&
       overlaps(o, rental),
   );
+}
+
+export function conflictInfo(
+  rental: RentalSummary,
+  list: RentalSummary[],
+): number | null {
+  const rivals = conflictRivals(rental, list);
   if (!rivals.length) return null;
   const order = [rental, ...rivals]
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))

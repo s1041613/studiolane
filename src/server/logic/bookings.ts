@@ -24,7 +24,9 @@ const STATUS_ORDER: Record<RentalStatus, number> = {
   [RentalStatus.Cancelled]: 5,
 };
 
-function matchesQuery(rental: RentalSummary, q: string): boolean {
+// Shared with shelf.ts: the shelf applies the same ?q= match on top of
+// whichever folder is selected, instead of re-deriving the rule.
+export function matchesQuery(rental: RentalSummary, q: string): boolean {
   const needle = q.trim().toLowerCase();
   if (!needle) return true;
   return (

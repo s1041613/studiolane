@@ -36,6 +36,21 @@ export function purposeFromLabel(label: string): PurposeCode | null {
   return entry ? entry[0] : null;
 }
 
+// --- room ---------------------------------------------------------------
+// The DB's single `room` column, "A" | "B"; the UI never shows the letter
+// on its own (room-naming decision: 大教室 / 小教室, no "大A" / "A 教室").
+
+export type RoomCode = "A" | "B";
+
+const ROOM_LABEL: Record<RoomCode, string> = {
+  A: "大教室",
+  B: "小教室",
+};
+
+export function roomToLabel(code: RoomCode): string {
+  return ROOM_LABEL[code];
+}
+
 // --- role (pricing_plans.role / roster.role) --------------------------------
 // R2 in the migration plan: this is the DB's "身分類型" (identity category).
 
