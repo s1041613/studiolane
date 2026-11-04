@@ -14,7 +14,7 @@ import {
   findRegisteredOverlaps,
   planConfirm,
 } from "@/server/logic/bookings";
-import type { BookingAction } from "@/server/logic/bookings";
+import type { BookingAction, RivalSnapshot } from "@/server/logic/bookings";
 import { PaymentState, RentalStatus } from "@/server/types/home";
 import type { RentalSummary } from "@/server/types/home";
 
@@ -82,13 +82,13 @@ function withRoomLock<T>(room: "A" | "B", run: () => Promise<T>): Promise<T> {
 export type BookingActionResult = Sealed;
 export type ConfirmBookingResult = Sealed<null, { blockers: { conflicts: RentalSummary[] } }>;
 
-// T-確認: no rivals -> confirm; rivals and no cancelIds -> report them for
-// the dialog; rivals and matching cancelIds -> confirm this one and cancel
+// T-確認: no rivals -> confirm; rivals and no cancelRivals -> report them for
+// the dialog; rivals and matching cancelRivals (id, status, payment) -> confirm this one and cancel
 // the rest in one write (RentalRepository.confirmWithCancellations). If the
-// fresh rivals no longer match cancelIds — someone else acted on this room
+// fresh rivals no longer match cancelRivals — someone else acted on this room
 // in between — this refuses the same way a lost transition() race does,
 // rather than opening yet another dialog.
-export async function confirmBooking(id: string, cancelIds?: string[]): Promise<ConfirmBookingResult> {
+export async function confirmBooking(id: string, cancelRivals?: RivalSnapshot[]): Promise<ConfirmBookingResult> {
   return runAction({ attempted: "確認預約", access: "staff", revalidate: REVALIDATE }, async () => {
     const existing = await rentalRepo.findById(id);
     if (!existing) return fail("NOT_FOUND", "找不到這筆預約");
@@ -99,9 +99,9 @@ export async function confirmBooking(id: string, cancelIds?: string[]): Promise<
       const { rental, all } = loaded.data;
       if (!(await stillRentable(rental))) return fail("FAILED_PRECONDITION", NO_LONGER_RENTABLE);
 
-      const plan = planConfirm(rental, all, cancelIds);
+      const plan = planConfirm(rental, all, cancelRivals);
       if (plan.kind === "conflicts") {
-        if (cancelIds) return fail("ABORTED", STALE_BOOKING);
+        if (cancelRivals) return fail("ABORTED", STALE_BOOKING);
         return failBlockers(
           "FAILED_PRECONDITION",
           `跟 ${plan.conflicts.length} 筆預約時間重疊，請先取消或延期下面這幾筆，再回來確認`,

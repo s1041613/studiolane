@@ -141,7 +141,7 @@ describe("BookingActions: primary menu items", () => {
     expect(screen.queryByRole("alertdialog", { name: "不能確認" })).not.toBeInTheDocument();
   });
 
-  it("confirming the clash dialog calls confirmBooking again with the rival's id and closes on success", async () => {
+  it("confirming the clash dialog calls confirmBooking again with the reviewed rival and closes on success", async () => {
     actions.confirmBooking.mockResolvedValueOnce(blockers()).mockResolvedValueOnce(OK);
     render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
 
@@ -150,7 +150,7 @@ describe("BookingActions: primary menu items", () => {
     await screen.findByRole("alertdialog", { name: "確認並取消重疊的預約？" });
     fireEvent.click(screen.getByRole("button", { name: "確認並取消其他" }));
 
-    await waitFor(() => expect(actions.confirmBooking).toHaveBeenNthCalledWith(2, "r1", ["rival"]));
+    await waitFor(() => expect(actions.confirmBooking).toHaveBeenNthCalledWith(2, "r1", [expect.objectContaining({ id: "rival" })]));
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 
