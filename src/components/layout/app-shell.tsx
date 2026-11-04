@@ -5,11 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { NAV_ITEMS, isNavActive, pageTitle } from "@/components/layout/nav-items";
-import { Logo } from "@/components/layout/logo";
+import { Logo } from "@/components/ui/logo";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const title = pageTitle(pathname);
+
+  // /bookings is the full-viewport desktop (src/components/desktop/); the
+  // old icon rail / mobile bar must not wrap it. Every other route keeps
+  // this shell.
+  if (pathname === "/bookings") return children;
 
   return (
     <>

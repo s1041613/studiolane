@@ -73,11 +73,20 @@ sources:
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/layout/app-shell.tsx
     title: AppShell component
   - id: logo
-    resource: https://github.com/s1041613/studiolane/blob/main/src/components/layout/logo.tsx
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/logo.tsx
     title: Logo component
   - id: nav-items
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/layout/nav-items.ts
     title: Navigation items
+  - id: window
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/window.tsx
+    title: Window component
+  - id: traffic-lights
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/traffic-lights.tsx
+    title: TrafficLights component
+  - id: dock
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/dock.tsx
+    title: Dock component
 ---
 
 # Overview
@@ -257,6 +266,19 @@ its own fixed title, `預約教室` (book a room). Every page under
 `/settings` shows `設定` (settings). Every other path shows no title
 bar.[^nav-items]
 
+# Window, Traffic Lights, and Dock
+
+`Window` is a floating, draggable, resizable panel with Finder-style
+chrome: a title bar with `TrafficLights` and a centered title, three resize
+handles, and Esc-to-close.[^window] Position and size are read from a
+`rect` prop and written back only when a drag or resize ends.
+`TrafficLights` renders the three gel-sphere window-control dots; only the
+close light does anything today, min/max are decorative
+placeholders.[^traffic-lights] `Dock` is the floating icon bar pinned to
+the bottom of the desktop, holding `DockItem` entries with a hover label
+and an active indicator dot.[^dock] All three are used together by the
+desktop shell that `/bookings` renders inside of.
+
 [^button]: Button component
 [^action-button]: ActionButton component
 [^dialog]: Dialog component
@@ -281,3 +303,6 @@ bar.[^nav-items]
 [^app-shell]: AppShell component
 [^logo]: Logo component
 [^nav-items]: Navigation items
+[^window]: Window component
+[^traffic-lights]: TrafficLights component
+[^dock]: Dock component

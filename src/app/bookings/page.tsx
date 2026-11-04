@@ -4,6 +4,7 @@ import { loadSection } from "@/server/services/section";
 import { bookingListFilters } from "@/server/logic/bookings";
 import { BookingsView } from "@/components/bookings/bookings-view";
 import { requirePageAccess } from "@/server/auth/require-staff";
+import { DesktopShell } from "@/components/desktop/desktop-shell";
 
 export default async function BookingsPage(props: PageProps<"/bookings">) {
   await requirePageAccess("/bookings");
@@ -19,8 +20,8 @@ export default async function BookingsPage(props: PageProps<"/bookings">) {
   const filters = bookingListFilters(typeof rawQuery === "string" ? rawQuery : undefined);
 
   return (
-    <main className="flex w-full flex-1 flex-col gap-6 md:min-h-0">
+    <DesktopShell>
       <BookingsView section={section} filters={filters} />
-    </main>
+    </DesktopShell>
   );
 }
