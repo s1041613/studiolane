@@ -46,9 +46,11 @@ function mondayOfWeek(iso: IsoDate): IsoDate {
   return addDays(iso, -(isoWeekday(iso) - 1));
 }
 
+const WEEK_OFFSET_DAYS = { this: 0, next: 7, after_next: 14 } as const;
+
 function resolveWeekday(mention: DateMention & { kind: "weekday" }, today: IsoDate): DateMentionResolution {
   const monday = mondayOfWeek(today);
-  const weekOffset = mention.week === "this" ? 0 : 7;
+  const weekOffset = WEEK_OFFSET_DAYS[mention.week];
   return { date: addDays(monday, weekOffset + mention.weekday - 1), inferredYear: false };
 }
 

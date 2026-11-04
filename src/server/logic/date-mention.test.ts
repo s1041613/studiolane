@@ -6,7 +6,7 @@ import type { DateMention } from "@/server/logic/kobeyee-parse";
 // so "this week" and "next week" land on different, easily checked dates.
 const TODAY = "2026-11-04";
 
-function weekday(week: "this" | "next", weekday: number): DateMention {
+function weekday(week: "this" | "next" | "after_next", weekday: number): DateMention {
   return { kind: "weekday", week, weekday };
 }
 
@@ -21,6 +21,7 @@ describe("resolveDateMention: weekday", () => {
 
   it("下週四 resolves one week later than 這週四", () => {
     expect(resolveDateMention(weekday("next", 4), TODAY)).toEqual({ date: "2026-11-12", inferredYear: false });
+    expect(resolveDateMention(weekday("after_next", 3), TODAY)).toEqual({ date: "2026-11-18", inferredYear: false });
   });
 
   it("treats Sunday (weekday 7) as the last day of the current week, not the next one", () => {
