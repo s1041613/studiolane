@@ -201,7 +201,6 @@ export function BookingDraftFields({ draft, onDraftChange, revealed, data }: Boo
       <Divider />
       <Row field="total" label="合計" revealed={revealed} skeleton={<Bar className="h-7 w-32" />}>
         <p className="pt-1.5 text-[22px] font-semibold tracking-tight">
-          <small className="mr-1.5 text-[13px] font-medium text-text-secondary">{slots.length} 筆</small>
           {priced && <span data-testid="booking-total">{isFree ? "免費" : money(totalAmount)}</span>}
         </p>
       </Row>
