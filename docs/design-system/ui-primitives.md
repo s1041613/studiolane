@@ -4,7 +4,7 @@ title: Shared UI Primitives and App Shell
 description: The reusable buttons, dialogs, badges, controls, and app shell layout that every page is built from.
 tags: [design-system, components, layout, forms]
 status: draft
-generated: { by: claude-code/claude-sonnet-5, at: 2026-10-31T08:47:16Z }
+generated: { by: claude-code/claude-sonnet-5, at: 2026-11-04T07:54:11Z }
 sources:
   - id: button
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/button.tsx
@@ -87,6 +87,18 @@ sources:
   - id: dock
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/dock.tsx
     title: Dock component
+  - id: menu
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/menu.tsx
+    title: Menu component
+  - id: tooltip
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/tooltip.tsx
+    title: Tooltip component
+  - id: sidebar-list
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/sidebar-list.tsx
+    title: SidebarList component
+  - id: info-panel
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/info-panel.tsx
+    title: InfoPanel component
 ---
 
 # Overview
@@ -279,6 +291,33 @@ the bottom of the desktop, holding `DockItem` entries with a hover label
 and an active indicator dot.[^dock] All three are used together by the
 desktop shell that `/bookings` renders inside of.
 
+# Menu, Tooltip, SidebarList, and InfoPanel
+
+`Menu` is a context menu for one row: a trigger (click, or a row's own
+right-click) opens a popup of real `menuitem`s with arrow-key navigation,
+type-ahead, and Esc-to-close, unlike `Popover`'s plain buttons-in-a-box.
+Use it for a row's own choice (such as the bookings list's `狀態` cell),
+not a form control's popover.[^menu] A disabled `MenuItem` stays in the
+menu, dimmed, instead of being removed, so its text can explain why.[^menu]
+
+`Tooltip` is a passive hint, not a choice: hover or focus only, with about
+a 450ms open delay carried by its own `Provider` (base-ui's `Tooltip.Root`
+takes no delay prop directly).[^tooltip] It never opens from a touch tap,
+so it needs no extra wiring for a `(hover: none)` device.[^tooltip]
+
+`SidebarList` is a window's left-hand folder list: grouped sections, each
+item showing a quiet count. An item's count can be marked `danger` (shown
+in red) to make one folder, such as a clash count, stand out among
+otherwise-quiet numbers.[^sidebar-list]
+
+`InfoPanel` is a small floating panel for one item's detail: draggable by
+its own title strip only (no resize, no traffic lights — `Window` is for a
+whole app's content, `InfoPanel` is for one row). Its position is a
+controlled prop, written back only when a drag ends, the same pattern as
+`Window`'s `rect`.[^info-panel] All four are used together by the bookings
+list's shelf view (sidebar folders, a row's `狀態` menu, a clash tooltip,
+and the row's info panel).
+
 [^button]: Button component
 [^action-button]: ActionButton component
 [^dialog]: Dialog component
@@ -306,3 +345,7 @@ desktop shell that `/bookings` renders inside of.
 [^window]: Window component
 [^traffic-lights]: TrafficLights component
 [^dock]: Dock component
+[^menu]: Menu component
+[^tooltip]: Tooltip component
+[^sidebar-list]: SidebarList component
+[^info-panel]: InfoPanel component

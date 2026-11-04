@@ -31,9 +31,11 @@ feature UIs are the rental rules settings page (`/settings/rules`; see
 read-only batch detail page (`/bookings/batch/<batchId>`), and the
 read-only bookings list (`/bookings`); see `docs/booking/`. The bookings
 list now renders inside a desktop shell (menu bar, Dock, a draggable and
-resizable window) rather than the app shell. A corner cat on that shell
-opens a chat-only Kobeyee window with no AI wiring yet. There is no real
-auth yet. Other features land in later PRs.
+resizable window) rather than the app shell, as a 預約冊 shelf: sidebar
+folders (period/room/status/clash), a row's `狀態` menu, a clash tooltip,
+and a draggable info panel. A corner cat on that shell opens a chat-only
+Kobeyee window with no AI wiring yet. There is no real auth yet. Other
+features land in later PRs.
 
 ## Working here
 

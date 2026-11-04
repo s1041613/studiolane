@@ -1,5 +1,14 @@
 # Update Log
 
+## 2026-11-04
+
+* **Update**: [Bookings List](bookings-list.md) now documents the 預約冊
+  shelf UI: sidebar folders (預約/教室/狀態, with 撞單 counted separately),
+  the row's 狀態 menu trigger replacing the old action buttons, the 撞單
+  tooltip, and the draggable info panel opened by double-click or Enter.
+  Rewrote "Out of scope" now that the sidebar covers date/room/status
+  filtering.
+
 ## 2026-11-03
 
 * **Update**: [Bookings List](bookings-list.md) now documents the five row
