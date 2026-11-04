@@ -33,7 +33,7 @@ test("sending a message expands into a filled 預約教室 form; 清除 collapse
   const booking = page.getByRole("dialog", { name: "預約教室" });
   await expect(booking).toBeVisible();
   await expect(booking.getByText("5 段可以")).toBeVisible();
-  await expect(booking.getByRole("textbox", { name: /開始$/ })).toHaveCount(5);
+  await expect(booking.locator("[data-slot-row]")).toHaveCount(5);
   await expect(booking.getByText("選擇租借人")).toBeVisible();
   await expect(booking.getByTestId("booking-total")).toHaveCount(0);
 
@@ -61,5 +61,5 @@ test("the Dock 預約教室 icon opens the form expanded and empty", async ({ pa
   const booking = page.getByRole("dialog", { name: "預約教室" });
   await expect(booking).toBeVisible();
   await expect(booking.getByText("選擇租借人")).toBeVisible();
-  await expect(booking.getByRole("textbox", { name: /開始$/ })).toHaveCount(0);
+  await expect(booking.locator("[data-slot-row]")).toHaveCount(0);
 });
