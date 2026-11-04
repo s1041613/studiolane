@@ -59,6 +59,7 @@ export default defineConfig({
     command: `pnpm dev -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: false,
-    env: forwardedEnv(),
+    // e2e reads Kobeyee messages from the fixture, never the real model.
+    env: { ...forwardedEnv(), NEXT_PUBLIC_KOBEYEE_FIXTURE: "1" },
   },
 });

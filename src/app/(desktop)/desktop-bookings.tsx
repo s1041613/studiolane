@@ -4,6 +4,8 @@ import { Suspense, use, type ComponentProps, type ReactNode } from "react";
 import { DesktopShell } from "@/components/desktop/desktop-shell";
 import { fixtureReader } from "@/components/desktop/kobeyee-fixture";
 import type { BookingFormSlotProps } from "@/components/desktop/kobeyee-window";
+import type { KobeyeeReader } from "@/components/desktop/kobeyee-session";
+import { readKobeyeeMessage } from "@/server/actions/kobeyee";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookingDraftFields, type BookingDraftFieldsData } from "@/components/booking/booking-draft-fields";
 
@@ -11,6 +13,9 @@ type DesktopBookingsProps = Pick<ComponentProps<typeof DesktopShell>, "sectionsP
   formDataPromise: Promise<BookingDraftFieldsData>;
   children: ReactNode;
 };
+
+// Playwright sets this so e2e never calls the real model (playwright.config.ts).
+const kobeyeeReader: KobeyeeReader = process.env.NEXT_PUBLIC_KOBEYEE_FIXTURE === "1" ? fixtureReader : readKobeyeeMessage;
 
 // A thin placeholder while formDataPromise is still pending; the Kobeyee
 // window is closed by default, so this only ever shows if someone opens
@@ -40,7 +45,7 @@ export function DesktopBookings({ sectionsPromise, formDataPromise, children }: 
   return (
     <DesktopShell
       sectionsPromise={sectionsPromise}
-      reader={fixtureReader}
+      reader={kobeyeeReader}
       renderBookingForm={(form) => (
         <Suspense fallback={<BookingFormSkeleton />}>
           <ResolvedBookingForm formDataPromise={formDataPromise} {...form} />

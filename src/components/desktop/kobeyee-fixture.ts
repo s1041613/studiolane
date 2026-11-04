@@ -48,7 +48,7 @@ const READ_DELAY_MS = 1200;
 // Playwright forces a non-"ok" result by starting the message with this
 // marker, followed by the status to force ("failed" or "unreadable"); any
 // other message still reads as the default fixture above.
-export const FIXTURE_FORCE_PREFIX = "studiolane-fixture-force:";
+const FIXTURE_FORCE_PREFIX = "studiolane-fixture-force:";
 
 function forcedResult(text: string): KobeyeeResult | null {
   const forced = text.startsWith(FIXTURE_FORCE_PREFIX) ? text.slice(FIXTURE_FORCE_PREFIX.length) : "";
