@@ -1,0 +1,227 @@
+"use client";
+
+import * as React from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { TrafficLights } from "@/components/ui/traffic-lights";
+
+export interface WindowRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface WindowProps {
+  title: string;
+  open: boolean;
+  rect: WindowRect;
+  onRectChange: (rect: WindowRect) => void;
+  onClose: () => void;
+  minWidth?: number;
+  minHeight?: number;
+  // The top edge can't be dragged above this (the menu bar's height).
+  topInset?: number;
+  children: React.ReactNode;
+}
+
+const DEFAULT_MIN_WIDTH = 640;
+const DEFAULT_MIN_HEIGHT = 360;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), Math.max(min, max));
+}
+
+// A floating, draggable, resizable panel with Finder-style chrome (traffic
+// lights, centered title). Position and size are read from `rect` and
+// written back only when a drag or resize ends; while one is in progress
+// this mutates the DOM node directly instead of round-tripping through React
+// state, the same approach the step1 mockup's drag script uses. All of that
+// imperative DOM work is wired up inside an effect — the escape hatch the
+// React Compiler expects for anything that isn't pure rendering.
+function Window({
+  title,
+  open,
+  rect,
+  onRectChange,
+  onClose,
+  minWidth = DEFAULT_MIN_WIDTH,
+  minHeight = DEFAULT_MIN_HEIGHT,
+  topInset = 0,
+  children,
+}: WindowProps) {
+  const nodeRef = React.useRef<HTMLDivElement>(null);
+  const titleBarRef = React.useRef<HTMLDivElement>(null);
+  const eastRef = React.useRef<HTMLDivElement>(null);
+  const southRef = React.useRef<HTMLDivElement>(null);
+  const cornerRef = React.useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  // Follows `rect` (a reopen, or the store syncing back after a drag ends).
+  // Not involved while a drag/resize is live — that mutates the node
+  // directly, below.
+  React.useEffect(() => {
+    const node = nodeRef.current;
+    if (!node || !open) return;
+    node.style.left = `${rect.x}px`;
+    node.style.top = `${rect.y}px`;
+    node.style.width = `${rect.width}px`;
+    node.style.height = `${rect.height}px`;
+  }, [rect, open]);
+
+  // Esc closes the front window.
+  React.useEffect(() => {
+    if (!open) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
+  // Drag (title bar) and resize (the three edge handles) each track one
+  // pointer from down to up, mutating the node's inline style live and
+  // reporting the final rect once the pointer lifts.
+  React.useEffect(() => {
+    const node = nodeRef.current;
+    const titleBar = titleBarRef.current;
+    const east = eastRef.current;
+    const south = southRef.current;
+    const corner = cornerRef.current;
+    if (!node || !titleBar || !east || !south || !corner || !open) return;
+    // Captured by the closures below as `const`s; none of them get reassigned,
+    // so the null check above holds for the effect's whole lifetime.
+
+    function commitRect() {
+      const box = node!.getBoundingClientRect();
+      onRectChange({ x: box.left, y: box.top, width: box.width, height: box.height });
+    }
+
+    function onTitleBarDown(event: PointerEvent) {
+      const target = event.target as HTMLElement;
+      if (target.closest("button,input,textarea,select,a")) return;
+      const start = node!.getBoundingClientRect();
+      const originX = event.clientX;
+      const originY = event.clientY;
+
+      function onMove(moveEvent: PointerEvent) {
+        const x = clamp(start.left + (moveEvent.clientX - originX), -(start.width - 80), window.innerWidth - 80);
+        const y = clamp(start.top + (moveEvent.clientY - originY), topInset, window.innerHeight - 40);
+        node!.style.left = `${x}px`;
+        node!.style.top = `${y}px`;
+      }
+      function onUp() {
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        document.body.style.userSelect = "";
+        commitRect();
+      }
+      document.body.style.userSelect = "none";
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    }
+
+    function makeResizeHandler(edge: "e" | "s" | "se") {
+      return function onResizeDown(event: PointerEvent) {
+        event.preventDefault();
+        const start = node!.getBoundingClientRect();
+        const originX = event.clientX;
+        const originY = event.clientY;
+
+        function onMove(moveEvent: PointerEvent) {
+          const dx = moveEvent.clientX - originX;
+          const dy = moveEvent.clientY - originY;
+          if (edge !== "s") {
+            node!.style.width = `${clamp(start.width + dx, minWidth, window.innerWidth - start.left)}px`;
+          }
+          if (edge !== "e") {
+            node!.style.height = `${clamp(start.height + dy, minHeight, window.innerHeight - start.top)}px`;
+          }
+        }
+        function onUp() {
+          document.removeEventListener("pointermove", onMove);
+          document.removeEventListener("pointerup", onUp);
+          document.body.style.userSelect = "";
+          commitRect();
+        }
+        document.body.style.userSelect = "none";
+        document.addEventListener("pointermove", onMove);
+        document.addEventListener("pointerup", onUp);
+      };
+    }
+
+    const onEastDown = makeResizeHandler("e");
+    const onSouthDown = makeResizeHandler("s");
+    const onCornerDown = makeResizeHandler("se");
+
+    titleBar.addEventListener("pointerdown", onTitleBarDown);
+    east.addEventListener("pointerdown", onEastDown);
+    south.addEventListener("pointerdown", onSouthDown);
+    corner.addEventListener("pointerdown", onCornerDown);
+
+    return () => {
+      titleBar.removeEventListener("pointerdown", onTitleBarDown);
+      east.removeEventListener("pointerdown", onEastDown);
+      south.removeEventListener("pointerdown", onSouthDown);
+      corner.removeEventListener("pointerdown", onCornerDown);
+    };
+  }, [open, onRectChange, minWidth, minHeight, topInset]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          ref={nodeRef}
+          role="dialog"
+          aria-label={title}
+          className="fixed z-[100] flex flex-col overflow-hidden rounded-[10px]"
+          style={{
+            transformOrigin: "50% 50%",
+            background: "rgba(237,242,250,0.68)",
+            backdropFilter: "blur(34px) saturate(160%)",
+            WebkitBackdropFilter: "blur(34px) saturate(160%)",
+            boxShadow: "0 0 0 1px rgba(0,0,0,0.45), 0 18px 50px rgba(0,10,40,0.6)",
+          }}
+          initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.97 }}
+          transition={{ duration: reduceMotion ? 0.05 : 0.22, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {/* Finder-style toolbar (`.f-tb`): brushed-metal gradient, gel
+              traffic lights, left-aligned title — the step1 mockup's
+              `.win.finder .f-tb`, trimmed to just lights + title (no
+              sidebar/search/nav buttons; those aren't part of v1). */}
+          <div
+            ref={titleBarRef}
+            className="relative z-[3] flex h-10 flex-none items-center gap-2 py-0 pr-2.5 pl-3 select-none"
+            style={{
+              backgroundImage: "linear-gradient(180deg, #fbfcfe 0%, #eef1f6 50%, #dfe4ea 51%, #eef1f6 100%)",
+              boxShadow: "inset 0 1px 0 #fff, 0 1px 0 #bba891",
+            }}
+          >
+            <TrafficLights onClose={onClose} />
+            <p
+              className="min-w-0 truncate text-[13.5px] font-bold text-foreground"
+              style={{ marginRight: "auto", textShadow: "0 1px 0 rgba(255,255,255,0.8)" }}
+            >
+              {title}
+            </p>
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+          {/* `.win::after`'s inset gloss hairline, ported as a sibling
+              overlay (z-50) instead of a pseudo-element so it still shows
+              over the opaque toolbar, same as the mockup. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-50 rounded-[10px]"
+            style={{ boxShadow: "inset 0 0.5px 0 rgba(255,255,255,0.7), inset 0 0 0 0.5px rgba(255,255,255,0.18)" }}
+          />
+          <div ref={eastRef} className="absolute top-0 right-0 h-full w-2 cursor-ew-resize" />
+          <div ref={southRef} className="absolute bottom-0 left-0 h-2 w-full cursor-ns-resize" />
+          <div ref={cornerRef} className="absolute right-0 bottom-0 size-4 cursor-nwse-resize" />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export { Window };
