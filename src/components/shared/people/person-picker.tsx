@@ -73,7 +73,7 @@ export function PersonPicker({ people, selectedLabel, placeholder, create, onCha
       <PopoverTrigger {...control} disabled={disabled} className={`${controlVariants({ variant, size: variant === "inline" ? "inline" : "default" })} text-left`}>
         {selectedLabel || <span className="text-muted-foreground">{placeholder}</span>}
       </PopoverTrigger>
-      <PopoverContent surface="menu" className="w-(--anchor-width)">
+      <PopoverContent surface="menu" className={variant === "inline" ? "w-[300px]" : "w-(--anchor-width)"}>
         <Command filter={scoreRosterKeywords}>
           <CommandInput placeholder="搜尋姓名…" value={query} onValueChange={setQuery} />
           <CommandList>

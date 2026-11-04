@@ -88,7 +88,7 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
     >
       {/* Opaque panes: Kobeyee usually floats over the 預約冊 window, whose
           text would otherwise ghost through the translucent Window body. */}
-      <div className="flex h-full justify-end gap-[7px] px-2 pt-[7px]">
+      <div className="flex h-full justify-end gap-[7px] px-2 py-[7px]">
         {booking && (
           // Any click or key in the form finishes the skeleton fill.
           <WindowPane
