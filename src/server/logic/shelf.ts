@@ -1,8 +1,10 @@
-// 預約冊 (the bookings window's shelf view): one sidebar folder is selected
-// at a time, and the same registry below both draws the sidebar and
-// decides each folder's rows — see shelfRows/shelfCount. The folder shape
-// stays a discriminated union so a caller can switch on `kind` instead of
-// stringly-typed ids.
+// 預約冊 (the bookings window's shelf view): three independent facets —
+// period (exactly one selected), room (at most one, or every room), status
+// (at most one, or every status) — combine by intersection. The same
+// registry below drives the sidebar (SHELF_SECTIONS), the row filter
+// (shelfRows/shelfCount), and the click/count helpers
+// (withFolder/toggleFolder/folderActive), so a folder's matching rule lives
+// in exactly one place.
 import { ALL_STATUSES, matchesQuery, sortBookingsNewestFirst } from "@/server/logic/bookings";
 import { conflictInfo, conflictRivals, rentalTouchesDate } from "@/server/logic/home-selectors";
 import { addDays, isoWeekday, shortDateParts } from "@/server/logic/date";
@@ -11,32 +13,25 @@ import type { RoomCode, RentalStatusCode } from "@/server/supabase/codecs";
 import { RentalStatus } from "@/server/types/home";
 import type { RentalSummary } from "@/server/types/home";
 
-export type ShelfFolder =
-  | { kind: "period"; period: "today" | "week" | "all" }
-  | { kind: "room"; room: "A" | "B" }
-  | { kind: "status"; status: RentalStatus }
-  | { kind: "clash" };
+export type ShelfFilter = {
+  period: "today" | "week" | "all";
+  room: "A" | "B" | null;
+  status: RentalStatus | "clash" | null;
+};
 
-export const DEFAULT_SHELF_FOLDER: ShelfFolder = { kind: "period", period: "all" };
+export const DEFAULT_SHELF_FILTER: ShelfFilter = { period: "all", room: null, status: null };
 
-// A stable identity for a folder: equality, React keys, and the lookup key
-// into the registry below.
-export function folderKey(folder: ShelfFolder): string {
-  switch (folder.kind) {
-    case "period":
-      return `period:${folder.period}`;
-    case "room":
-      return `room:${folder.room}`;
-    case "status":
-      return `status:${folder.status}`;
-    case "clash":
-      return "clash";
-  }
-}
+type ShelfFacet = "period" | "room" | "status";
 
 interface ShelfFolderEntry {
-  folder: ShelfFolder;
+  key: string;
   label: string;
+  facet: ShelfFacet;
+  value: ShelfFilter[ShelfFacet];
+  // `isClash` is read only by the sidebar, to turn its count red once it's
+  // above zero; nothing else treats this entry differently from any other
+  // status entry.
+  isClash?: boolean;
   // `all` is only read by the clash entry (a rental's clash status depends
   // on every other rental, not just itself).
   matches: (rental: RentalSummary, ctx: { today: string; all: RentalSummary[] }) => boolean;
@@ -75,10 +70,12 @@ function inWeek(rental: RentalSummary, today: string): boolean {
   return false;
 }
 
-function periodEntry(period: "today" | "week" | "all", label: string): ShelfFolderEntry {
+function periodEntry(period: ShelfFilter["period"], label: string): ShelfFolderEntry {
   return {
-    folder: { kind: "period", period },
+    key: `period:${period}`,
     label,
+    facet: "period",
+    value: period,
     matches: (rental, { today }) => {
       if (period === "all") return true;
       if (!onCalendar(rental)) return false;
@@ -88,20 +85,25 @@ function periodEntry(period: "today" | "week" | "all", label: string): ShelfFold
 }
 
 function roomEntry(room: RoomCode): ShelfFolderEntry {
-  return { folder: { kind: "room", room }, label: roomToLabel(room), matches: (rental) => rental.room === room };
+  return { key: `room:${room}`, label: roomToLabel(room), facet: "room", value: room, matches: (rental) => rental.room === room };
 }
 
 function statusEntry(status: RentalStatus): ShelfFolderEntry {
   return {
-    folder: { kind: "status", status },
+    key: `status:${status}`,
     label: statusToLabel(status as RentalStatusCode),
+    facet: "status",
+    value: status,
     matches: (rental) => rental.status === status,
   };
 }
 
 const CLASH_ENTRY: ShelfFolderEntry = {
-  folder: { kind: "clash" },
+  key: "status:clash",
   label: "撞單",
+  facet: "status",
+  value: "clash",
+  isClash: true,
   matches: (rental, { all }) => conflictInfo(rental, all) != null,
 };
 
@@ -116,24 +118,53 @@ export const SHELF_SECTIONS: ShelfSection[] = [
   { title: "狀態", items: STATUS_ITEMS },
 ];
 
-function entryFor(folder: ShelfFolder): ShelfFolderEntry {
-  const key = folderKey(folder);
-  const entry = SHELF_SECTIONS.flatMap((section) => section.items).find((item) => folderKey(item.folder) === key);
-  if (!entry) throw new Error(`Unknown shelf folder: ${key}`);
-  return entry;
+function allEntries(): ShelfFolderEntry[] {
+  return SHELF_SECTIONS.flatMap((section) => section.items);
 }
 
-// Every rental the folder shows, newest first; the caller applies the
+function entryFor(facet: ShelfFacet, value: ShelfFilter[ShelfFacet]): ShelfFolderEntry | undefined {
+  return allEntries().find((entry) => entry.facet === facet && entry.value === value);
+}
+
+// The filter one sidebar item represents on its own: this facet forced to
+// the item's value, the other two left exactly as given. Used both for a
+// sidebar item's faceted count (shelfCount against this) and, via
+// toggleFolder, for selecting it.
+export function withFolder(filter: ShelfFilter, entry: ShelfFolderEntry): ShelfFilter {
+  return { ...filter, [entry.facet]: entry.value } as ShelfFilter;
+}
+
+export function folderActive(filter: ShelfFilter, entry: ShelfFolderEntry): boolean {
+  return filter[entry.facet] === entry.value;
+}
+
+// Room and status are optional facets (null = every value), so clicking the
+// one already selected clears it back to null. Period always holds exactly
+// one value, so it only ever gets set, never cleared.
+export function toggleFolder(filter: ShelfFilter, entry: ShelfFolderEntry): ShelfFilter {
+  if (entry.facet !== "period" && folderActive(filter, entry)) {
+    return { ...filter, [entry.facet]: null } as ShelfFilter;
+  }
+  return withFolder(filter, entry);
+}
+
+function matchesFilter(rental: RentalSummary, filter: ShelfFilter, ctx: { today: string; all: RentalSummary[] }): boolean {
+  const period = entryFor("period", filter.period);
+  if (!period?.matches(rental, ctx)) return false;
+  if (filter.room !== null && !entryFor("room", filter.room)?.matches(rental, ctx)) return false;
+  if (filter.status !== null && !entryFor("status", filter.status)?.matches(rental, ctx)) return false;
+  return true;
+}
+
+// Every rental the filter shows, newest first; the caller applies the
 // ?q= search on top (it ranks against every rental, same as 撞單, so it
 // stays a separate step rather than folded in here).
-export function shelfRows(all: RentalSummary[], folder: ShelfFolder, today: string): RentalSummary[] {
-  const entry = entryFor(folder);
-  return sortBookingsNewestFirst(all.filter((rental) => entry.matches(rental, { today, all })));
+export function shelfRows(all: RentalSummary[], filter: ShelfFilter, today: string): RentalSummary[] {
+  return sortBookingsNewestFirst(all.filter((rental) => matchesFilter(rental, filter, { today, all })));
 }
 
-export function shelfCount(all: RentalSummary[], folder: ShelfFolder, today: string): number {
-  const entry = entryFor(folder);
-  return all.filter((rental) => entry.matches(rental, { today, all })).length;
+export function shelfCount(all: RentalSummary[], filter: ShelfFilter, today: string): number {
+  return all.filter((rental) => matchesFilter(rental, filter, { today, all })).length;
 }
 
 // The ?q= search, applied on top of shelfRows.

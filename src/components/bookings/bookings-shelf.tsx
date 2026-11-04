@@ -8,8 +8,8 @@
 import { useMemo, useState } from "react";
 import { conflictInfo, isNextDay, money, paymentTag } from "@/server/logic/home-selectors";
 import { shortDateParts } from "@/server/logic/date";
-import { DEFAULT_SHELF_FOLDER, folderKey, rivalText, searchShelfRows, shelfCount, shelfRows, SHELF_SECTIONS } from "@/server/logic/shelf";
-import type { ShelfFolder } from "@/server/logic/shelf";
+import { DEFAULT_SHELF_FILTER, folderActive, rivalText, searchShelfRows, shelfCount, shelfRows, SHELF_SECTIONS, toggleFolder, withFolder } from "@/server/logic/shelf";
+import type { ShelfFilter } from "@/server/logic/shelf";
 import { roomToLabel, statusToLabel } from "@/server/supabase/codecs";
 import type { RentalStatusCode, RoomCode } from "@/server/supabase/codecs";
 import type { RentalSummary } from "@/server/types/home";
@@ -31,15 +31,15 @@ interface BookingsShelfProps {
 const DEFAULT_INFO_POSITION: InfoPanelPosition = { x: 48, y: 44 };
 
 export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
-  const [folder, setFolder] = useState<ShelfFolder>(DEFAULT_SHELF_FOLDER);
+  const [filter, setFilter] = useState<ShelfFilter>(DEFAULT_SHELF_FILTER);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [infoId, setInfoId] = useState<string | null>(null);
   const [infoPosition, setInfoPosition] = useState<InfoPanelPosition>(DEFAULT_INFO_POSITION);
 
   const rows = useMemo(
-    () => searchShelfRows(shelfRows(allRentals, folder, today), q),
-    [allRentals, folder, today, q],
+    () => searchShelfRows(shelfRows(allRentals, filter, today), q),
+    [allRentals, filter, today, q],
   );
 
   const sections: SidebarSection[] = useMemo(
@@ -47,18 +47,18 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
       SHELF_SECTIONS.map((section) => ({
         title: section.title,
         items: section.items.map((item) => {
-          const count = shelfCount(allRentals, item.folder, today);
+          const count = shelfCount(allRentals, withFolder(filter, item), today);
           return {
-            key: folderKey(item.folder),
+            key: item.key,
             label: item.label,
             count,
-            active: folderKey(item.folder) === folderKey(folder),
-            tone: item.folder.kind === "clash" && count > 0 ? ("danger" as const) : undefined,
-            onClick: () => setFolder(item.folder),
+            active: folderActive(filter, item),
+            tone: item.isClash && count > 0 ? ("danger" as const) : undefined,
+            onClick: () => setFilter(toggleFolder(filter, item)),
           };
         }),
       })),
-    [allRentals, folder, today],
+    [allRentals, filter, today],
   );
 
   const infoRental = infoId ? rows.find((r) => r.id === infoId) ?? allRentals.find((r) => r.id === infoId) : null;
