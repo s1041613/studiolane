@@ -90,6 +90,7 @@
   --color-warn: var(--eb-warn-text);
   --color-warn-dot: var(--eb-warn-dot);
   --color-danger-bg: var(--eb-danger-bg);
+  --color-link: var(--eb-link-text);
 
   --color-cal-available-border: var(--eb-cal-available-border);
   --color-cal-oneday-border: var(--eb-cal-oneday-border);
