@@ -21,7 +21,6 @@ import {
   shelfCount,
   shelfRows,
   shelfStatusText,
-  shelfTitle,
   SHELF_SECTIONS,
   sortShelfRows,
   toggleFolder,
@@ -191,7 +190,7 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
             <ForwardIcon />
           </ToolbarButton>
         </ToolbarButtonGroup>
-        <ToolbarTitle>{shelfTitle(filter)}</ToolbarTitle>
+        <ToolbarTitle>預約冊</ToolbarTitle>
         <ToolbarButton aria-label="取得資訊" title="取得資訊" disabled={rows.length === 0} onClick={openSelectionInfo}>
           <ActionIcon />
         </ToolbarButton>

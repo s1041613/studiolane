@@ -10,7 +10,6 @@ import {
   shelfCount,
   shelfRows,
   shelfStatusText,
-  shelfTitle,
   SHELF_SECTIONS,
   sortShelfRows,
   toggleFolder,
@@ -300,14 +299,6 @@ describe("sortShelfRows / nextShelfSort", () => {
     expect(sort).toEqual({ key: "amount", direction: "ascending" });
     expect(sortShelfRows(all, sort, all).map((r) => r.id)).toEqual(["first", "late", "early"]);
     expect(nextShelfSort(sort, "amount").direction).toBe("descending");
-  });
-});
-
-describe("shelfTitle", () => {
-  it("names the period alone, or the narrowing folders without 全部", () => {
-    expect(shelfTitle(DEFAULT_SHELF_FILTER)).toBe("全部");
-    expect(shelfTitle(filter({ room: "A", status: RentalStatus.Pending }))).toBe("大教室・待確認");
-    expect(shelfTitle(filter({ period: "today", status: "clash" }))).toBe("今天・撞單");
   });
 });
 
