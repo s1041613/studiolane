@@ -29,8 +29,10 @@ schema, repositories, domain logic) exists; see `docs/data-model/`. The only
 feature UIs are the rental rules settings page (`/settings/rules`; see
 `docs/rental-time-rules/`), the new-booking page (`/bookings/new`), the
 read-only batch detail page (`/bookings/batch/<batchId>`), and the
-read-only bookings list (`/bookings`); see `docs/booking/`. There is no real auth yet. Other features land
-in later PRs.
+read-only bookings list (`/bookings`); see `docs/booking/`. The bookings
+list now renders inside a desktop shell (menu bar, Dock, a draggable and
+resizable window) rather than the app shell. There is no real auth yet.
+Other features land in later PRs.
 
 ## Working here
 
