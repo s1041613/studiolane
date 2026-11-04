@@ -21,7 +21,7 @@ export default async function BookingsPage(props: PageProps<"/bookings">) {
   const filters = bookingListFilters(typeof rawQuery === "string" ? rawQuery : undefined);
 
   return (
-    <DesktopShell>
+    <DesktopShell rentals={section.ok ? section.data : null}>
       <BookingsView section={section} filters={filters} today={todayIso()} />
     </DesktopShell>
   );
