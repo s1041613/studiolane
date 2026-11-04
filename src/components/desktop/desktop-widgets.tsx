@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { Widget, WidgetAddButton, WidgetEyebrow } from "@/components/ui/widget";
+import { Widget, WidgetAddButton } from "@/components/ui/widget";
 import { WidgetGallery } from "@/components/ui/widget-gallery";
 import { WidgetGrid, widgetColumnsForWidth, widgetSlotSize } from "@/components/ui/widget-grid";
 import { MENU_BAR_HEIGHT } from "@/components/desktop/menu-bar";
@@ -11,8 +11,10 @@ import { WIDGET_KINDS, WIDGET_NAME, WIDGET_SPAN, isWidgetKind } from "@/componen
 import type { WidgetKind } from "@/components/desktop/widget-kinds";
 import { TodayWidget } from "@/components/desktop/today-widget";
 import { UnpaidWidget } from "@/components/desktop/unpaid-widget";
+import { FreeSlotWidget } from "@/components/desktop/free-slot-widget";
 import { useNow } from "@/components/desktop/use-now";
 import type { RentalSummary } from "@/server/types/home";
+import type { RentalRule } from "@/server/logic/booking-rules";
 
 // Where the grid starts, and the strip kept clear on the right.
 const GRID_LEFT = 32;
@@ -41,31 +43,33 @@ function useColumnCount(): number {
 
 interface WidgetBodyProps {
   kind: WidgetKind;
-  // Null when the rentals failed to load; each widget then shows —.
+  // Null when the rentals or rules failed to load; each widget then shows —.
   rentals: readonly RentalSummary[] | null;
+  rules: readonly RentalRule[] | null;
   now: Date | null;
 }
 
-function WidgetBody({ kind, rentals, now }: WidgetBodyProps) {
+function WidgetBody({ kind, rentals, rules, now }: WidgetBodyProps) {
   switch (kind) {
     case "today":
       return <TodayWidget rentals={rentals} now={now} />;
     case "unpaid":
       return <UnpaidWidget rentals={rentals} />;
     case "free":
-      return <WidgetEyebrow tone="time">{WIDGET_NAME[kind]}</WidgetEyebrow>;
+      return <FreeSlotWidget rentals={rentals} rules={rules} now={now} />;
   }
 }
 
 interface DesktopWidgetsProps {
   hidden: boolean;
   rentals: readonly RentalSummary[] | null;
+  rules: readonly RentalRule[] | null;
 }
 
 // The widget layer on the desktop. Right-click opens the edit menu; in edit
 // mode widgets wobble, drag between cells and show −, the + opens the
 // gallery, and a click on empty desktop (or Esc) ends editing.
-function DesktopWidgets({ hidden, rentals }: DesktopWidgetsProps) {
+function DesktopWidgets({ hidden, rentals, rules }: DesktopWidgetsProps) {
   const widgets = useDesktopStore((state) => state.widgets);
   const editing = useDesktopStore((state) => state.editingWidgets);
   const setEditing = useDesktopStore((state) => state.setEditingWidgets);
@@ -111,7 +115,7 @@ function DesktopWidgets({ hidden, rentals }: DesktopWidgetsProps) {
         onRemove={() => removeWidget(kind)}
         removeLabel={`移除「${WIDGET_NAME[kind]}」`}
       >
-        <WidgetBody kind={kind} rentals={rentals} now={now} />
+        <WidgetBody kind={kind} rentals={rentals} rules={rules} now={now} />
       </Widget>
     ),
   }));
@@ -172,7 +176,7 @@ function DesktopWidgets({ hidden, rentals }: DesktopWidgetsProps) {
           preview: (
             <div style={widgetSlotSize(WIDGET_SPAN[kind])}>
               <Widget label={WIDGET_NAME[kind]} tone={WIDGET_TONE[kind]} editing={false} onRemove={() => {}} removeLabel="">
-                <WidgetBody kind={kind} rentals={rentals} now={now} />
+                <WidgetBody kind={kind} rentals={rentals} rules={rules} now={now} />
               </Widget>
             </div>
           ),
