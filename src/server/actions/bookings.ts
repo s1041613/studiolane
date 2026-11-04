@@ -83,7 +83,7 @@ export type BookingActionResult = Sealed;
 export type ConfirmBookingResult = Sealed<null, { blockers: { conflicts: RentalSummary[] } }>;
 
 // T-確認: no rivals -> confirm; rivals and no cancelRivals -> report them for
-// the dialog; rivals and matching cancelRivals (id, status, payment) -> confirm this one and cancel
+// the dialog; rivals and matching cancelRivals (id, status, payment, amount) -> confirm this one and cancel
 // the rest in one write (RentalRepository.confirmWithCancellations). If the
 // fresh rivals no longer match cancelRivals — someone else acted on this room
 // in between — this refuses the same way a lost transition() race does,

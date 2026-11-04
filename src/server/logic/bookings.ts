@@ -241,14 +241,14 @@ export type ConfirmPlan =
 
 // The rival fields the clash dialog showed and that decide the cancellation
 // and its refund note; any drift since the user reviewed them is stale.
-export type RivalSnapshot = Pick<RentalSummary, "id" | "status" | "paymentState">;
+export type RivalSnapshot = Pick<RentalSummary, "id" | "status" | "paymentState" | "amount">;
 
 export function rivalSnapshot(rental: RivalSnapshot): RivalSnapshot {
-  return { id: rental.id, status: rental.status, paymentState: rental.paymentState };
+  return { id: rental.id, status: rental.status, paymentState: rental.paymentState, amount: rental.amount };
 }
 
 function snapshotKeys(rivals: RivalSnapshot[]): string {
-  return rivals.map((r) => `${r.id}|${r.status}|${r.paymentState}`).sort().join("\n");
+  return rivals.map((r) => `${r.id}|${r.status}|${r.paymentState}|${r.amount ?? 0}`).sort().join("\n");
 }
 
 function sameSnapshots(a: RivalSnapshot[], b: RivalSnapshot[]): boolean {
