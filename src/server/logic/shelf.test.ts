@@ -78,6 +78,16 @@ describe("shelfRows: 預約 period facet", () => {
     expect(shelfRows(all, filter({ period: "week" }), TODAY)).toEqual([]);
   });
 
+  it("今天 with a picked 狀態 filters by date only, so 今天 + 已取消 shows today's cancelled rows", () => {
+    const all = [
+      makeRental({ id: "cancelled", date: TODAY, status: RentalStatus.Cancelled }),
+      makeRental({ id: "postponed", date: TODAY, status: RentalStatus.Postponed }),
+    ];
+
+    expect(shelfRows(all, filter({ period: "today", status: RentalStatus.Cancelled }), TODAY).map((r) => r.id)).toEqual(["cancelled"]);
+    expect(shelfCount(all, filter({ period: "today", status: RentalStatus.Postponed }), TODAY)).toBe(1);
+  });
+
   it("全部 shows every status, including postponed and cancelled", () => {
     const all = [
       makeRental({ id: "a", date: "2000-01-01", status: RentalStatus.Postponed }),

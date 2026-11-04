@@ -23,6 +23,14 @@ export const DEFAULT_SHELF_FILTER: ShelfFilter = { period: "all", room: null, st
 
 type ShelfFacet = "period" | "room" | "status";
 
+// `statusSelected` is only read by 今天/本週: they hide postponed/cancelled
+// rows unless a 狀態 folder is picked, in which case they filter by date only.
+interface ShelfMatchContext {
+  today: string;
+  all: RentalSummary[];
+  statusSelected: boolean;
+}
+
 interface ShelfFolderEntry {
   key: string;
   label: string;
@@ -34,7 +42,7 @@ interface ShelfFolderEntry {
   isClash?: boolean;
   // `all` is only read by the clash entry (a rental's clash status depends
   // on every other rental, not just itself).
-  matches: (rental: RentalSummary, ctx: { today: string; all: RentalSummary[] }) => boolean;
+  matches: (rental: RentalSummary, ctx: ShelfMatchContext) => boolean;
 }
 
 export interface ShelfSection {
@@ -76,9 +84,9 @@ function periodEntry(period: ShelfFilter["period"], label: string): ShelfFolderE
     label,
     facet: "period",
     value: period,
-    matches: (rental, { today }) => {
+    matches: (rental, { today, statusSelected }) => {
       if (period === "all") return true;
-      if (!onCalendar(rental)) return false;
+      if (!statusSelected && !onCalendar(rental)) return false;
       return period === "today" ? rentalTouchesDate(rental, today) : inWeek(rental, today);
     },
   };
@@ -148,7 +156,8 @@ export function toggleFolder(filter: ShelfFilter, entry: ShelfFolderEntry): Shel
   return withFolder(filter, entry);
 }
 
-function matchesFilter(rental: RentalSummary, filter: ShelfFilter, ctx: { today: string; all: RentalSummary[] }): boolean {
+function matchesFilter(rental: RentalSummary, filter: ShelfFilter, base: { today: string; all: RentalSummary[] }): boolean {
+  const ctx: ShelfMatchContext = { ...base, statusSelected: filter.status !== null };
   const period = entryFor("period", filter.period);
   if (!period?.matches(rental, ctx)) return false;
   if (filter.room !== null && !entryFor("room", filter.room)?.matches(rental, ctx)) return false;

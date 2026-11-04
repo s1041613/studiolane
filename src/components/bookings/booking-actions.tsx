@@ -12,9 +12,9 @@ import {
 } from "@/server/actions/bookings";
 import { allowedActions, conflictDialogRows, needsRefund } from "@/server/logic/bookings";
 import type { BookingAction } from "@/server/logic/bookings";
-import { money, roomLabel, slotText } from "@/server/logic/home-selectors";
+import { money, slotText } from "@/server/logic/home-selectors";
 import { shortDateParts } from "@/server/logic/date";
-import { statusToLabel } from "@/server/supabase/codecs";
+import { roomToLabel, statusToLabel } from "@/server/supabase/codecs";
 import type { RentalStatusCode } from "@/server/supabase/codecs";
 import type { RentalSummary } from "@/server/types/home";
 import { Button } from "@/components/ui/button";
@@ -205,7 +205,7 @@ export function BookingActions({ rental, open, onOpenChange }: BookingActionsPro
         onConfirm={() => (endDialog ? runEnd(endDialog) : Promise.resolve())}
         description={
           <>
-            {rental.person} · {slotText(rental)} · {roomLabel(rental)}
+            {rental.person} · {slotText(rental)} · {roomToLabel(rental.room)}
             {endDialog && needsRefund(rental) && (
               <span className="mt-2 block rounded-lg bg-inset p-2 text-warn">
                 這筆已付款 {money(rental.amount ?? 0)}，{END_LABEL[endDialog]}後需要退款。備註會加上「【需要退款】」。

@@ -83,7 +83,9 @@ and `預約` are currently picked, and changing either one updates every
 
 `今天` and `本週` only count a booking while it still holds its slot: a
 `已延期` (postponed) or `已取消` (cancelled) booking is excluded even if its
-date falls in that range. `全部` has no such exclusion.[^shelf-logic] A
+date falls in that range, unless a `狀態` folder is selected: then the period
+filters by date only, so `今天` + `已取消` shows today's cancelled bookings.
+`全部` has no such exclusion.[^shelf-logic] A
 booking that crosses midnight counts on both calendar days it
 touches.[^shelf-logic]
 
