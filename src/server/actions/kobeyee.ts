@@ -13,11 +13,11 @@ const rulesRepo = new RulesRepository();
 
 // A pasted chat message is a few lines; anything far longer is not one
 // request and would only cost tokens.
-export const KOBEYEE_MAX_INPUT_CHARS = 2000;
+const KOBEYEE_MAX_INPUT_CHARS = 2000;
 
 // With reasoning effort "low" the eval's slowest case took 10.8s; the
 // earlier default-effort worst case was 22s. 25s covers both with margin.
-export const KOBEYEE_TIMEOUT_MS = 25_000;
+const KOBEYEE_TIMEOUT_MS = 25_000;
 
 // Reads one staff message into reviews. Never writes: staff confirm the
 // filled form themselves. No retry here; the chat offers 再試一次 on "failed".

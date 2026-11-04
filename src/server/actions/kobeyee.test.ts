@@ -28,7 +28,7 @@ vi.mock("ai", async (importOriginal) => ({
   generateText: data.generateText,
 }));
 
-const { readKobeyeeMessage, KOBEYEE_MAX_INPUT_CHARS } = await import("@/server/actions/kobeyee");
+const { readKobeyeeMessage } = await import("@/server/actions/kobeyee");
 
 const newRentalOutput = {
   tasks: [
@@ -65,7 +65,7 @@ describe("readKobeyeeMessage", () => {
 
   it("returns unreadable for empty or oversized input without calling the model", async () => {
     expect(await readKobeyeeMessage("   ")).toEqual({ status: "unreadable" });
-    expect(await readKobeyeeMessage("x".repeat(KOBEYEE_MAX_INPUT_CHARS + 1))).toEqual({ status: "unreadable" });
+    expect(await readKobeyeeMessage("x".repeat(2001))).toEqual({ status: "unreadable" });
     expect(data.generateText).not.toHaveBeenCalled();
   });
 
