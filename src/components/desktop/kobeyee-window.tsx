@@ -24,7 +24,7 @@ import {
   kobeyeeLine,
   kobeyeeWindowRect,
   overlapQuestions,
-  readyToRegister,
+  readyToCreate,
   renterReply,
   revealedCount,
   type KobeyeeReader,
@@ -37,7 +37,7 @@ export interface BookingFormSlotProps {
   draft: BookingDraft;
   // Rows at or past this index in DRAFT_FIELDS render as skeletons.
   revealed: number;
-  // After 確認登記 the form only shows what was written.
+  // After 建立預約 the form only shows what was written.
   locked: boolean;
   onDraftChange: (draft: BookingDraft) => void;
 }
@@ -54,7 +54,7 @@ const REVEAL_MS = 1500;
 // The chat pane sits inside the window's 8px side gutters.
 const CHAT_PANE_INSET = 16;
 
-// The last 確認登記 press, cleared once the draft changes.
+// The last 建立預約 press, cleared once the draft changes.
 type SubmitState = { kind: "idle" } | { kind: "submitting" } | { kind: "error"; message: string };
 
 const IDLE: SubmitState = { kind: "idle" };
@@ -100,18 +100,18 @@ function KobeyeeWindow({ reader, submitter, draftTotal, renderBookingForm }: Kob
   const line = kobeyeeLine(phase);
   const reading = phase.kind === "reading";
   const draft = session.draft;
-  const review = phase.kind === "filling" || phase.kind === "filled" || phase.kind === "registered" ? phase.review : null;
-  const registered = phase.kind === "registered";
+  const review = phase.kind === "filling" || phase.kind === "filled" || phase.kind === "created" ? phase.review : null;
+  const created = phase.kind === "created";
   const total = draft ? draftTotal(draft) : null;
-  const ready = readyToRegister(session);
+  const ready = readyToCreate(session);
 
-  async function register() {
+  async function createBooking() {
     if (!draft || !ready) return;
     setSubmitState({ kind: "submitting" });
     const outcome = await submitter(draft, acknowledgedConflictIds(session));
-    if (outcome.status === "registered") {
+    if (outcome.status === "created") {
       setSubmitState(IDLE);
-      dispatch({ type: "registered", reply: renterReply(session, total) });
+      dispatch({ type: "created", reply: renterReply(session, total) });
     } else {
       // A hold that appeared after the read: the overlap question is gone,
       // so say so rather than writing past it.
@@ -160,7 +160,7 @@ function KobeyeeWindow({ reader, submitter, draftTotal, renderBookingForm }: Kob
             {renderBookingForm({
               draft: session.draft ?? blankDraft(),
               revealed: revealedCount(phase),
-              locked: registered,
+              locked: created,
               onDraftChange: (next) => {
                 setSubmitState(IDLE);
                 dispatch({ type: "editDraft", draft: next });
@@ -222,7 +222,7 @@ function KobeyeeWindow({ reader, submitter, draftTotal, renderBookingForm }: Kob
                         {question}
                         {answer && <Answered>{answer === "include" ? "一起建立" : "不要"}</Answered>}
                       </p>
-                      {!answer && !registered && (
+                      {!answer && !created && (
                         <div className="mt-2 flex gap-2">
                           <Button type="button" variant="bevel" size="xs" onClick={() => dispatch({ type: "answerOverlap", slotIndex, answer: "include" })}>
                             <PlusIcon /> 一起建立
@@ -243,24 +243,24 @@ function KobeyeeWindow({ reader, submitter, draftTotal, renderBookingForm }: Kob
                   </p>
                 </Said>
               )}
-              {(ready || registered) && (
+              {(ready || created) && (
                 <Said>
                   <Button
                     type="button"
                     variant="gel"
                     size="sm"
-                    disabled={registered || submitState.kind === "submitting"}
-                    onClick={() => void register()}
+                    disabled={created || submitState.kind === "submitting"}
+                    onClick={() => void createBooking()}
                   >
                     <CheckIcon />
-                    {registered
-                      ? `已登記 ${phase.count} 筆`
-                      : `確認登記 ${draft?.slots.length ?? 0} 筆${total ? `・${total.toLocaleString("en-US")}` : ""}`}
+                    {created
+                      ? `已建立 ${phase.count} 筆`
+                      : `建立預約 ${draft?.slots.length ?? 0} 筆${total ? `・${total.toLocaleString("en-US")}` : ""}`}
                   </Button>
                   {submitState.kind === "error" && <p className="mt-1 text-[13px] text-danger">{submitState.message}</p>}
                 </Said>
               )}
-              {registered && (
+              {created && (
                 <Said>
                   <p>給租借人的回覆：</p>
                   <p className="mt-2 rounded-md bg-(--eb-desk-field) px-3 py-2.5 text-[13px] whitespace-pre-wrap shadow-[inset_0_0_0_1px_var(--eb-desk-edge)]">

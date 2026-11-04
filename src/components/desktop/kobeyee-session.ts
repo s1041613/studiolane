@@ -19,9 +19,9 @@ export type KobeyeePhase =
   // The read itself didn't finish; `message` on the session is kept so
   // `retry` can resend it.
   | { kind: "failed" }
-  // Staff pressed 確認登記 and the booking was written; the form stays,
+  // Staff pressed 建立預約 and the booking was written; the form stays,
   // read-only, next to the reply staff can copy to the renter.
-  | { kind: "registered"; review: KobeyeeReview; count: number; reply: string };
+  | { kind: "created"; review: KobeyeeReview; count: number; reply: string };
 
 // Staff's answer to one 待確認重疊 question, keyed by SlotReview index.
 type OverlapAnswer = "include" | "skip";
@@ -55,14 +55,14 @@ export type KobeyeeEvent =
   | { type: "editDraft"; draft: BookingDraft }
   | { type: "clear" }
   | { type: "answerOverlap"; slotIndex: number; answer: OverlapAnswer }
-  | { type: "registered"; reply: string }
+  | { type: "created"; reply: string }
   | { type: "moveWindow"; windowRect: WindowRect; viewport: Viewport };
 
 /** Reader seam: the AI action, or the fixture under e2e. */
 export type KobeyeeReader = (text: string) => Promise<KobeyeeResult>;
 
 type KobeyeeSubmitOutcome =
-  | { status: "registered" }
+  | { status: "created" }
   // Someone else's held booking overlaps; staff may resend with these ids.
   | { status: "conflicts"; conflictIds: string[] }
   | { status: "error"; message: string };
@@ -144,9 +144,9 @@ export function reduceKobeyee(s: KobeyeeSession, e: KobeyeeEvent): KobeyeeSessio
       const draft = e.answer === "include" ? { ...s.draft, slots: [...s.draft.slots, slot.slot] } : s.draft;
       return { ...s, draft, overlapAnswers: { ...s.overlapAnswers, [e.slotIndex]: e.answer } };
     }
-    case "registered": {
+    case "created": {
       if (s.phase.kind !== "filled" || !s.draft) return s;
-      return { ...s, phase: { kind: "registered", review: s.phase.review, count: s.draft.slots.length, reply: e.reply } };
+      return { ...s, phase: { kind: "created", review: s.phase.review, count: s.draft.slots.length, reply: e.reply } };
     }
     case "moveWindow":
       if (!s.chatRect) return s;
@@ -205,8 +205,8 @@ export function acknowledgedConflictIds(session: KobeyeeSession): string[] {
   });
 }
 
-/** 確認登記 appears once nothing is left for staff to answer. */
-export function readyToRegister(session: KobeyeeSession): boolean {
+/** 建立預約 appears once nothing is left for staff to answer. */
+export function readyToCreate(session: KobeyeeSession): boolean {
   const { phase, draft } = session;
   if (phase.kind !== "filled" || !draft) return false;
   const unanswered = overlapQuestions(phase.review).some(({ slotIndex }) => !session.overlapAnswers[slotIndex]);
@@ -218,11 +218,11 @@ const ROOM_LABEL = { A: "大教室", B: "小教室" } as const;
 // Fictional placeholder until the studio's real account has a settings home.
 const TRANSFER_DETAILS = ["範例銀行（000）", "戶名：範例舞蹈教室", "帳號：000-000-000000", "匯款完成請提供末五碼以利對帳"];
 
-/** The reply staff copy to the renter after 確認登記; never sent by Kobeyee. */
+/** The reply staff copy to the renter after 建立預約; never sent by Kobeyee. */
 export function renterReply(session: KobeyeeSession, total: number | null): string {
   const { phase, draft } = session;
   if (phase.kind !== "filled" || !draft) return "";
-  const lines = [`你好～幫你登記好${ROOM_LABEL[draft.room]}了：`, ...draft.slots.map((slot) => `・${slotLabel(slot)}`)];
+  const lines = [`你好～幫你預約了${ROOM_LABEL[draft.room]}：`, ...draft.slots.map((slot) => `・${slotLabel(slot)}`)];
   if (total !== null && total > 0) lines.push(`共 ${total.toLocaleString("en-US")} 元`);
   const refused = [
     ...blockedSlots(phase.review).map(({ label, reason }) => `・${label} ${reason}`),
