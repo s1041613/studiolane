@@ -1,6 +1,10 @@
 import { RentalStatus } from "@/server/types/home";
 import type { RentalSummary } from "@/server/types/home";
 import { rentalTouchesDate } from "@/server/logic/home-selectors";
+import { clipWindowsToNow, getAvailableWindows, toMinutes } from "@/server/logic/booking-rules";
+import type { RuleContext } from "@/server/logic/booking-rules";
+import type { TimeWindow } from "@/server/logic/booking";
+import { todayIso } from "@/server/logic/date";
 
 // Rentals that no longer hold the room never show on the desktop widgets.
 const OFF_THE_DAY: RentalStatus[] = [RentalStatus.Postponed, RentalStatus.Cancelled];
@@ -38,4 +42,16 @@ export function needsAttention(rental: RentalSummary): boolean {
 // 待付款: every rental in status 待付款, whatever its date.
 export function countAwaitingPayment(rentals: readonly RentalSummary[]): number {
   return rentals.filter((rental) => rental.status === RentalStatus.AwaitingPayment).length;
+}
+
+// Bookings run in half-hour steps, so a shorter gap can't be rented.
+const MIN_FREE_MINUTES = 30;
+
+// 下一個空檔: the room's first rentable window left today, from the next half
+// hour on, at least 30 minutes long — the same windows the booking form
+// offers (rental rules minus registered rentals). Null when nothing is left.
+export function nextFreeSlot(room: "A" | "B", now: Date, ctx: RuleContext): TimeWindow | null {
+  const today = todayIso(now);
+  const windows = clipWindowsToNow(getAvailableWindows(room, today, ctx), today, now);
+  return windows.find((window) => toMinutes(window.end) - toMinutes(window.start) >= MIN_FREE_MINUTES) ?? null;
 }

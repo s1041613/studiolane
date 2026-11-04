@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { RentalStatus } from "@/server/types/home";
 import { makeRental } from "@/server/logic/test-fixtures";
+import type { RentalRule } from "@/server/logic/booking-rules";
 import {
   countAwaitingPayment,
   needsAttention,
+  nextFreeSlot,
   rentalPhase,
   selectTodayRentals,
   spotlightRental,
@@ -98,5 +100,71 @@ describe("countAwaitingPayment", () => {
     ];
 
     expect(countAwaitingPayment(rentals)).toBe(2);
+  });
+});
+
+describe("nextFreeSlot", () => {
+  // 2026-11-03 is a Tuesday (weekday 2).
+  function block(start: string, end: string, overrides: Partial<RentalRule> = {}): RentalRule {
+    return {
+      id: `${start}-${end}`,
+      kind: "rental",
+      room: null,
+      weekday: 2,
+      onDate: null,
+      start,
+      end,
+      effect: "block",
+      reason: "測試",
+      archivedAt: null,
+      ...overrides,
+    };
+  }
+  // Open 08:00–24:00 every Tuesday.
+  const NIGHT = block("00:00", "08:00");
+  const registered = (start: string, end: string, room: "A" | "B" = "A") =>
+    makeRental({ id: start, date: TODAY, start, end, room, status: RentalStatus.Registered });
+
+  it("starts at the next half hour when the room is free now", () => {
+    expect(nextFreeSlot("A", NOW, { rules: [NIGHT], existingRentals: [] })).toEqual({ start: "14:30", end: "24:00" });
+  });
+
+  it("skips past a registered rental under way", () => {
+    const ctx = { rules: [NIGHT], existingRentals: [registered("14:00", "16:00")] };
+    expect(nextFreeSlot("A", NOW, ctx)).toEqual({ start: "16:00", end: "24:00" });
+  });
+
+  it("only blocks that room", () => {
+    const ctx = { rules: [NIGHT], existingRentals: [registered("14:00", "16:00", "B")] };
+    expect(nextFreeSlot("A", NOW, ctx)?.start).toBe("14:30");
+  });
+
+  it("skips a gap shorter than 30 minutes", () => {
+    const ctx = { rules: [NIGHT], existingRentals: [registered("12:00", "14:30"), registered("14:50", "18:00")] };
+    expect(nextFreeSlot("A", NOW, ctx)).toEqual({ start: "18:00", end: "24:00" });
+  });
+
+  it("takes a gap of exactly 30 minutes", () => {
+    const ctx = { rules: [NIGHT], existingRentals: [registered("12:00", "14:30"), registered("15:00", "18:00")] };
+    expect(nextFreeSlot("A", NOW, ctx)).toEqual({ start: "14:30", end: "15:00" });
+  });
+
+  it("is null when the room is closed all day", () => {
+    expect(nextFreeSlot("A", NOW, { rules: [block("00:00", "24:00")], existingRentals: [] })).toBeNull();
+  });
+
+  it("is null when the rest of the day is booked", () => {
+    const ctx = { rules: [NIGHT], existingRentals: [registered("14:00", "24:00")] };
+    expect(nextFreeSlot("A", NOW, ctx)).toBeNull();
+  });
+
+  it("is null once closing time has passed", () => {
+    const ctx = { rules: [NIGHT, block("22:00", "24:00")], existingRentals: [] };
+    expect(nextFreeSlot("A", new Date("2026-11-03T22:10:00+08:00"), ctx)).toBeNull();
+  });
+
+  it("ignores pending rentals, which don't hold the room", () => {
+    const pending = makeRental({ date: TODAY, start: "14:00", end: "16:00", status: RentalStatus.Pending });
+    expect(nextFreeSlot("A", NOW, { rules: [NIGHT], existingRentals: [pending] })?.start).toBe("14:30");
   });
 });
