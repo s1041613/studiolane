@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   FORM_WIDTH,
   INITIAL_KOBEYEE_SESSION,
+  kobeyeeLine,
   kobeyeeWindowRect,
   reduceKobeyee,
   type KobeyeeEvent,
   type KobeyeeSession,
 } from "@/components/desktop/kobeyee-session";
+import type { SlotDraft } from "@/server/logic/booking";
 import { DRAFT_FIELDS, type KobeyeeResult, type KobeyeeReview } from "@/server/logic/kobeyee";
 
 const CHAT = { x: 1000, y: 120, width: 440, height: 560 };
@@ -20,6 +22,7 @@ const REVIEW: KobeyeeReview = {
   questions: [],
 };
 const OK: KobeyeeResult = { status: "ok", reviews: [REVIEW] };
+const SLOT: SlotDraft = { date: "2026-01-01", start: "10:00", end: "11:00", isCrossMidnight: false };
 
 function run(events: KobeyeeEvent[], from: KobeyeeSession = INITIAL_KOBEYEE_SESSION): KobeyeeSession {
   return events.reduce(reduceKobeyee, from);
@@ -60,6 +63,31 @@ describe("reduceKobeyee", () => {
     expect(s.phase.kind).toBe("unreadable");
   });
 
+  it("a failed read returns to chat and keeps the message for retry", () => {
+    const s = run([{ type: "resolved", requestId: sent.requestSeq, result: { status: "failed" } }], sent);
+    expect(s.layout).toBe("chat");
+    expect(s.phase).toEqual({ kind: "failed" });
+    expect(s.message).toBe("hi");
+  });
+
+  it("retry resends the kept message as a fresh request", () => {
+    const failed = run([{ type: "resolved", requestId: sent.requestSeq, result: { status: "failed" } }], sent);
+    const retried = run([{ type: "retry" }], failed);
+    expect(retried.phase).toEqual({ kind: "reading", requestId: failed.requestSeq + 1 });
+    expect(retried.layout).toBe("booking");
+    expect(retried.message).toBe("hi");
+  });
+
+  it("retry is a no-op outside the failed phase", () => {
+    expect(run([{ type: "retry" }], sent)).toBe(sent);
+    expect(run([{ type: "retry" }], opened)).toBe(opened);
+  });
+
+  it("clearing while reading discards the in-flight result", () => {
+    const cleared = run([{ type: "clear" }], sent);
+    expect(run([{ type: "resolved", requestId: sent.requestSeq, result: OK }], cleared)).toBe(cleared);
+  });
+
   it.each([
     ["empty", opened],
     ["reading", sent],
@@ -74,6 +102,24 @@ describe("reduceKobeyee", () => {
     const s = run([{ type: "open", layout: "booking", defaultChatRect: CHAT }]);
     expect(s).toMatchObject({ open: true, layout: "booking", phase: { kind: "manual" } });
     expect(s.draft).toMatchObject({ renter: null, slots: [] });
+  });
+});
+
+describe("kobeyeeLine", () => {
+  it("reads 讀取失敗 for a failed phase", () => {
+    expect(kobeyeeLine({ kind: "failed" })).toBe("讀取失敗");
+  });
+
+  it("leaves incomplete slots out of both the legal and rejected counts", () => {
+    const review: KobeyeeReview = {
+      ...REVIEW,
+      slots: [
+        { state: "legal", slot: SLOT, quote: "q", inferred: { year: false } },
+        { state: "incomplete", date: "2026-01-01", start: null, end: null, quote: "q", inferred: { year: false } },
+        { state: "blocked", slot: SLOT, reason: "x", quote: "q", inferred: { year: false } },
+      ],
+    };
+    expect(kobeyeeLine({ kind: "filled", review })).toBe("1 段可以，1 段不行");
   });
 });
 

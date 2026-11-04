@@ -45,5 +45,15 @@ function fixtureResult(): KobeyeeResult {
 // Roughly a real read, so the loading state is visible.
 const READ_DELAY_MS = 1200;
 
-export const fixtureReader: KobeyeeReader = () =>
-  new Promise((resolve) => setTimeout(() => resolve(fixtureResult()), READ_DELAY_MS));
+// Playwright forces a non-"ok" result by starting the message with this
+// marker, followed by the status to force ("failed" or "unreadable"); any
+// other message still reads as the default fixture above.
+export const FIXTURE_FORCE_PREFIX = "studiolane-fixture-force:";
+
+function forcedResult(text: string): KobeyeeResult | null {
+  const forced = text.startsWith(FIXTURE_FORCE_PREFIX) ? text.slice(FIXTURE_FORCE_PREFIX.length) : "";
+  return forced === "failed" || forced === "unreadable" ? { status: forced } : null;
+}
+
+export const fixtureReader: KobeyeeReader = (text) =>
+  new Promise((resolve) => setTimeout(() => resolve(forcedResult(text) ?? fixtureResult()), READ_DELAY_MS));

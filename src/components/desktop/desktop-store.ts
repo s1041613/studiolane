@@ -48,6 +48,8 @@ interface DesktopStore {
   kobeyee: KobeyeeSession;
   dispatchKobeyee: (event: KobeyeeEvent) => void;
   sendToKobeyee: (text: string, reader: KobeyeeReader) => Promise<void>;
+  // Resends the message kept from a failed read; no-op outside "failed".
+  retryKobeyee: (reader: KobeyeeReader) => Promise<void>;
 }
 
 // Only the widget layout survives a reload; windows always start closed.
@@ -80,6 +82,14 @@ export const useDesktopStore = create<DesktopStore>()(
         get().dispatchKobeyee({ type: "send", text });
         const requestId = get().kobeyee.requestSeq;
         const result = await reader(text);
+        get().dispatchKobeyee({ type: "resolved", requestId, result });
+      },
+      retryKobeyee: async (reader) => {
+        const { phase, message } = get().kobeyee;
+        if (phase.kind !== "failed" || message === null) return;
+        get().dispatchKobeyee({ type: "retry" });
+        const requestId = get().kobeyee.requestSeq;
+        const result = await reader(message);
         get().dispatchKobeyee({ type: "resolved", requestId, result });
       },
     }),

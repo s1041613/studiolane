@@ -56,6 +56,26 @@ test("sending a message expands into a filled 預約教室 form; 清除 collapse
   await expect(page.getByRole("dialog", { name: "Kobeyee" }).getByText("貼上 LINE 訊息", { exact: true })).toBeVisible();
 });
 
+test("a failed read shows 讀取失敗 with 再試一次, and retry resends the message", async ({ page }) => {
+  await openKobeyee(page);
+  // The dialog's title flips to 預約教室 while reading, then back to
+  // Kobeyee once the read fails, so match either title throughout.
+  const window = page.getByRole("dialog", { name: /^(Kobeyee|預約教室)$/ });
+
+  // Forces the fixture reader to return a failed result instead of its
+  // default fixture; the marker is documented in kobeyee-fixture.ts.
+  await window.getByPlaceholder("貼上 LINE 訊息").fill("studiolane-fixture-force:failed");
+  await window.getByRole("button", { name: "送出" }).click();
+
+  await expect(window.getByText("讀取失敗")).toBeVisible();
+  const retryButton = window.getByRole("button", { name: "再試一次" });
+  await expect(retryButton).toBeVisible();
+
+  await retryButton.click();
+  await expect(window.getByRole("button", { name: "送出" })).toBeDisabled();
+  await expect(window.getByText("讀取失敗")).toBeVisible();
+});
+
 test("the Dock 預約教室 icon opens the form expanded and empty", async ({ page }) => {
   await page.goto("/bookings");
   await page.getByRole("button", { name: "預約教室" }).click();
