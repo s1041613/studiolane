@@ -9,6 +9,7 @@ import {
   nextStatusOnConfirm,
   initialBookingFilters,
   planConfirm,
+  rivalSnapshot,
   selectBookingRows,
   withRefundNote,
 } from "@/server/logic/bookings";
@@ -80,7 +81,7 @@ describe("確認", () => {
   it("T-確認-4: 帶著同一份撞單名單確認 → 這筆往下走，其他全部取消；已付款且 > 0 的加退款備註", () => {
     const paidOther = makeRental({ id: "paid", date: "2026-10-06", start: "15:00", end: "17:00", status: RentalStatus.Registered, ...paid, amount: 1000, note: "老客人" });
     const unpaidOther = makeRental({ id: "unpaid", date: "2026-10-06", start: "13:00", end: "14:30" });
-    const result = planConfirm(target, [target, paidOther, unpaidOther], ["paid", "unpaid"]);
+    const result = planConfirm(target, [target, paidOther, unpaidOther], [paidOther, unpaidOther].map(rivalSnapshot));
     expect(result).toEqual({
       kind: "confirm",
       nextStatus: RentalStatus.Registered,
@@ -94,8 +95,15 @@ describe("確認", () => {
   it("T-確認-4: 名單跟 server 重新算的不一樣（有人剛好也在操作）→ 回傳新的名單，不改資料", () => {
     const a = makeRental({ id: "a", date: "2026-10-06", start: "15:00", end: "17:00" });
     const b = makeRental({ id: "b", date: "2026-10-06", start: "13:00", end: "14:30" });
-    const result = planConfirm(target, [target, a, b], ["a"]);
+    const result = planConfirm(target, [target, a, b], [rivalSnapshot(a)]);
     expect(result.kind).toBe("conflicts");
+  });
+
+  it("T-確認-4: 撞單對手在確認前變成已付款 → 視為過期，回傳新的名單，不改資料", () => {
+    const rival = makeRental({ id: "rival", date: "2026-10-06", start: "15:00", end: "17:00", status: RentalStatus.Registered, amount: 1000 });
+    const reviewed = rivalSnapshot(rival);
+    const paidNow = { ...rival, ...paid };
+    expect(planConfirm(target, [target, paidNow], [reviewed]).kind).toBe("conflicts");
   });
 
   it("T-確認-3: 撞單視窗把目前這筆和重疊的預約全部一起依送出時間排序，標出要保留的那筆", () => {

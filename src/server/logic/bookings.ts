@@ -239,17 +239,29 @@ export type ConfirmPlan =
   | { kind: "conflicts"; conflicts: RentalSummary[] }
   | { kind: "confirm"; nextStatus: RentalStatus; cancellations: Cancellation[] };
 
-function sameIds(a: string[], b: string[]): boolean {
-  return a.length === b.length && [...a].sort().join("\n") === [...b].sort().join("\n");
+// The rival fields the clash dialog showed and that decide the cancellation
+// and its refund note; any drift since the user reviewed them is stale.
+export type RivalSnapshot = Pick<RentalSummary, "id" | "status" | "paymentState">;
+
+export function rivalSnapshot(rental: RivalSnapshot): RivalSnapshot {
+  return { id: rental.id, status: rental.status, paymentState: rental.paymentState };
+}
+
+function snapshotKeys(rivals: RivalSnapshot[]): string {
+  return rivals.map((r) => `${r.id}|${r.status}|${r.paymentState}`).sort().join("\n");
+}
+
+function sameSnapshots(a: RivalSnapshot[], b: RivalSnapshot[]): boolean {
+  return a.length === b.length && snapshotKeys(a) === snapshotKeys(b);
 }
 
 // T-確認-2..6: with no rivals, confirm directly. With rivals, the first call
-// (no cancelIds) only reports them for the dialog; the follow-up call carries
-// the ids the user agreed to cancel and goes ahead only if they still match
+// (no cancelRivals) only reports them for the dialog; the follow-up call carries
+// the rivals the user agreed to cancel and goes ahead only if they still match
 // the server's fresh view, so nothing changes behind the user's back.
-export function planConfirm(rental: RentalSummary, all: RentalSummary[], cancelIds?: string[]): ConfirmPlan {
+export function planConfirm(rental: RentalSummary, all: RentalSummary[], cancelRivals?: RivalSnapshot[]): ConfirmPlan {
   const rivals = findConfirmRivals(rental, all);
-  if (rivals.length > 0 && !(cancelIds && sameIds(cancelIds, rivals.map((r) => r.id)))) {
+  if (rivals.length > 0 && !(cancelRivals && sameSnapshots(cancelRivals, rivals))) {
     return { kind: "conflicts", conflicts: rivals };
   }
   return {

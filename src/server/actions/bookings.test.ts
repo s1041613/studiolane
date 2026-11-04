@@ -4,6 +4,7 @@ import { PaymentState, RentalStatus } from "@/server/types/home";
 import type { RentalSummary } from "@/server/types/home";
 import type { StatusPatch, StatusSnapshot } from "@/server/repositories/rental-repository";
 import { makeRental, oneDayRule } from "@/server/logic/test-fixtures";
+import { rivalSnapshot } from "@/server/logic/bookings";
 import type { RentalRule } from "@/server/logic/booking-rules";
 
 const data = vi.hoisted(() => ({
@@ -136,7 +137,7 @@ describe("confirmBooking", () => {
     expect(data.transition).not.toHaveBeenCalled();
   });
 
-  it("with cancelIds matching the fresh rivals, confirms and cancels them in one write", async () => {
+  it("with cancelRivals matching the fresh rivals, confirms and cancels them in one write", async () => {
     const rival = makeRental({
       id: "rival",
       date: FUTURE_DATE,
@@ -151,7 +152,7 @@ describe("confirmBooking", () => {
     const mine = makeRental({ id: "r1", date: FUTURE_DATE, start: "10:30", end: "11:30", room: "A", status: RentalStatus.Pending });
     data.rentals = [rival, mine];
 
-    const result = unseal(await confirmBooking("r1", ["rival"]));
+    const result = unseal(await confirmBooking("r1", [rivalSnapshot(rival)]));
 
     expect(result).toEqual({ ok: true, data: null });
     expect(data.confirmWithCancellations).toHaveBeenCalledWith("r1", RentalStatus.Registered, [
@@ -161,12 +162,12 @@ describe("confirmBooking", () => {
     expect(revalidatePath).toHaveBeenCalledExactlyOnceWith("/bookings");
   });
 
-  it("with cancelIds that no longer match the fresh rivals, refuses ABORTED and writes nothing", async () => {
+  it("with cancelRivals that no longer match the fresh rivals, refuses ABORTED and writes nothing", async () => {
     const rival = makeRental({ id: "rival", date: FUTURE_DATE, start: "10:00", end: "11:00", room: "A", status: RentalStatus.Pending });
     const mine = makeRental({ id: "r1", date: FUTURE_DATE, start: "10:30", end: "11:30", room: "A", status: RentalStatus.Pending });
     data.rentals = [rival, mine];
 
-    const result = unseal(await confirmBooking("r1", ["some-other-id"]));
+    const result = unseal(await confirmBooking("r1", [{ ...rivalSnapshot(rival), id: "some-other-id" }]));
 
     expect(result).toEqual({
       ok: false,

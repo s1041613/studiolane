@@ -10,7 +10,7 @@ import {
   markBookingPaid,
   postponeBooking,
 } from "@/server/actions/bookings";
-import { allowedActions, conflictDialogRows, needsRefund } from "@/server/logic/bookings";
+import { allowedActions, conflictDialogRows, needsRefund, rivalSnapshot } from "@/server/logic/bookings";
 import type { BookingAction } from "@/server/logic/bookings";
 import { money, slotText } from "@/server/logic/home-selectors";
 import { shortDateParts } from "@/server/logic/date";
@@ -141,14 +141,14 @@ export function BookingActions({ rental, open, onOpenChange }: BookingActionsPro
     }
   }
 
-  // The user already saw and accepted this exact rival list; sending their
-  // ids back is what tells the server to cancel them alongside confirming.
+  // The user already saw and accepted this exact rival list; sending it
+  // back is what tells the server to cancel them alongside confirming.
   // A stale mismatch (someone else acted on the room meanwhile) comes back
   // as a plain refusal, shown inline same as the end dialog's.
   async function runClashConfirm() {
     if (!clashRivals) return;
     setClashError(null);
-    const result = await settle(confirmBooking(rental.id, clashRivals.map((r) => r.id)));
+    const result = await settle(confirmBooking(rental.id, clashRivals.map(rivalSnapshot)));
     if (result.ok) setClashRivals(null);
     else setClashError(result.error);
   }
