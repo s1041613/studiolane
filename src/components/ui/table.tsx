@@ -25,11 +25,22 @@ function TableFrame({ className, ...props }: React.ComponentProps<"div">) {
 // display:block/grid would otherwise drop them.
 type Stack = "md"
 
-function Table({ className, stack, ...props }: React.ComponentProps<"table"> & { stack?: Stack }) {
+// density="compact": a window's list pane — 35px single-line rows, no row
+// dividers, rounded blue selection, small header. Read by the cells below
+// through the table's group data attribute, so it stays CSS only too.
+type Density = "comfortable" | "compact"
+
+function Table({
+  className,
+  stack,
+  density = "comfortable",
+  ...props
+}: React.ComponentProps<"table"> & { stack?: Stack; density?: Density }) {
   return (
     <table
       data-slot="table"
       data-stack={stack}
+      data-density={density}
       role={stack ? "table" : undefined}
       className={cn("group/table w-full border-collapse text-sm", stack && "max-md:block", className)}
       {...props}
@@ -39,7 +50,7 @@ function Table({ className, stack, ...props }: React.ComponentProps<"table"> & {
 
 // sticky: the header stays in view while the card's content scrolls; it
 // needs the opaque surface so rows don't show through.
-const tableHeaderVariants = cva("", {
+const tableHeaderVariants = cva("group-data-[density=compact]/table:bg-[#eef2f7] group-data-[density=compact]/table:shadow-[0_1px_0_rgba(120,95,70,0.16)]", {
   variants: {
     sticky: { false: "", true: "sticky top-0 z-10 bg-surface-solid" },
   },
@@ -79,6 +90,9 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
       role="row"
       className={cn(
         "border-b border-divider-strong transition-colors duration-(--eb-dur-fast) hover:bg-white/55",
+        "group-data-[density=compact]/table:border-b-0 group-data-[density=compact]/table:hover:bg-[rgba(120,95,70,0.06)]",
+        "group-data-[density=compact]/table:aria-selected:bg-[rgba(31,111,214,0.18)] group-data-[density=compact]/table:aria-selected:hover:bg-[rgba(31,111,214,0.18)]",
+        "group-data-[density=compact]/table:[&>td:first-child]:rounded-l-[5px] group-data-[density=compact]/table:[&>td:last-child]:rounded-r-[5px]",
         "group-data-[stack=md]/table:max-md:grid group-data-[stack=md]/table:max-md:grid-cols-2 group-data-[stack=md]/table:max-md:gap-x-4 group-data-[stack=md]/table:max-md:gap-y-2.5 group-data-[stack=md]/table:max-md:px-3 group-data-[stack=md]/table:max-md:py-3.5",
         className
       )}
@@ -98,7 +112,16 @@ const cellAlign = {
 type CellAlign = keyof typeof cellAlign
 
 // A column width as a CSS length, e.g. "6.5rem".
-type ColumnWidth = `${number}${"rem" | "em" | "ch" | "px" | "%"}`
+export type ColumnWidth = `${number}${"rem" | "em" | "ch" | "px" | "%"}`
+
+export type SortDirection = "ascending" | "descending"
+
+// A clickable header: `direction` is set on the column the rows are sorted
+// by, which then reads bold with a ▲/▼.
+interface HeadSort {
+  direction: SortDirection | null
+  onSort: () => void
+}
 
 // The header cell: 13px muted, 14px above and 12px below, then the header line.
 // width sizes the whole column; a stacked table hides its header, so the
@@ -108,21 +131,44 @@ function TableHead({
   align = "start",
   width,
   style,
+  sort,
+  children,
   ...props
-}: Omit<React.ComponentProps<"th">, "align" | "width"> & { align?: CellAlign; width?: ColumnWidth }) {
+}: Omit<React.ComponentProps<"th">, "align" | "width"> & { align?: CellAlign; width?: ColumnWidth; sort?: HeadSort }) {
   return (
     <th
       data-slot="table-head"
       scope="col"
       role="columnheader"
+      aria-sort={sort ? (sort.direction ?? "none") : undefined}
       className={cn(
         "border-b border-divider-header px-3 pt-3.5 pb-3 text-[13px] font-normal text-muted-foreground",
+        "group-data-[density=compact]/table:border-b-0 group-data-[density=compact]/table:px-2.5 group-data-[density=compact]/table:pt-[5px] group-data-[density=compact]/table:pb-1 group-data-[density=compact]/table:text-[11.5px]",
+        sort?.direction && "font-semibold text-foreground",
         cellAlign[align],
         className
       )}
       style={{ width, ...style }}
       {...props}
-    />
+    >
+      {sort ? (
+        <button
+          type="button"
+          onClick={sort.onSort}
+          className={cn(
+            "inline-flex cursor-default items-center gap-[5px] hover:text-foreground",
+            align === "amount" && "flex-row-reverse"
+          )}
+        >
+          {children}
+          <span aria-hidden="true" className="text-[8px] text-link">
+            {sort.direction === "ascending" ? "▲" : sort.direction === "descending" ? "▼" : ""}
+          </span>
+        </button>
+      ) : (
+        children
+      )}
+    </th>
   )
 }
 
@@ -150,6 +196,7 @@ function TableCell({
       role="cell"
       className={cn(
         "px-3 py-3.5 align-middle",
+        "group-data-[density=compact]/table:h-[35px] group-data-[density=compact]/table:px-3 group-data-[density=compact]/table:py-1",
         cellAlign[align],
         align === "amount" && "font-medium",
         "group-data-[stack=md]/table:max-md:block group-data-[stack=md]/table:max-md:min-w-0 group-data-[stack=md]/table:max-md:p-0",

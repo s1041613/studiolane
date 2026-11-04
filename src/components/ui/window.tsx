@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { cn } from "cn";
 import { TrafficLights } from "@/components/ui/traffic-lights";
 
 export interface WindowRect {
@@ -24,11 +26,24 @@ interface WindowProps {
   // Rendered at the title bar's right end, after the title's own
   // `marginRight: auto` has pushed everything past it there.
   titleAccessory?: React.ReactNode;
+  // When set, the title bar leaves room for the content's own controls
+  // (rendered through WindowToolbar) instead of showing `title`.
+  toolbar?: boolean;
   children: React.ReactNode;
 }
 
 const DEFAULT_MIN_WIDTH = 640;
 const DEFAULT_MIN_HEIGHT = 360;
+
+const ToolbarSlotContext = React.createContext<HTMLElement | null>(null);
+
+// Puts its children into the enclosing Window's title bar. Outside a
+// Window (unit tests, a page without the desktop shell) it renders in place.
+function WindowToolbar({ children }: { children: React.ReactNode }) {
+  const slot = React.useContext(ToolbarSlotContext);
+  if (!slot) return <div className="flex h-10 items-center gap-2 px-3">{children}</div>;
+  return createPortal(children, slot);
+}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max));
@@ -51,8 +66,10 @@ function Window({
   minHeight = DEFAULT_MIN_HEIGHT,
   topInset = 0,
   titleAccessory,
+  toolbar = false,
   children,
 }: WindowProps) {
+  const [toolbarSlot, setToolbarSlot] = React.useState<HTMLElement | null>(null);
   const nodeRef = React.useRef<HTMLDivElement>(null);
   const titleBarRef = React.useRef<HTMLDivElement>(null);
   const eastRef = React.useRef<HTMLDivElement>(null);
@@ -190,9 +207,8 @@ function Window({
           exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.97 }}
           transition={{ duration: reduceMotion ? 0.05 : 0.22, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* File-browser-style toolbar: brushed-metal gradient, gel
-              traffic lights, left-aligned title (no sidebar/search/nav
-              buttons; those aren't part of v1). */}
+          {/* Brushed-metal toolbar: gel traffic lights, then either the
+              left-aligned title or the content's own controls. */}
           <div
             ref={titleBarRef}
             className="relative z-[3] flex h-10 flex-none items-center gap-2 py-0 pr-2.5 pl-3 select-none"
@@ -201,16 +217,19 @@ function Window({
               boxShadow: "inset 0 1px 0 #fff, 0 1px 0 #bba891",
             }}
           >
-            <TrafficLights onClose={onClose} />
-            <p
-              className="min-w-0 truncate text-[13.5px] font-bold text-foreground"
-              style={{ marginRight: "auto", textShadow: "0 1px 0 rgba(255,255,255,0.8)" }}
-            >
-              {title}
-            </p>
-            {titleAccessory}
+            <TrafficLights onClose={onClose} className="mr-1.5" />
+            {toolbar ? (
+              <div ref={setToolbarSlot} className="flex min-w-0 flex-1 items-center gap-2" />
+            ) : (
+              <>
+                <WindowTitle>{title}</WindowTitle>
+                {titleAccessory}
+              </>
+            )}
           </div>
-          <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+            <ToolbarSlotContext.Provider value={toolbarSlot}>{children}</ToolbarSlotContext.Provider>
+          </div>
           {/* Inset gloss hairline, as a sibling overlay (z-50) instead of
               a pseudo-element so it still shows over the opaque toolbar. */}
           <div
@@ -227,4 +246,41 @@ function Window({
   );
 }
 
-export { Window };
+function WindowTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      className="min-w-0 truncate text-[13.5px] font-bold text-foreground"
+      style={{ marginRight: "auto", textShadow: "0 1px 0 rgba(255,255,255,0.8)" }}
+    >
+      {children}
+    </p>
+  );
+}
+
+// An inset, rounded content pane inside a window (a list, a sidebar's
+// neighbour).
+function WindowPane({ className, style, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      className={cn("relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[7px]", className)}
+      style={{ background: "#eef2f7", boxShadow: "inset 0 0 0 1px rgba(120,95,70,0.32)", ...style }}
+      {...props}
+    />
+  );
+}
+
+// The one line of centered summary text along a window's bottom edge.
+function WindowStatusBar({ className, ...props }: React.ComponentProps<"p">) {
+  return (
+    <p
+      aria-live="polite"
+      className={cn(
+        "-mt-[3px] flex h-[22px] flex-none items-center justify-center truncate px-2.5 pb-[3px] text-[11.5px] text-text-secondary",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export { Window, WindowPane, WindowStatusBar, WindowTitle, WindowToolbar };
