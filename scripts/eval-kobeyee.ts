@@ -9,7 +9,7 @@ import { kobeyeeEvalCases } from "@/server/logic/__fixtures__/kobeyee-eval-cases
 import { kobeyeeBlindEvalCases } from "@/server/logic/__fixtures__/kobeyee-eval-cases-blind";
 import { scoreKobeyeeParse, type CaseScore } from "@/server/logic/kobeyee-eval-scorer";
 import type { KobeyeeParse } from "@/server/logic/kobeyee-parse";
-import { extractKobeyeeParse, KOBEYEE_MODEL_ID } from "@/server/services/kobeyee-extraction";
+import { extractKobeyeeParse, KOBEYEE_MODEL_ID, type KobeyeeReasoningEffort } from "@/server/services/kobeyee-extraction";
 
 function rowFor(
   caseId: string,
@@ -42,6 +42,8 @@ async function main(): Promise<void> {
 
   // KOBEYEE_EVAL_MODEL=gpt-5-nano pnpm eval:ai compares another model on the same cases.
   const modelId = process.env.KOBEYEE_EVAL_MODEL ?? KOBEYEE_MODEL_ID;
+  // KOBEYEE_EVAL_EFFORT=low pnpm eval:ai compares a reasoning effort level.
+  const effort = process.env.KOBEYEE_EVAL_EFFORT as KobeyeeReasoningEffort | undefined;
   const transcript: unknown[] = [];
   const rows: Record<string, string | number>[] = [];
   let failedCases = 0;
@@ -65,7 +67,7 @@ async function main(): Promise<void> {
 
   for (const evalCase of evalCases) {
     const startedAt = performance.now();
-    const result = await extractKobeyeeParse(evalCase.input, evalCase.today, modelId);
+    const result = await extractKobeyeeParse(evalCase.input, evalCase.today, modelId, effort);
     const ms = performance.now() - startedAt;
     latenciesMs.push(ms);
     // "unreadable" is scored as nothing extracted, the same as the model
@@ -92,10 +94,10 @@ async function main(): Promise<void> {
 
   console.table(rows);
   mkdirSync("eval-results", { recursive: true });
-  const file = `eval-results/kobeyee-${modelId}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+  const file = `eval-results/kobeyee-${modelId}-${effort ?? "default"}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
   writeFileSync(file, JSON.stringify(transcript, null, 2));
   console.log(`Inputs and model outputs: ${file}`);
-  console.log(`${modelId}: ${evalCases.length} cases, ${failedCases} failed, ${missingFieldTotal} null field(s).`);
+  console.log(`${modelId} (effort ${effort ?? "default"}): ${evalCases.length} cases, ${failedCases} failed, ${missingFieldTotal} null field(s).`);
 
   const sorted = [...latenciesMs].sort((a, b) => a - b);
   const median = percentile(sorted, 50);

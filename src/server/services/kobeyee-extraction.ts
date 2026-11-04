@@ -10,6 +10,11 @@ import { buildKobeyeePrompt } from "@/server/services/kobeyee-prompt";
 // gets tried before changing this.
 export const KOBEYEE_MODEL_ID = "gpt-5-mini";
 
+// "low" measured 43/44 at median 5.6s vs default 43/44 at 7.5s; "minimal"
+// dropped to 40/44. Compare via KOBEYEE_EVAL_EFFORT before changing this.
+export type KobeyeeReasoningEffort = "minimal" | "low" | "medium" | "high";
+export const KOBEYEE_REASONING_EFFORT: KobeyeeReasoningEffort | undefined = "low";
+
 export type KobeyeeExtraction = { status: "ok"; parse: KobeyeeParse } | { status: "unreadable" };
 
 const UNREADABLE: KobeyeeExtraction = { status: "unreadable" };
@@ -25,6 +30,8 @@ export async function extractKobeyeeParse(
   text: string,
   today: IsoDate,
   modelId: string = KOBEYEE_MODEL_ID,
+  reasoningEffort: KobeyeeReasoningEffort | undefined = KOBEYEE_REASONING_EFFORT,
+  abortSignal?: AbortSignal,
 ): Promise<KobeyeeExtraction> {
   let output: unknown;
   try {
@@ -32,6 +39,8 @@ export async function extractKobeyeeParse(
       model: openai(modelId),
       prompt: buildKobeyeePrompt(text, today),
       output: Output.object({ schema: kobeyeeParseSchema }),
+      abortSignal,
+      ...(reasoningEffort && { providerOptions: { openai: { reasoningEffort } } }),
     });
     output = result.output;
   } catch (error) {
