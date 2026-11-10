@@ -17,7 +17,6 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("the 租借時段 tab and page render", async ({ page }) => {
-  await expect(page.getByRole("heading", { level: 1, name: "設定" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "設定項目" }).getByRole("link", { name: "租借時段" })).toHaveAttribute(
     "aria-current",
     "page",

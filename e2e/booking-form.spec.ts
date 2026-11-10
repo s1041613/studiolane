@@ -8,6 +8,5 @@ import { expect, test } from "@playwright/test";
 test("renders the booking form", async ({ page }) => {
   const response = await page.goto("/bookings/new");
   expect(response?.status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "預約教室" })).toBeVisible();
   await expect(page.getByText("選擇租借人…")).toBeVisible();
 });

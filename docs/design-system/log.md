@@ -2,6 +2,9 @@
 
 ## 2026-11-11
 
+* **Update**: [Shared UI Primitives](ui-primitives.md) drops the deleted
+  `AppShell`, `Logo`, and `NAV_ITEMS` and renames away from "and App
+  Shell"; the old icon-rail app shell is gone from the codebase.
 * **Update**: [Shared UI Primitives and App Shell](ui-primitives.md) drops
   the deleted `InfoPanel` and notes the `Tooltip` help-tag look and the
   `--eb-window-*` tokens.
