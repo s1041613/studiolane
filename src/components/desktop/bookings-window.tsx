@@ -2,12 +2,13 @@
 
 import { useEffect } from "react";
 import type { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { Window, type WindowRect } from "@/components/ui/window";
 import { useDesktopStore } from "@/components/desktop/desktop-store";
 import { MENU_BAR_HEIGHT } from "@/components/desktop/menu-bar";
 import { CORNER_RIGHT, CORNER_RESERVE_WIDTH } from "@/components/desktop/kobeyee";
 
-export const BOOKINGS_WINDOW_ID = "bookings";
+const BOOKINGS_WINDOW_ID = "bookings";
 
 const TOP_GAP = 14;
 // Dock height plus its own bottom offset and a little breathing room.
@@ -33,39 +34,39 @@ export function defaultBookingsRect(): WindowRect {
 }
 
 interface BookingsWindowProps {
-  // null on every route but /bookings (the home page has no window content),
-  // so its presence is what decides whether the window opens.
+  // True on /bookings: the URL is the single source of truth.
+  open: boolean;
   children: ReactNode;
 }
 
 // The one v1 window: file-browser-style chrome around the existing
-// BookingsView, unchanged. Opens by default whenever its content is
-// present, so /bookings reads the same as before the desktop shell existed
-// while the home page starts with it closed. Navigating away doesn't close
-// it again yet — that two-way URL<->window sync is a later step.
-function BookingsWindow({ children }: BookingsWindowProps) {
-  const hasContent = children != null;
+// BookingsView, unchanged. `open` follows the URL two-way: it's open
+// whenever the route is /bookings, and closing (red light or Escape, which
+// Window already wires to onClose) navigates back to / instead of just
+// flipping a store flag.
+function BookingsWindow({ open, children }: BookingsWindowProps) {
+  const router = useRouter();
   const windowState = useDesktopStore((state) => state.windows[BOOKINGS_WINDOW_ID]);
-  const openWindow = useDesktopStore((state) => state.openWindow);
-  const closeWindow = useDesktopStore((state) => state.closeWindow);
+  const ensureRect = useDesktopStore((state) => state.ensureRect);
   const setRect = useDesktopStore((state) => state.setRect);
 
   useEffect(() => {
-    if (!hasContent) return;
-    openWindow(BOOKINGS_WINDOW_ID, defaultBookingsRect());
-    // openWindow is a no-op once the window already exists, so this running
-    // again on a future render (it won't, deps are stable) would be safe too.
-  }, [hasContent, openWindow]);
+    if (!open) return;
+    ensureRect(BOOKINGS_WINDOW_ID, defaultBookingsRect());
+    // ensureRect is a no-op once the window already has a rect, so this
+    // running again on a future render (it won't, deps are stable) would
+    // be safe too.
+  }, [open, ensureRect]);
 
-  if (!hasContent || !windowState) return null;
+  if (!windowState) return null;
 
   return (
     <Window
       title="預約冊"
-      open={windowState.open}
+      open={open}
       rect={windowState.rect}
       onRectChange={(rect) => setRect(BOOKINGS_WINDOW_ID, rect)}
-      onClose={() => closeWindow(BOOKINGS_WINDOW_ID)}
+      onClose={() => router.push("/")}
       topInset={MENU_BAR_HEIGHT}
       toolbar
     >

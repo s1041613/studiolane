@@ -11,48 +11,41 @@ beforeEach(() => {
 });
 
 describe("useDesktopStore", () => {
-  it("toggleWindow opens a window that doesn't exist yet, at the given rect", () => {
-    useDesktopStore.getState().toggleWindow("bookings", RECT);
+  it("ensureRect creates a window's rect entry the first time it's open", () => {
+    useDesktopStore.getState().ensureRect("bookings", RECT);
 
-    const window = useDesktopStore.getState().windows.bookings;
-    expect(window).toEqual({ id: "bookings", open: true, rect: RECT });
+    expect(useDesktopStore.getState().windows.bookings).toEqual({ id: "bookings", rect: RECT });
   });
 
-  it("toggleWindow flips open/closed on a window that already exists", () => {
-    useDesktopStore.getState().openWindow("bookings", RECT);
+  it("ensureRect is a no-op once the window already has a rect", () => {
+    useDesktopStore.getState().ensureRect("bookings", RECT);
+    const moved = { x: 50, y: 60, width: 800, height: 600 };
+    useDesktopStore.getState().setRect("bookings", moved);
 
-    useDesktopStore.getState().toggleWindow("bookings", RECT);
-    expect(useDesktopStore.getState().windows.bookings?.open).toBe(false);
+    useDesktopStore.getState().ensureRect("bookings", RECT);
 
-    useDesktopStore.getState().toggleWindow("bookings", RECT);
-    expect(useDesktopStore.getState().windows.bookings?.open).toBe(true);
+    expect(useDesktopStore.getState().windows.bookings).toEqual({ id: "bookings", rect: moved });
   });
 
-  it("closeWindow on an id that was never opened is a no-op", () => {
-    useDesktopStore.getState().closeWindow("bookings");
+  it("setRect on an id that was never opened is a no-op", () => {
+    useDesktopStore.getState().setRect("bookings", RECT);
     expect(useDesktopStore.getState().windows).toEqual({});
   });
 
-  it("setRect updates only the rect, leaving open as-is", () => {
-    useDesktopStore.getState().openWindow("bookings", RECT);
+  it("setRect updates only the rect", () => {
+    useDesktopStore.getState().ensureRect("bookings", RECT);
     const moved = { x: 50, y: 60, width: 800, height: 600 };
 
     useDesktopStore.getState().setRect("bookings", moved);
 
-    expect(useDesktopStore.getState().windows.bookings).toEqual({ id: "bookings", open: true, rect: moved });
+    expect(useDesktopStore.getState().windows.bookings).toEqual({ id: "bookings", rect: moved });
   });
 
-  it("isAnyWindowOpen reflects any open window, Kobeyee included", () => {
-    expect(isAnyWindowOpen(useDesktopStore.getState())).toBe(false);
-
-    useDesktopStore.getState().openWindow("bookings", RECT);
-    expect(isAnyWindowOpen(useDesktopStore.getState())).toBe(true);
-
-    useDesktopStore.getState().closeWindow("bookings");
-    expect(isAnyWindowOpen(useDesktopStore.getState())).toBe(false);
-
-    useDesktopStore.getState().dispatchKobeyee({ type: "open", layout: "chat", defaultChatRect: RECT });
-    expect(isAnyWindowOpen(useDesktopStore.getState())).toBe(true);
+  it("isAnyWindowOpen is true when either argument is true, Kobeyee included", () => {
+    expect(isAnyWindowOpen(false, false)).toBe(false);
+    expect(isAnyWindowOpen(false, true)).toBe(true);
+    expect(isAnyWindowOpen(true, false)).toBe(true);
+    expect(isAnyWindowOpen(true, true)).toBe(true);
   });
 });
 
@@ -96,7 +89,7 @@ describe("desktop widgets", () => {
   });
 
   it("persists only the widget layout", () => {
-    useDesktopStore.getState().openWindow("bookings", RECT);
+    useDesktopStore.getState().ensureRect("bookings", RECT);
     useDesktopStore.getState().moveWidget("free", { column: 3, row: 1 });
 
     const stored = JSON.parse(localStorage.getItem("studiolane-desktop") ?? "{}");

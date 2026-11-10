@@ -1,8 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Dock, DockItem } from "@/components/ui/dock";
 import { useDesktopStore } from "@/components/desktop/desktop-store";
-import { BOOKINGS_WINDOW_ID, defaultBookingsRect } from "@/components/desktop/bookings-window";
 import { defaultKobeyeeRect } from "@/components/desktop/kobeyee";
 
 function BookingLedgerIcon() {
@@ -32,10 +32,16 @@ function NewBookingIcon() {
   );
 }
 
-function DockBar() {
-  const windows = useDesktopStore((state) => state.windows);
-  const toggleWindow = useDesktopStore((state) => state.toggleWindow);
-  const open = windows[BOOKINGS_WINDOW_ID]?.open ?? false;
+interface DockBarProps {
+  // Derived from the URL by the caller: whether /bookings — and so the
+  // 預約冊 window — is the current route.
+  bookingsOpen: boolean;
+}
+
+// Clicking 預約冊 toggles by navigating: closed → push /bookings (opens
+// it), open → push / (closes it, same as the red light).
+function DockBar({ bookingsOpen }: DockBarProps) {
+  const router = useRouter();
   const bookingOpen = useDesktopStore((state) => state.kobeyee.open && state.kobeyee.layout === "booking");
   const dispatchKobeyee = useDesktopStore((state) => state.dispatchKobeyee);
 
@@ -43,9 +49,9 @@ function DockBar() {
     <Dock>
       <DockItem
         label="預約冊"
-        active={open}
+        active={bookingsOpen}
         icon={<BookingLedgerIcon />}
-        onClick={() => toggleWindow(BOOKINGS_WINDOW_ID, defaultBookingsRect())}
+        onClick={() => router.push(bookingsOpen ? "/" : "/bookings")}
       />
       <DockItem
         label="預約教室"

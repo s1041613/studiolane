@@ -19,19 +19,22 @@ import {
   type KobeyeeSession,
 } from "@/components/desktop/kobeyee-session";
 
-interface WindowState {
+// A window's open/closed state used to live here too, but for 預約冊 it now
+// follows the URL (see BookingsWindow) so there's no second copy that can
+// drift from the route. Only the rect — position/size — still persists
+// across opens within the session.
+interface WindowRectState {
   id: string;
-  open: boolean;
   rect: WindowRect;
 }
 
 interface DesktopStore {
   // Keyed by window id so a later step can add more windows without
   // reshaping this record.
-  windows: Record<string, WindowState>;
-  openWindow: (id: string, defaultRect: WindowRect) => void;
-  closeWindow: (id: string) => void;
-  toggleWindow: (id: string, defaultRect: WindowRect) => void;
+  windows: Record<string, WindowRectState>;
+  // Creates the rect entry the first time a window opens; a no-op once one
+  // already exists for that id.
+  ensureRect: (id: string, defaultRect: WindowRect) => void;
   setRect: (id: string, rect: WindowRect) => void;
 
   widgets: WidgetPlacement[];
@@ -55,29 +58,8 @@ export const useDesktopStore = create<DesktopStore>()(
   persist(
     (set, get) => ({
       windows: {},
-      openWindow: (id, defaultRect) =>
-        set((state) => ({
-          windows: {
-            ...state.windows,
-            [id]: state.windows[id] ? { ...state.windows[id], open: true } : { id, open: true, rect: defaultRect },
-          },
-        })),
-      closeWindow: (id) =>
-        set((state) => {
-          const existing = state.windows[id];
-          if (!existing) return state;
-          return { windows: { ...state.windows, [id]: { ...existing, open: false } } };
-        }),
-      toggleWindow: (id, defaultRect) =>
-        set((state) => {
-          const existing = state.windows[id];
-          return {
-            windows: {
-              ...state.windows,
-              [id]: existing ? { ...existing, open: !existing.open } : { id, open: true, rect: defaultRect },
-            },
-          };
-        }),
+      ensureRect: (id, defaultRect) =>
+        set((state) => (state.windows[id] ? state : { windows: { ...state.windows, [id]: { id, rect: defaultRect } } })),
       setRect: (id, rect) =>
         set((state) => {
           const existing = state.windows[id];
@@ -137,6 +119,9 @@ function readStoredWidgets(persisted: unknown): WidgetPlacement[] | null {
   );
 }
 
-export function isAnyWindowOpen(state: Pick<DesktopStore, "windows" | "kobeyee">): boolean {
-  return state.kobeyee.open || Object.values(state.windows).some((w) => w.open);
+// Kobeyee is the only window still tracked here; every other window (just
+// 預約冊 today) has its open state derived from the URL instead, so callers
+// pass that in rather than this reading it from `windows`.
+export function isAnyWindowOpen(kobeyeeOpen: boolean, otherWindowOpen: boolean): boolean {
+  return kobeyeeOpen || otherWindowOpen;
 }
