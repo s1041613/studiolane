@@ -1,10 +1,10 @@
 ---
 type: Feature
-title: Shared UI Primitives and App Shell
-description: The reusable buttons, dialogs, badges, controls, and app shell layout that every page is built from.
+title: Shared UI Primitives
+description: The reusable buttons, dialogs, badges, controls, and layout primitives that every page is built from.
 tags: [design-system, components, layout, forms]
 status: draft
-generated: { by: claude-code/claude-sonnet-5, at: 2026-11-04T07:54:11Z }
+generated: { by: claude-code/claude-sonnet-5, at: 2026-11-10T16:58:53Z }
 sources:
   - id: button
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/button.tsx
@@ -69,15 +69,6 @@ sources:
   - id: read-only-notice
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/read-only-notice.tsx
     title: ReadOnlyNotice component
-  - id: app-shell
-    resource: https://github.com/s1041613/studiolane/blob/main/src/components/layout/app-shell.tsx
-    title: AppShell component
-  - id: logo
-    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/logo.tsx
-    title: Logo component
-  - id: nav-items
-    resource: https://github.com/s1041613/studiolane/blob/main/src/components/layout/nav-items.ts
-    title: Navigation items
   - id: window
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/window.tsx
     title: Window component
@@ -119,9 +110,8 @@ sources:
 # Overview
 
 This document covers the reusable interface components in
-`src/components/ui/*` and `src/components/layout/*`. The underlying rules
-for color, font, corner radius, and spacing live in
-[Design Tokens](design-system.md).
+`src/components/ui/*`. The underlying rules for color, font, corner
+radius, and spacing live in [Design Tokens](design-system.md).
 
 Most of these components' code comments mark a section with a
 `DESIGN.md §` reference, for example `§5.1`, `§5.4`, and `§5.9` through
@@ -281,24 +271,6 @@ the only guard.
 An error shown as a toast always has a ✕ close button. An error does not go
 away on its own, so the user must be able to close it.
 
-# App Shell Icon Rail and Mobile Bar
-
-`AppShell` renders two navigation layouts and picks one by screen
-width.[^app-shell] The desktop layout is a fixed `IconRail` on the left,
-with the `Logo` above four navigation items. The current page is marked
-with a darker background.[^app-shell][^logo] Below the `md` breakpoint, it
-switches to a `MobileBar`, with the `Logo` and a hamburger menu button that
-expands into the navigation list when tapped.[^app-shell] Both layouts
-share the same `NAV_ITEMS` list, which has four items today: `首頁` (home),
-`預約教室` (book a room), `預約列表` (bookings list), and `設定` (settings).[^nav-items]
-
-`AppShell` also decides whether to show a page title. The `pageTitle`
-function reads the path to choose the title text. Only `/bookings/new` has
-its own fixed title, `預約教室` (book a room). Every page under
-`/bookings/batch/` shows `預約明細` (booking detail). Every page under
-`/settings` shows `設定` (settings). Every other path shows no title
-bar.[^nav-items]
-
 # Window, Traffic Lights, and Dock
 
 `Window` is a floating, draggable, resizable panel with file-browser-style
@@ -396,9 +368,6 @@ from the `--eb-desk-*`, `--eb-bevel*`, `--eb-gel*` and `--eb-window-*` tokens in
 [^page-failure]: PageFailure component
 [^error-code]: ErrorCode component
 [^read-only-notice]: ReadOnlyNotice component
-[^app-shell]: AppShell component
-[^logo]: Logo component
-[^nav-items]: Navigation items
 [^window]: Window component
 [^window-toolbar]: Window toolbar controls
 [^traffic-lights]: TrafficLights component

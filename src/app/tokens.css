@@ -105,9 +105,6 @@
   --eb-h-control-sm: 32px;  /* 表格內按鈕、時間欄、跨日 */
   --eb-h-button:     42px;  /* 主按鈕 */
   --eb-size-icon-btn: 40px; /* 日期前後鍵 */
-  --eb-size-rail-item: 46px;
-  --eb-rail-width: 60px;
-  --eb-content-offset: 84px; /* 內容區起點（左欄寬 + 間距） */
 
   /* ---------- 10. 陰影：只給浮在畫面上的東西 ---------- */
   --eb-shadow-none: none;
