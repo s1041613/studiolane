@@ -58,21 +58,6 @@ function ForwardIcon() {
   )
 }
 
-// A gear followed by a small ⌄: the "actions on the selection" button.
-function ActionIcon() {
-  return (
-    <>
-      <svg viewBox="0 0 16 16" aria-hidden="true" className={ICON_CLASS}>
-        <circle cx="8" cy="8" r="2.2" />
-        <path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6 5 5M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4" />
-      </svg>
-      <svg viewBox="0 0 16 16" aria-hidden="true" className={cn(ICON_CLASS, "w-2")}>
-        <path d="m4 6 4 4 4-4" />
-      </svg>
-    </>
-  )
-}
-
 function ToolbarTitle({ className, ...props }: React.ComponentProps<"p">) {
   return (
     <p
@@ -121,4 +106,4 @@ function ToolbarSearch({ className, clearHref, clearLabel = "清除搜尋", ...p
   )
 }
 
-export { ActionIcon, BackIcon, ForwardIcon, ToolbarButton, ToolbarButtonGroup, ToolbarSearch, ToolbarTitle }
+export { BackIcon, ForwardIcon, ToolbarButton, ToolbarButtonGroup, ToolbarSearch, ToolbarTitle }

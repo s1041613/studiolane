@@ -52,11 +52,11 @@ describe("BookingsView", () => {
     expect(screen.getByRole("columnheader", { name: /日期/ })).toHaveAttribute("aria-sort", "descending");
   });
 
-  it("orders the columns 日期 時段 租借人 用途 教室 狀態 付款 金額", () => {
+  it("orders the columns 日期 時段 租借人 用途 教室 狀態 付款 金額 備註", () => {
     render(<BookingsView section={{ ok: true, data: [makeRental({ id: "a", date: "2026-11-04" })] }} today={TODAY} />);
 
     const headers = screen.getAllByRole("columnheader").map((th) => th.textContent?.replace(/[▲▼]/g, ""));
-    expect(headers).toEqual(["日期", "時段", "租借人", "用途", "教室", "狀態", "付款", "金額"]);
+    expect(headers).toEqual(["日期", "時段", "租借人", "用途", "教室", "狀態", "付款", "金額", "備註"]);
   });
 
   it("keeps the 預約冊 title and walks folder history with 上一頁/下一頁", () => {

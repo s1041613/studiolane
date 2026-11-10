@@ -24,17 +24,18 @@ function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
 
 function TooltipContent({
   className,
-  side = "top",
-  sideOffset = 6,
+  side = "bottom",
+  sideOffset = 4,
+  align = "start",
   ...props
 }: TooltipPrimitive.Popup.Props & Pick<TooltipPrimitive.Positioner.Props, "side" | "sideOffset" | "align">) {
   return (
     <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Positioner side={side} sideOffset={sideOffset} className="isolate z-50">
+      <TooltipPrimitive.Positioner side={side} sideOffset={sideOffset} align={align} className="isolate z-50">
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
-            "rounded-md bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-(--eb-shadow-popover) outline-hidden data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+            "rounded-[3px] bg-(--eb-tooltip) px-[7px] py-0.5 text-[11.5px] text-foreground shadow-(--eb-tooltip-shadow) outline-hidden data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
             className
           )}
           {...props}

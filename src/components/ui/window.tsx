@@ -211,14 +211,8 @@ function Window({
           ref={nodeRef}
           role="dialog"
           aria-label={title}
-          className="fixed z-[100] flex flex-col overflow-hidden rounded-[10px]"
-          style={{
-            transformOrigin: "50% 50%",
-            background: "rgba(237,242,250,0.68)",
-            backdropFilter: "blur(34px) saturate(160%)",
-            WebkitBackdropFilter: "blur(34px) saturate(160%)",
-            boxShadow: "0 0 0 1px rgba(0,0,0,0.45), 0 18px 50px rgba(0,10,40,0.6)",
-          }}
+          className="fixed z-[100] flex flex-col overflow-hidden rounded-[10px] bg-(--eb-window-glass) shadow-(--eb-window-shadow) backdrop-blur-[34px] backdrop-saturate-[1.6]"
+          style={{ transformOrigin: "50% 50%" }}
           initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.97 }}
@@ -228,15 +222,10 @@ function Window({
               left-aligned title or the content's own controls. */}
           <div
             ref={titleBarRef}
-            className="relative z-[3] flex h-10 flex-none items-center gap-2 py-0 pr-2.5 pl-3 select-none"
-            style={
-              chrome === "toolbar"
-                ? {
-                    backgroundImage: "linear-gradient(180deg, #fbfcfe 0%, #eef1f6 50%, #dfe4ea 51%, #eef1f6 100%)",
-                    boxShadow: "inset 0 1px 0 #fff, 0 1px 0 #bba891",
-                  }
-                : undefined
-            }
+            className={cn(
+              "relative z-[3] flex h-10 flex-none items-center gap-2 py-0 pr-2.5 pl-3 select-none",
+              chrome === "toolbar" && "bg-(image:--eb-window-bar) shadow-(--eb-window-bar-shadow)"
+            )}
           >
             <TrafficLights onClose={onClose} className="mr-1.5" />
             {toolbar ? (

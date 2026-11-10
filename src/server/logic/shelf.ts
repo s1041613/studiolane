@@ -181,7 +181,7 @@ export function searchShelfRows(rows: RentalSummary[], q: string): RentalSummary
   return rows.filter((rental) => matchesQuery(rental, q));
 }
 
-// "撞 11/6 15:00 某某": the clash row's earliest-created rival, named so
+// "撞單 11/6 15:00 某某": the clash row's earliest-created rival, named so
 // staff know which other booking to deal with first. Empty string when the
 // rental doesn't currently clash.
 export function rivalText(rental: RentalSummary, all: RentalSummary[]): string {
@@ -189,10 +189,10 @@ export function rivalText(rental: RentalSummary, all: RentalSummary[]): string {
   if (rivals.length === 0) return "";
   const earliest = [...rivals].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
   const { monthDay } = shortDateParts(earliest.date);
-  return `撞 ${monthDay} ${earliest.start} ${earliest.person}`;
+  return `撞單 ${monthDay} ${earliest.start} ${earliest.person}`;
 }
 
-export type ShelfSortKey = "date" | "time" | "renter" | "purpose" | "room" | "status" | "payment" | "amount";
+export type ShelfSortKey = "date" | "time" | "renter" | "purpose" | "room" | "status" | "payment" | "amount" | "note";
 export type ShelfSort = { key: ShelfSortKey; direction: "ascending" | "descending" };
 
 export const DEFAULT_SHELF_SORT: ShelfSort = { key: "date", direction: "ascending" };
@@ -210,6 +210,7 @@ const SORT_VALUE: Record<ShelfSortKey, (rental: RentalSummary, all: RentalSummar
   status: (r, all) => `${conflictInfo(r, all) != null ? "0" : "1"}${statusToLabel(r.status as RentalStatusCode)}`,
   payment: (r) => r.paymentState,
   amount: (r) => r.amount ?? -1,
+  note: (r) => r.note,
 };
 
 function compareValues(a: SortValue, b: SortValue): number {

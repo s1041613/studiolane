@@ -273,7 +273,7 @@ describe("rivalText", () => {
       createdAt: "2026-01-02T00:00:00Z",
     });
 
-    expect(rivalText(rental, [rental, earlyRival, laterRival])).toBe("撞 11/6 15:00 某某");
+    expect(rivalText(rental, [rental, earlyRival, laterRival])).toBe("撞單 11/6 15:00 某某");
   });
 
   it("is empty when the rental has no rival", () => {

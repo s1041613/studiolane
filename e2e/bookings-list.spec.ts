@@ -99,20 +99,11 @@ test("the 教室 sidebar folder 小教室 shows only room B's rows", async ({ pa
   await expect(grid(page).getByText("林小雨")).not.toBeVisible();
 });
 
-test("double-clicking a row opens its info panel with 狀態, 租借人, 用途, 付款, 金額, 備註", async ({ page }) => {
+test("each row shows its 備註 after 金額", async ({ page }) => {
   await page.goto("/bookings");
 
   const row = page.locator("tr").filter({ hasText: "周小貓" });
-  await row.dblclick();
-
-  const panel = page.getByRole("dialog", { name: "周小貓" });
-  await expect(panel).toBeVisible();
-  await expect(panel.getByText("待確認")).toBeVisible();
-  await expect(panel.getByText("外部客戶")).toBeVisible();
-  await expect(panel.getByText("瑜珈", { exact: true })).toBeVisible();
-  await expect(panel.getByText("未付款")).toBeVisible();
-  await expect(panel.getByText("1,200")).toBeVisible();
-  await expect(panel.getByText("想借瑜珈墊")).toBeVisible();
+  await expect(row.locator("td").last()).toContainText("想借瑜珈墊");
 });
 
 test("rows start oldest date first, and the 日期 header flips the order", async ({ page }) => {
