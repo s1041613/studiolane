@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { MenuBar } from "@/components/desktop/menu-bar";
 import { DockBar } from "@/components/desktop/dock-bar";
 import { BookingsWindow } from "@/components/desktop/bookings-window";
@@ -22,7 +23,7 @@ interface DesktopShellProps extends KobeyeeWindowProps {
   // The widgets' data; null when that read failed.
   rentals: readonly RentalSummary[] | null;
   rules: readonly RentalRule[] | null;
-  // The 預約冊 window's content; null on every route but /bookings.
+  // The 預約冊 window's content, shown only on /bookings.
   children: ReactNode;
 }
 
@@ -32,7 +33,11 @@ interface DesktopShellProps extends KobeyeeWindowProps {
 // window; null on `/`, where the window stays closed. The booking form
 // comes in as a render prop because desktop/ can't import booking/.
 function DesktopShell({ rentals, rules, children, reader, renderBookingForm }: DesktopShellProps) {
-  const windowOpen = useDesktopStore((state) => isAnyWindowOpen(state));
+  // A layout's `children` is never null (Next wraps every page in its own
+  // boundary), so the pathname, not the page's output, is the open state.
+  const bookingsOpen = usePathname() === "/bookings";
+  const kobeyeeOpen = useDesktopStore((state) => state.kobeyee.open);
+  const windowOpen = isAnyWindowOpen(kobeyeeOpen, bookingsOpen);
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: "#0b3a8c" }}>
@@ -43,10 +48,10 @@ function DesktopShell({ rentals, rules, children, reader, renderBookingForm }: D
       />
       <DesktopWidgets hidden={windowOpen} rentals={rentals} rules={rules} />
       <MenuBar />
-      <BookingsWindow>{children}</BookingsWindow>
+      <BookingsWindow open={bookingsOpen}>{children}</BookingsWindow>
       <KobeyeeWindow reader={reader} renderBookingForm={renderBookingForm} />
       <KobeyeeCat />
-      <DockBar />
+      <DockBar bookingsOpen={bookingsOpen} />
     </div>
   );
 }
