@@ -22,12 +22,14 @@ interface DesktopShellProps extends KobeyeeWindowProps {
   // The widgets' data; null when that read failed.
   rentals: readonly RentalSummary[] | null;
   rules: readonly RentalRule[] | null;
+  // The 預約冊 window's content; null on every route but /bookings.
   children: ReactNode;
 }
 
-// Replaces /bookings' page shell: a full-viewport desktop with a menu bar,
-// wallpaper, widgets, a Dock, and the 預約冊 window. `children` is the existing
-// BookingsView, rendered unchanged inside the window. The booking form
+// The desktop itself: a full-viewport shell with a menu bar, wallpaper,
+// widgets, a Dock, and the 預約冊 window, shared by `/` and `/bookings`.
+// `children` is BookingsView on /bookings, rendered unchanged inside the
+// window; null on `/`, where the window stays closed. The booking form
 // comes in as a render prop because desktop/ can't import booking/.
 function DesktopShell({ rentals, rules, children, reader, renderBookingForm }: DesktopShellProps) {
   const windowOpen = useDesktopStore((state) => isAnyWindowOpen(state));

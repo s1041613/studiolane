@@ -11,11 +11,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const title = pageTitle(pathname);
 
-  // /bookings is the full-viewport desktop (src/components/desktop/); the
-  // old icon rail / mobile bar must not wrap it. Every other route keeps
-  // this shell.
-  if (pathname === "/bookings") return children;
-
   return (
     <>
       <IconRail pathname={pathname} />
@@ -95,7 +90,7 @@ function MobileBar({ pathname }: { pathname: string }) {
   );
 }
 
-export function PageTitleRow({ children }: { children: ReactNode }) {
+function PageTitleRow({ children }: { children: ReactNode }) {
   return <div className="flex items-center py-4 md:mt-6 md:mb-6 md:h-10 md:py-0">{children}</div>;
 }
 
