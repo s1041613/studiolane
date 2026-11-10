@@ -33,7 +33,7 @@ read-only bookings list (`/bookings`); see `docs/booking/`. The bookings
 list now renders inside a desktop shell (menu bar, Dock, a draggable and
 resizable window) rather than the app shell, as a 預約冊 shelf: sidebar
 folders (period/room/status/clash), a row's `狀態` menu, a clash tooltip,
-and a draggable info panel. A corner cat on that shell opens the
+and a 備註 column. A corner cat on that shell opens the
 Kobeyee window; sending a message widens it leftward into a 預約教室 form
 filled from a fixture reader (no AI wiring yet, no submit), and the Dock's
 預約教室 icon opens that form empty. There is no real auth yet. Other

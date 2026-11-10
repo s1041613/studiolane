@@ -1,5 +1,11 @@
 # Update Log
 
+## 2026-11-11
+
+* **Update**: [Shared UI Primitives and App Shell](ui-primitives.md) drops
+  the deleted `InfoPanel` and notes the `Tooltip` help-tag look and the
+  `--eb-window-*` tokens.
+
 ## 2026-11-04
 
 * **Update**: [Shared UI Primitives and App Shell](ui-primitives.md) now

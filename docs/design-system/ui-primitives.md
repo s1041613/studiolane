@@ -99,9 +99,6 @@ sources:
   - id: sidebar-list
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/sidebar-list.tsx
     title: SidebarList component
-  - id: info-panel
-    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/info-panel.tsx
-    title: InfoPanel component
   - id: widget
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/widget.tsx
     title: Widget component
@@ -327,7 +324,7 @@ the bottom of the desktop, holding `DockItem` entries with a hover label
 and an active indicator dot.[^dock] All three are used together by the
 desktop shell that `/bookings` renders inside of.
 
-# Menu, Tooltip, SidebarList, and InfoPanel
+# Menu, Tooltip, and SidebarList
 
 `Menu` is a context menu for one row: a trigger (click, or a row's own
 right-click) opens a popup of real `menuitem`s with arrow-key navigation,
@@ -339,7 +336,9 @@ menu, dimmed, instead of being removed, so its text can explain why.[^menu]
 `Tooltip` is a passive hint, not a choice: hover or focus only, with about
 a 450ms open delay carried by its own `Provider` (base-ui's `Tooltip.Root`
 takes no delay prop directly).[^tooltip] It never opens from a touch tap,
-so it needs no extra wiring for a `(hover: none)` device.[^tooltip]
+so it needs no extra wiring for a `(hover: none)` device.[^tooltip] It
+looks like a classic desktop help tag (pale yellow, square-ish) and opens
+below its trigger, start-aligned by default.[^tooltip]
 
 `SidebarList` is a window's left-hand folder list, in its own inset pane:
 grouped sections, each item a small blue folder icon (`glyph` picks the
@@ -348,13 +347,8 @@ gradient pill with white text. An item's count can be marked `accent`
 (bold blue, for a folder that still needs a decision) or `danger` (red,
 for a live clash).[^sidebar-list]
 
-`InfoPanel` is a small floating panel for one item's detail: draggable by
-its own title strip only (no resize, no traffic lights — `Window` is for a
-whole app's content, `InfoPanel` is for one row). Its position is a
-controlled prop, written back only when a drag ends, the same pattern as
-`Window`'s `rect`.[^info-panel] All four are used together by the bookings
-list's shelf view (sidebar folders, a row's `狀態` menu, a clash tooltip,
-and the row's info panel).
+All three are used together by the bookings list's shelf view (sidebar
+folders, a row's `狀態` menu, and a clash tooltip on the date).
 
 # Widget, Widget Grid, Widget Gallery, and Context Menu
 
@@ -378,7 +372,7 @@ side column).[^window] Inside them use `Button` `bevel` (清除) and `gel` (送�
 `SegmentedControl look="gel"` (教室, 用途, 付款方式), `Input
 variant="inline"` for text that reads as plain until hovered or focused,
 and `Skeleton` for the fill-in placeholder.[^button][^input] Colours come
-from the `--eb-desk-*`, `--eb-bevel*` and `--eb-gel*` tokens in
+from the `--eb-desk-*`, `--eb-bevel*`, `--eb-gel*` and `--eb-window-*` tokens in
 `src/app/tokens.css`.
 
 [^button]: Button component
@@ -412,7 +406,6 @@ from the `--eb-desk-*`, `--eb-bevel*` and `--eb-gel*` tokens in
 [^menu]: Menu component
 [^tooltip]: Tooltip component
 [^sidebar-list]: SidebarList component
-[^info-panel]: InfoPanel component
 [^widget]: Widget component
 [^widget-grid]: WidgetGrid component
 [^widget-grid-layout]: Widget grid placement rules
