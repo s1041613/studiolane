@@ -77,14 +77,14 @@ beforeEach(() => {
 });
 
 describe("BookingActions: the 狀態 trigger follows allowedActions", () => {
-  it("a pending booking's menu offers 確認, 延期… and 取消…", async () => {
+  it("a pending booking's menu offers 確認, 延期 and 取消", async () => {
     render(<Harness rental={makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending })} />);
 
     openMenu("待確認");
 
     expect(await screen.findByRole("menuitem", { name: "確認" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "延期…" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "取消…" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "延期" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "取消" })).toBeInTheDocument();
   });
 
   it("an awaiting-payment booking's menu offers 標記已付款", async () => {
@@ -213,7 +213,7 @@ describe("BookingActions: primary menu items", () => {
 });
 
 describe("BookingActions: postpone / cancel", () => {
-  it("取消… opens a ConfirmDialog with the refund warning when the booking is paid", async () => {
+  it("取消 opens a ConfirmDialog with the refund warning when the booking is paid", async () => {
     const rental = makeRental({
       id: "r1",
       date: "2099-06-01",
@@ -224,19 +224,19 @@ describe("BookingActions: postpone / cancel", () => {
     render(<Harness rental={rental} />);
 
     openMenu("已登記");
-    fireEvent.click(await screen.findByRole("menuitem", { name: "取消…" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "取消" }));
 
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("需要退款");
     expect(dialog).toHaveTextContent("600");
   });
 
-  it("取消… opens a ConfirmDialog with no refund warning for an unpaid booking", async () => {
+  it("取消 opens a ConfirmDialog with no refund warning for an unpaid booking", async () => {
     const rental = makeRental({ id: "r1", date: "2099-06-01", status: RentalStatus.Pending });
     render(<Harness rental={rental} />);
 
     openMenu("待確認");
-    fireEvent.click(await screen.findByRole("menuitem", { name: "取消…" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "取消" }));
 
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).not.toHaveTextContent("需要退款");
@@ -248,7 +248,7 @@ describe("BookingActions: postpone / cancel", () => {
     render(<Harness rental={rental} />);
 
     openMenu("待確認");
-    fireEvent.click(await screen.findByRole("menuitem", { name: "取消…" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "取消" }));
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(screen.getByRole("button", { name: /確定取消/ }));
 
@@ -261,7 +261,7 @@ describe("BookingActions: postpone / cancel", () => {
     render(<Harness rental={rental} />);
 
     openMenu("待確認");
-    fireEvent.click(await screen.findByRole("menuitem", { name: "延期…" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "延期" }));
     fireEvent.click(screen.getByRole("button", { name: /確定延期/ }));
 
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());

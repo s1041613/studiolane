@@ -64,10 +64,6 @@ const PRIMARY_ACTION: Record<"markPaid" | "markDone", (id: string) => Promise<Sh
   },
 };
 
-// The menu's own item text keeps the "…" (these always ask something
-// else first — the confirm dialog below); the dialog's own title, confirm
-// button, and refund note read the plain verb instead.
-const END_MENU_LABEL: Record<EndAction, string> = { postpone: "延期…", cancel: "取消…" };
 const END_LABEL: Record<EndAction, string> = { postpone: "延期", cancel: "取消" };
 
 // The 狀態 cell: plain text at rest (bookings-shelf.tsx's row owns the
@@ -195,7 +191,7 @@ export function BookingActions({ rental, open, onOpenChange, emphasized = false 
                 className={action === "cancel" ? "text-destructive" : undefined}
                 onClick={() => openEndDialog(action)}
               >
-                {END_MENU_LABEL[action]}
+                {END_LABEL[action]}
               </MenuItem>
             );
           })}

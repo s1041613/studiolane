@@ -274,7 +274,7 @@ test("cancelling a paid booking warns about the refund before it goes through", 
     const row = rowFor(page, id);
 
     await openStatusMenu(row, "已登記");
-    await page.getByRole("menuitem", { name: "取消…", exact: true }).click();
+    await page.getByRole("menuitem", { name: "取消", exact: true }).click();
 
     const dialog = page.getByRole("alertdialog", { name: "取消這筆預約？" });
     await expect(dialog).toBeVisible();
@@ -314,7 +314,7 @@ test("postponing an unpaid booking shows no refund warning", async ({ page }) =>
     const row = rowFor(page, id);
 
     await openStatusMenu(row, "待確認");
-    await page.getByRole("menuitem", { name: "延期…", exact: true }).click();
+    await page.getByRole("menuitem", { name: "延期", exact: true }).click();
 
     const dialog = page.getByRole("alertdialog", { name: "延期這筆預約？" });
     await expect(dialog).toBeVisible();
