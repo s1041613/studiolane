@@ -33,13 +33,22 @@ const LIGHT_STYLE: Record<LightTone, { background: string; boxShadow: string }> 
   },
 };
 
+// Same-colour halo on group hover; drop-shadow leaves the inline gloss and
+// box-shadow untouched.
+const GLOW_CLASS: Record<LightTone, string> = {
+  close: "group-hover:drop-shadow-[0_0_2.5px_rgb(250_94_62/.55)]",
+  min: "group-hover:drop-shadow-[0_0_2.5px_rgb(255_187_60/.6)]",
+  max: "group-hover:drop-shadow-[0_0_2.5px_rgb(0_199_90/.5)]",
+};
+const GLOW_MOTION = "transition-[filter] duration-150 motion-reduce:transition-none motion-reduce:group-hover:filter-none";
+
 // The small top gloss highlight every sphere gets (`.light::before`).
 const GLOSS_CLASS =
   "before:absolute before:top-px before:left-[3px] before:right-[3px] before:h-[4.5px] before:rounded-full before:bg-gradient-to-b before:from-white/90 before:to-white/0 before:content-['']";
 
 function Light({ tone, className }: { tone: LightTone; className?: string }) {
   return (
-    <span aria-hidden="true" className={cn("relative block size-[13px] rounded-full", GLOSS_CLASS, className)} style={LIGHT_STYLE[tone]} />
+    <span aria-hidden="true" className={cn("relative block size-[13px] rounded-full", GLOSS_CLASS, GLOW_CLASS[tone], GLOW_MOTION, className)} style={LIGHT_STYLE[tone]} />
   );
 }
 
@@ -50,7 +59,7 @@ function TrafficLights({ onClose, closeLabel = "關閉視窗", className }: Traf
         type="button"
         onClick={onClose}
         aria-label={closeLabel}
-        className={cn("relative grid size-[13px] cursor-pointer place-items-center rounded-full", GLOSS_CLASS)}
+        className={cn("relative grid size-[13px] cursor-pointer place-items-center rounded-full", GLOSS_CLASS, GLOW_CLASS.close, GLOW_MOTION)}
         style={LIGHT_STYLE.close}
       >
         <svg viewBox="0 0 6 6" className="relative size-[6px] opacity-0 group-hover:opacity-60 group-focus-visible:opacity-60">

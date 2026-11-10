@@ -151,7 +151,7 @@ function KobeyeeWindow({ reader, renderBookingForm }: KobeyeeWindowProps) {
                 <Button type="button" variant="ghost" size="xs" className="font-normal text-text-secondary">
                   <ClipboardPasteIcon /> 貼上
                 </Button>
-                <Button type="button" variant="gel" size="icon-xs" className="size-7 rounded-full" aria-label="送出" onClick={submit}>
+                <Button type="button" variant="gel" size="icon-xs" className="size-7 rounded-full" aria-label="送出" disabled={!text.trim()} onClick={submit}>
                   <ArrowUpIcon />
                 </Button>
               </div>

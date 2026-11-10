@@ -91,11 +91,10 @@ function FolderIcon({ glyph }: { glyph: FolderGlyph }) {
   )
 }
 
-const ACTIVE_STYLE: React.CSSProperties = {
-  backgroundImage: "linear-gradient(180deg, #6fb2fa 0%, #2b7de9 48%, #1d5fb8 52%, #2b7de9 85%, #4fa0f6 100%)",
-  textShadow: "0 1px 1px rgba(0,40,110,0.55)",
-  boxShadow: "inset 0 1px 1px rgba(255,255,255,0.6), 0 0 0 1px #1d5fb8, 0 1px 2px rgba(80,40,0,0.3)",
-}
+// Same soft gel as the gel button so the selected folder and the send
+// button read as one family.
+const ACTIVE_CLASS =
+  "bg-(image:--eb-gel) font-semibold text-white shadow-(--eb-gel-shadow) transition-[box-shadow,filter] duration-150 ease-(--eb-ease) hover:shadow-(--eb-gel-shadow-hover) hover:brightness-[1.04]"
 
 const COUNT_TONE = {
   accent: "font-bold text-link",
@@ -131,9 +130,8 @@ function SidebarList({ sections, label, className }: { sections: SidebarSection[
                   onClick={item.onClick}
                   className={cn(
                     "flex min-h-7 w-full cursor-default items-center gap-[7px] rounded-md px-2 py-[3px] text-left text-[13px] leading-[1.35]",
-                    item.active ? "font-semibold text-white" : "text-foreground hover:bg-[rgba(110,94,81,0.1)]"
+                    item.active ? ACTIVE_CLASS : "text-foreground hover:bg-[rgba(110,94,81,0.1)]"
                   )}
-                  style={item.active ? ACTIVE_STYLE : undefined}
                 >
                   <FolderIcon glyph={item.glyph} />
                   <span className="truncate">{item.label}</span>

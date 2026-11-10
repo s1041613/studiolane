@@ -33,7 +33,7 @@ const buttonVariants = cva(
         bevel:
           "rounded-md border-0 bg-(image:--eb-bevel) font-normal text-foreground shadow-(--eb-bevel-shadow)",
         gel:
-          "rounded-full border-0 bg-(image:--eb-gel) text-white shadow-[var(--eb-gel-shadow),0_0_0_1px_var(--eb-desk-accent-edge)] [text-shadow:var(--eb-gel-ink-shadow)]",
+          "rounded-full border-0 bg-(image:--eb-gel) text-white shadow-(--eb-gel-shadow) transition-[box-shadow,filter,opacity,scale] duration-150 ease-(--eb-ease) hover:shadow-(--eb-gel-shadow-hover) hover:brightness-[1.04] active:shadow-(--eb-gel-shadow-active) active:brightness-100 disabled:scale-[.94] disabled:opacity-45 disabled:saturate-[.4]",
         // Login screen only: the lime gradient in `default` is for in-app
         // actions (DESIGN.md §5.1), the login screenshot's button is solid dark.
         dark: "border-transparent bg-foreground text-background hover:opacity-90",
