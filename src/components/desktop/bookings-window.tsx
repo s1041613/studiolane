@@ -33,25 +33,31 @@ export function defaultBookingsRect(): WindowRect {
 }
 
 interface BookingsWindowProps {
+  // null on every route but /bookings (the home page has no window content),
+  // so its presence is what decides whether the window opens.
   children: ReactNode;
 }
 
 // The one v1 window: file-browser-style chrome around the existing
-// BookingsView, unchanged. Opens by default so /bookings reads the same as
-// before the desktop shell existed.
+// BookingsView, unchanged. Opens by default whenever its content is
+// present, so /bookings reads the same as before the desktop shell existed
+// while the home page starts with it closed. Navigating away doesn't close
+// it again yet — that two-way URL<->window sync is a later step.
 function BookingsWindow({ children }: BookingsWindowProps) {
+  const hasContent = children != null;
   const windowState = useDesktopStore((state) => state.windows[BOOKINGS_WINDOW_ID]);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const closeWindow = useDesktopStore((state) => state.closeWindow);
   const setRect = useDesktopStore((state) => state.setRect);
 
   useEffect(() => {
+    if (!hasContent) return;
     openWindow(BOOKINGS_WINDOW_ID, defaultBookingsRect());
     // openWindow is a no-op once the window already exists, so this running
     // again on a future render (it won't, deps are stable) would be safe too.
-  }, [openWindow]);
+  }, [hasContent, openWindow]);
 
-  if (!windowState) return null;
+  if (!hasContent || !windowState) return null;
 
   return (
     <Window

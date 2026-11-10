@@ -21,12 +21,14 @@ test("bookings page shows the 預約列表 heading and the seeded rows", async (
   await expect(grid(page).getByText("周小貓")).toBeVisible();
 });
 
-test("the nav's 預約列表 link goes from the home page to /bookings", async ({ page }) => {
+test("the 預約冊 window is closed on the home page but open on /bookings", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("link", { name: "預約列表", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "預約冊" })).toHaveCount(0);
 
-  await expect(page).toHaveURL("/bookings");
+  await page.goto("/bookings");
+
+  await expect(page.getByRole("dialog", { name: "預約冊" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "預約列表", level: 1 })).toBeVisible();
 });
 

@@ -20,20 +20,22 @@ fixture data in this repository is fictional.
 This repository is at the skeleton stage: project configuration
 (package manager, Next.js, TypeScript, ESLint, Tailwind/PostCSS, shadcn,
 Drizzle, Vitest, Playwright, local Supabase config) plus a minimal `src/`:
-the app shell (icon rail / mobile bar, nav items), a placeholder home page,
-shared UI primitives (page-failure, error-code), and the shared `lib/`
-(calendar dates, click guard, date range, result, settle, utils), the server
-error boundary (`src/server/boundary`) and failure screens. Auth is a stub that always returns a demo admin, and
-audited writes are a no-op seam. The data layer (migration, seed, Drizzle
-schema, repositories, domain logic) exists; see `docs/data-model/`. The only
-feature UIs are the rental rules settings page (`/settings/rules`; see
-`docs/rental-time-rules/`), the new-booking page (`/bookings/new`), the
-read-only batch detail page (`/bookings/batch/<batchId>`), and the
-read-only bookings list (`/bookings`); see `docs/booking/`. The bookings
-list now renders inside a desktop shell (menu bar, Dock, a draggable and
-resizable window) rather than the app shell, as a 預約冊 shelf: sidebar
-folders (period/room/status/clash), a row's `狀態` menu, a clash tooltip,
-and a 備註 column. A corner cat on that shell opens the
+the app shell (icon rail / mobile bar, nav items), shared UI primitives
+(page-failure, error-code), and the shared `lib/` (calendar dates, click
+guard, date range, result, settle, utils), the server error boundary
+(`src/server/boundary`) and failure screens. Auth is a stub that always
+returns a demo admin, and audited writes are a no-op seam. The data layer
+(migration, seed, Drizzle schema, repositories, domain logic) exists; see
+`docs/data-model/`. The only feature UIs are the rental rules settings page
+(`/settings/rules`; see `docs/rental-time-rules/`), the new-booking page
+(`/bookings/new`), the read-only batch detail page
+(`/bookings/batch/<batchId>`), and the read-only bookings list
+(`/bookings`); see `docs/booking/`. The home page (`/`) is now the desktop
+itself — menu bar, wallpaper, widgets (today / 待付款 / 下一個空檔), Dock, and
+the Kobeyee cat, with every window closed — rather than the old app shell;
+`/bookings` shares that same desktop and additionally opens the 預約冊
+window: sidebar folders (period/room/status/clash), a row's `狀態` menu, a
+clash tooltip, and a 備註 column. A corner cat on the shell opens the
 Kobeyee window; sending a message widens it leftward into a 預約教室 form
 filled from a fixture reader (no AI wiring yet, no submit), and the Dock's
 預約教室 icon opens that form empty. There is no real auth yet. Other
