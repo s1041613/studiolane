@@ -1,7 +1,7 @@
 ---
 type: Feature
 title: Bookings List
-description: "The /bookings page: a bookings shelf with sidebar folders, a row's status menu, and a draggable info panel."
+description: "The /bookings page: a bookings shelf with sidebar folders, a row's status menu, and a red date for a clash."
 tags: [bookings, list, conflicts, actions]
 status: draft
 generated: { by: claude-code/claude-sonnet-5, at: 2026-11-04T09:30:55Z }
@@ -46,7 +46,7 @@ sources:
 The bookings list at `/bookings` opens as a `預約冊` (bookings shelf) window
 inside the desktop shell: a sidebar of folders next to a grid of
 rows.[^page][^shelf] It's built from the shared `Window`, `Menu`, `Tooltip`,
-`SidebarList`, and `InfoPanel` primitives, documented in the design-system
+and `SidebarList` primitives, documented in the design-system
 bundle's "Shared UI Primitives and App Shell" concept.
 
 Staff use it to check that a booking made on [the new booking page](booking.md)
@@ -98,11 +98,10 @@ decision; the rest are quiet.[^shelf]
 # What each row shows
 
 Each row is one compact line: the date, the time slot, the renter, the
-purpose, the room, the status, the payment state, and the amount, in that
-column order.[^shelf] The date shows only month/day (for example `11/6`),
+purpose, the room, the status, the payment state, the amount, and the
+note (`備註`, cut short with the full text on hover), in that column order.[^shelf] The date shows only month/day (for example `11/6`),
 with no weekday.[^shelf] A slot that ends after midnight is marked
-`跨日`.[^shelf] The renter reads bold unless the booking is closed; the
-status reads bold while it still needs a decision (`待確認`, `待付款`). A
+`跨日`.[^shelf] The renter always reads bold; the status reads bold while it still needs a decision (`待確認`, `待付款`). A
 closed row (`已完成`, `延期`, `已取消`) reads in muted grey as a
 whole.[^shelf] The room shows as `大教室` or
 `小教室`, never the bare letter; the payment state shows `已付款` for a
@@ -118,8 +117,7 @@ rental ID, on top of the current filter.[^search][^shelf-logic]
 
 The window's title is always `預約冊`; the highlighted sidebar folders
 show the current filter. The back and forward buttons beside it walk the folder selections made in this window, like a
-browser's history. The gear button (`取得資訊`) opens the info panel for
-the selected row, or the first row when none is selected. The status bar
+browser's history. The status bar
 along the bottom reads `N 筆預約，M 筆待確認` for the current view, with
 the second half shown only when it singles out part of the
 view.[^shelf][^shelf-logic]
@@ -131,10 +129,10 @@ Only `已登記` (registered) counts as a confirmed rental. Another renter's
 one.[^conflict] A `待確認` or `待付款` booking can overlap another one in
 the same room when staff pressed `仍要送出` in the conflict dialog.[^conflict]
 
-Each clashing row shows a red `撞單` mark right after its date.[^shelf]
-Hovering it (or focusing it, on a device with no hover) shows a tooltip
+A clashing row shows its date in bold red, with no extra text beside it;
+a screen reader still hears `撞單`.[^shelf] Hovering the date (or focusing it, on a device with no hover) shows a tooltip
 after about 450ms naming the earliest-made overlapping rival, for example
-`撞 11/6 15:00 某某`.[^shelf-logic] A clash is never shown with a dot or an
+`撞單 11/6 15:00 某某`.[^shelf-logic] A clash is never shown with a dot or an
 icon in front of the row.[^shelf]
 
 # The `狀態` (status) menu
@@ -150,10 +148,10 @@ click.[^row-actions][^sort] A row with no actions left (`已完成`,
 
 | Status | Menu items |
 |---|---|
-| `待確認` (pending confirmation) | `確認`, `延期…`, `取消…` |
-| `待付款` (awaiting payment) | `標記已付款`, `延期…`, `取消…` |
-| `已登記` (registered), unpaid | `標記已付款`, `延期…`, `取消…` |
-| `已登記` (registered), paid | `標記完成`, `延期…`, `取消…` |
+| `待確認` (pending confirmation) | `確認`, `延期`, `取消` |
+| `待付款` (awaiting payment) | `標記已付款`, `延期`, `取消` |
+| `已登記` (registered), unpaid | `標記已付款`, `延期`, `取消` |
+| `已登記` (registered), paid | `標記完成`, `延期`, `取消` |
 | `已完成`, `已延期`, `已取消` | no menu |
 
 `確認` moves a `待確認` booking on: a transfer-pay booking goes to
@@ -166,7 +164,7 @@ overlapping), it refuses the write and reports them instead, and a dialog
 opens listing this booking with its rivals, oldest submission
 first — the one being kept marked, the rest marked to be cancelled, each
 line like `11/6 15:00–16:00 某某`.[^actions][^row-actions] A rival that was
-already paid shows the same refund warning that `延期…`/`取消…` use. The
+already paid shows the same refund warning that `延期`/`取消` use. The
 dialog
 has two buttons, `返回` and `確認並取消其他`.[^row-actions] Confirming sends
 back the exact rival list shown, with each rival's status and payment
@@ -178,7 +176,7 @@ paid.[^actions][^repo] If someone else changed the room in between
 dialog stays open with the same "please refresh" refusal a lost write
 elsewhere in this menu uses.[^actions]
 
-`延期…` and `取消…` both ask for confirmation first and release the slot
+`延期` and `取消` both ask for confirmation first and release the slot
 right away.[^row-actions] If the booking was already paid, the
 confirmation warns that it needs a refund and marks the booking's note
 with `【需要退款】` (needs a refund) so staff can follow up by hand; the
@@ -190,14 +188,6 @@ an inconsistent state: whichever write loses that race is refused and told
 to refresh.[^repo] Any other refusal — the status no longer allows the
 action, or a rule now blocks the slot — shows as a short notice with no
 way to retry from inside it.[^actions]
-
-# Info panel
-
-Double-clicking a row, or pressing Enter while it's selected, opens a
-floating info panel for that booking, draggable by its title strip and
-closable with its own `✕`.[^shelf] It shows `狀態` (with the rival text
-when the row clashes), `租借人` (`名冊` for a roster renter, `外部客戶`
-otherwise), `用途`, `付款`, `金額`, and `備註` (`—` when empty).[^shelf]
 
 # Search
 
@@ -219,8 +209,7 @@ are no bookings at all, regardless of the query.[^shelf]
 # Keyboard
 
 The grid takes a single tab stop. Arrow up/down moves the row selection;
-Enter on a selected row opens its info panel; Escape closes an open status
-menu first, then the info panel.[^shelf]
+Escape closes an open status menu.[^shelf]
 
 # Out of scope
 

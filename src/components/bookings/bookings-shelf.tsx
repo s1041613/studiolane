@@ -2,9 +2,9 @@
 
 // 預約冊: a sidebar of folders (period / room / status / clash) next to one
 // sortable list of rows, with the window's toolbar (folder history, title,
-// 取得資訊, search) and status bar. Search (?q=) is a GET form in the
-// toolbar; folder selection and its history, sort, row selection, the open
-// status menu, and the info panel are all client-only state — nothing here
+// search) and status bar. Search (?q=) is a GET form in the toolbar;
+// folder selection and its history, sort, row selection, and the open
+// status menu are all client-only state — nothing here
 // is remembered across a reload.
 import { useMemo, useState } from "react";
 import Form from "next/form";
@@ -27,21 +27,18 @@ import {
   withFolder,
 } from "@/server/logic/shelf";
 import type { ShelfFilter, ShelfSort, ShelfSortKey } from "@/server/logic/shelf";
-import { roomToLabel, statusToLabel } from "@/server/supabase/codecs";
-import type { RentalStatusCode, RoomCode } from "@/server/supabase/codecs";
+import { roomToLabel } from "@/server/supabase/codecs";
+import type { RoomCode } from "@/server/supabase/codecs";
 import { RentalStatus } from "@/server/types/home";
 import type { RentalSummary } from "@/server/types/home";
 import { BookingActions } from "@/components/bookings/booking-actions";
 import { SidebarList } from "@/components/ui/sidebar-list";
 import type { FolderGlyph, SidebarSection } from "@/components/ui/sidebar-list";
-import { InfoPanel } from "@/components/ui/info-panel";
-import type { InfoPanelPosition } from "@/components/ui/info-panel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ColumnWidth } from "@/components/ui/table";
 import { WindowPane, WindowStatusBar, WindowToolbar } from "@/components/ui/window";
 import {
-  ActionIcon,
   BackIcon,
   ForwardIcon,
   ToolbarButton,
@@ -57,8 +54,6 @@ interface BookingsShelfProps {
   q: string;
 }
 
-const DEFAULT_INFO_POSITION: InfoPanelPosition = { x: 48, y: 44 };
-
 const NEEDS_DECISION = new Set<RentalStatus>([RentalStatus.Pending, RentalStatus.AwaitingPayment]);
 const CLOSED = new Set<RentalStatus>([RentalStatus.Completed, RentalStatus.Postponed, RentalStatus.Cancelled]);
 
@@ -72,13 +67,14 @@ function folderGlyph(key: string): FolderGlyph {
 
 const COLUMNS: { key: ShelfSortKey; label: string; width: ColumnWidth; amount?: boolean }[] = [
   { key: "date", label: "日期", width: "9.3%" },
-  { key: "time", label: "時段", width: "13.9%" },
-  { key: "renter", label: "租借人", width: "20.9%" },
-  { key: "purpose", label: "用途", width: "12.4%" },
-  { key: "room", label: "教室", width: "11.6%" },
-  { key: "status", label: "狀態", width: "11.1%" },
-  { key: "payment", label: "付款", width: "11.1%" },
-  { key: "amount", label: "金額", width: "9.6%", amount: true },
+  { key: "time", label: "時段", width: "12.5%" },
+  { key: "renter", label: "租借人", width: "13%" },
+  { key: "purpose", label: "用途", width: "11%" },
+  { key: "room", label: "教室", width: "9%" },
+  { key: "status", label: "狀態", width: "10%" },
+  { key: "payment", label: "付款", width: "10%" },
+  { key: "amount", label: "金額", width: "8%", amount: true },
+  { key: "note", label: "備註", width: "17.2%" },
 ];
 
 // Back/forward walk the folder selections made in this window, like a
@@ -93,8 +89,6 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
   const [sort, setSort] = useState<ShelfSort>(DEFAULT_SHELF_SORT);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [infoId, setInfoId] = useState<string | null>(null);
-  const [infoPosition, setInfoPosition] = useState<InfoPanelPosition>(DEFAULT_INFO_POSITION);
   const filter = history.entries[history.index];
 
   const rows = useMemo(
@@ -130,23 +124,8 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
     [allRentals, filter, today],
   );
 
-  const infoRental = infoId ? rows.find((r) => r.id === infoId) ?? allRentals.find((r) => r.id === infoId) : null;
-
   function selectRow(id: string) {
     setSelectedId(id);
-  }
-
-  function openInfo(id: string) {
-    setSelectedId(id);
-    setInfoId(id);
-    setInfoPosition(DEFAULT_INFO_POSITION);
-  }
-
-  // 取得資訊 with nothing selected picks the first row, so the button
-  // always does something while the list has rows.
-  function openSelectionInfo() {
-    const id = selectedId && rows.some((r) => r.id === selectedId) ? selectedId : rows[0]?.id;
-    if (id) openInfo(id);
   }
 
   function openRowMenu(rental: RentalSummary, event: React.MouseEvent) {
@@ -164,15 +143,9 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
       setSelectedId(rows[next === -1 ? 0 : next].id);
       return;
     }
-    if (event.key === "Enter" && selectedId && rows.some((r) => r.id === selectedId)) {
+    if (event.key === "Escape" && openMenuId) {
       event.preventDefault();
-      openInfo(selectedId);
-      return;
-    }
-    if (event.key === "Escape" && (openMenuId || infoId)) {
-      event.preventDefault();
-      if (openMenuId) setOpenMenuId(null);
-      else setInfoId(null);
+      setOpenMenuId(null);
     }
   }
 
@@ -192,9 +165,6 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
           </ToolbarButton>
         </ToolbarButtonGroup>
         <ToolbarTitle>預約冊</ToolbarTitle>
-        <ToolbarButton aria-label="取得資訊" title="取得資訊" disabled={rows.length === 0} onClick={openSelectionInfo}>
-          <ActionIcon />
-        </ToolbarButton>
         {/* Keyed by query so a navigation (submit, or 清除) remounts the
             input instead of leaving its uncontrolled value stale. */}
         <Form key={q} action="/bookings">
@@ -255,7 +225,6 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
                       menuOpen={rental.id === openMenuId}
                       onMenuOpenChange={(open) => setOpenMenuId(open ? rental.id : null)}
                       onSelect={() => selectRow(rental.id)}
-                      onOpenInfo={() => openInfo(rental.id)}
                       onContextMenu={(event) => openRowMenu(rental, event)}
                     />
                   ))}
@@ -264,15 +233,6 @@ export function BookingsShelf({ allRentals, today, q }: BookingsShelfProps) {
             </TableFrame>
           )}
 
-          <InfoPanel
-            title={infoRental?.person ?? ""}
-            open={infoId !== null && infoRental != null}
-            position={infoPosition}
-            onPositionChange={setInfoPosition}
-            onClose={() => setInfoId(null)}
-          >
-            {infoRental && <BookingInfo rental={infoRental} allRentals={allRentals} />}
-          </InfoPanel>
         </WindowPane>
       </div>
       <WindowStatusBar>{shelfStatusText(rows, q)}</WindowStatusBar>
@@ -287,7 +247,6 @@ interface BookingRowProps {
   menuOpen: boolean;
   onMenuOpenChange: (open: boolean) => void;
   onSelect: () => void;
-  onOpenInfo: () => void;
   onContextMenu: (event: React.MouseEvent) => void;
 }
 
@@ -298,7 +257,6 @@ function BookingRow({
   menuOpen,
   onMenuOpenChange,
   onSelect,
-  onOpenInfo,
   onContextMenu,
 }: BookingRowProps) {
   const clashing = conflictInfo(rental, allRentals) != null;
@@ -312,28 +270,27 @@ function BookingRow({
       aria-selected={selected}
       className={cn("group cursor-default select-none", closed && "text-text-secondary")}
       onClick={onSelect}
-      onDoubleClick={onOpenInfo}
       onContextMenu={onContextMenu}
     >
       <TableCell label="日期" className="tabular-nums whitespace-nowrap">
-        {shortDateParts(rental.date).monthDay}
-        {clashing && (
+        {clashing ? (
           <Tooltip>
-            <TooltipTrigger
-              render={<span tabIndex={0} />}
-              className="ml-[7px] cursor-default text-[11px] font-semibold tracking-[.01em] text-destructive"
-            >
-              撞單
+            <TooltipTrigger render={<span tabIndex={0} />} className="cursor-default font-semibold text-destructive">
+              {shortDateParts(rental.date).monthDay}
+              {/* The red date alone carries no meaning for a screen reader. */}
+              <span className="sr-only">撞單</span>
             </TooltipTrigger>
             <TooltipContent>{rivalText(rental, allRentals)}</TooltipContent>
           </Tooltip>
+        ) : (
+          shortDateParts(rental.date).monthDay
         )}
       </TableCell>
       <TableCell label="時段" className="tabular-nums whitespace-nowrap">
         {rental.start}–{rental.end}
         {isNextDay(rental) && <span className="ml-1 text-xs text-muted-foreground">（跨日）</span>}
       </TableCell>
-      <TableCell slot="title" label="租借人" className={cn("truncate", closed ? "font-medium" : "font-semibold")}>
+      <TableCell slot="title" label="租借人" className="truncate font-semibold">
         {rental.person}
       </TableCell>
       <TableCell label="用途" className="truncate">
@@ -356,32 +313,9 @@ function BookingRow({
       <TableCell label="金額" align="amount" className="whitespace-nowrap font-normal">
         {rental.amount != null ? money(rental.amount) : "—"}
       </TableCell>
+      <TableCell label="備註" className="truncate pl-4" title={rental.note || undefined}>
+        {rental.note}
+      </TableCell>
     </TableRow>
-  );
-}
-
-function BookingInfo({ rental, allRentals }: { rental: RentalSummary; allRentals: RentalSummary[] }) {
-  const clashing = conflictInfo(rental, allRentals) != null;
-  return (
-    <dl className="space-y-3">
-      <InfoField label="狀態">
-        {statusToLabel(rental.status as RentalStatusCode)}
-        {clashing && <div className="mt-0.5 text-xs text-warn">{rivalText(rental, allRentals)}</div>}
-      </InfoField>
-      <InfoField label="租借人">{rental.renterType === "roster" ? "名冊" : "外部客戶"}</InfoField>
-      <InfoField label="用途">{rental.purposeLabel}</InfoField>
-      <InfoField label="付款">{paymentTag(rental)}</InfoField>
-      <InfoField label="金額">{rental.amount != null ? money(rental.amount) : "—"}</InfoField>
-      <InfoField label="備註">{rental.note || "—"}</InfoField>
-    </dl>
-  );
-}
-
-function InfoField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5">{children}</dd>
-    </div>
   );
 }
