@@ -16,7 +16,11 @@ export interface WindowRect {
 interface WindowProps {
   title: string;
   open: boolean;
-  rect: WindowRect;
+  // Undefined until the window has been dragged or resized once; until then
+  // it sits at `defaultPlacement`, which is plain CSS so the server-rendered
+  // HTML already places it without reading the viewport.
+  rect?: WindowRect;
+  defaultPlacement?: React.CSSProperties;
   onRectChange: (rect: WindowRect) => void;
   onClose: () => void;
   minWidth?: number;
@@ -66,6 +70,7 @@ function Window({
   title,
   open,
   rect,
+  defaultPlacement,
   onRectChange,
   onClose,
   minWidth = DEFAULT_MIN_WIDTH,
@@ -96,6 +101,7 @@ function Window({
       placedRef.current = false;
       return;
     }
+    if (!rect) return;
     const target = { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` };
     if (!animateRect || reduceMotion || !placedRef.current) {
       Object.assign(node.style, target);
@@ -212,7 +218,7 @@ function Window({
           role="dialog"
           aria-label={title}
           className="fixed z-[100] flex flex-col overflow-hidden rounded-[10px] bg-(--eb-window-glass) shadow-(--eb-window-shadow) backdrop-blur-[34px] backdrop-saturate-[1.6]"
-          style={{ transformOrigin: "50% 50%" }}
+          style={{ transformOrigin: "50% 50%", ...(rect ? undefined : defaultPlacement) }}
           initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.97 }}

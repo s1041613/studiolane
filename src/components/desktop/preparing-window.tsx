@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { Window, WindowPane } from "@/components/ui/window";
-import type { WindowRect } from "@/components/ui/window";
 import { Spinner } from "@/components/ui/spinner";
 import { useDesktopStore } from "@/components/desktop/desktop-store";
 
@@ -14,16 +13,13 @@ const PREPARING_WINDOW_ID = "preparing";
 const PREPARING_WIDTH = 520;
 const PREPARING_HEIGHT = 340;
 
-// Centered on the current viewport; only meaningful once mounted in a
-// browser, same pattern as defaultBookingsRect/defaultKobeyeeRect.
-export function centeredPreparingRect(): WindowRect {
-  return {
-    x: Math.round((window.innerWidth - PREPARING_WIDTH) / 2),
-    y: Math.round((window.innerHeight - PREPARING_HEIGHT) / 2),
-    width: PREPARING_WIDTH,
-    height: PREPARING_HEIGHT,
-  };
-}
+// Centered with plain CSS so the server-rendered HTML is already in place.
+export const CENTERED_PREPARING_PLACEMENT: CSSProperties = {
+  left: `calc(50vw - ${PREPARING_WIDTH / 2}px)`,
+  top: `calc(50vh - ${PREPARING_HEIGHT / 2}px)`,
+  width: PREPARING_WIDTH,
+  height: PREPARING_HEIGHT,
+};
 
 interface PreparingWindowProps {
   // From preparingTitle(pathname); null keeps this window closed.
@@ -40,20 +36,16 @@ interface PreparingWindowProps {
 function PreparingWindow({ title }: PreparingWindowProps) {
   const router = useRouter();
   const windowState = useDesktopStore((state) => state.windows[PREPARING_WINDOW_ID]);
-  const ensureRect = useDesktopStore((state) => state.ensureRect);
   const setRect = useDesktopStore((state) => state.setRect);
 
-  useEffect(() => {
-    if (title) ensureRect(PREPARING_WINDOW_ID, centeredPreparingRect());
-  }, [title, ensureRect]);
-
-  if (!title || !windowState) return null;
+  if (!title) return null;
 
   return (
     <Window
       title={title}
       open
-      rect={windowState.rect}
+      rect={windowState?.rect}
+      defaultPlacement={CENTERED_PREPARING_PLACEMENT}
       onRectChange={(rect) => setRect(PREPARING_WINDOW_ID, rect)}
       onClose={() => router.push("/")}
     >
