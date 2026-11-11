@@ -3,6 +3,14 @@ import { getBookingFormData } from "@/server/services/booking-form";
 import { BookingSheet } from "@/components/booking/booking-sheet";
 import { requirePageAccess } from "@/server/auth/require-staff";
 
+// Parked (src/app/_parked is a private, unrouted folder — see Next's
+// project-organization docs on private folders): /bookings/new currently
+// shows PreparingWindow's 準備中 instead (see
+// src/components/desktop/preparing-window.tsx and
+// src/app/(desktop)/bookings/new/page.tsx). To restore, move this file back
+// to src/app/(desktop)/bookings/new/page.tsx, drop the real routed page's
+// requirePageAccess-only body and this route from
+// src/components/desktop/preparing.ts, and run `pnpm exec next typegen`.
 export default async function NewBookingPage() {
   await requirePageAccess("/bookings/new");
   // Without a request-time API this page prerenders at build time,

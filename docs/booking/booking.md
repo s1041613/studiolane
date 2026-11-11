@@ -35,6 +35,13 @@ sources:
     title: Batch summary logic
 ---
 
+> **Current status**: `/bookings/new` and `/bookings/batch/<batchId>` render
+> a `PreparingWindow` (`src/components/desktop/preparing-window.tsx`) — a
+> spinner and 準備中 — instead of the pages described below. The code below
+> is unchanged and still accurate; it's just parked, unrouted, at
+> `src/app/_parked/bookings-new/` and `src/app/_parked/bookings-batch/`
+> until this feature's own PR reconnects it.
+
 # Overview
 
 Staff create a booking on the new booking page, at `/bookings/new`.[^sheet]

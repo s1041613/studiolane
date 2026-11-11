@@ -11,6 +11,16 @@ import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableR
 import { SectionFailure } from "@/components/shared/failures/section-failure";
 import { requirePageAccess } from "@/server/auth/require-staff";
 
+// Parked (src/app/_parked is a private, unrouted folder — see Next's
+// project-organization docs on private folders): /bookings/batch/[batchId]
+// currently shows PreparingWindow's 準備中 instead (see
+// src/components/desktop/preparing-window.tsx and
+// src/app/(desktop)/bookings/batch/[batchId]/page.tsx). To restore, move
+// this file (and its sibling not-found.tsx) back to
+// src/app/(desktop)/bookings/batch/[batchId]/, drop both the real routed
+// page's requirePageAccess-only body and this route from
+// src/components/desktop/preparing.ts, and run `pnpm exec next typegen`.
+//
 // rentals.batch_id is a uuid column; eq()-ing it against a non-uuid string
 // makes Postgres throw before any row comes back. A malformed id is treated
 // the same as a batch with no rows below: 404, not a 500 or SectionFailure.

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
 
+// Parked alongside ./page.tsx (src/app/_parked is a private, unrouted
+// folder) — see that file's header for how to restore both.
 export default function BatchNotFound() {
   return (
     <main className="flex w-full flex-1 flex-col items-center justify-center gap-1.5 p-7 text-center text-sm">

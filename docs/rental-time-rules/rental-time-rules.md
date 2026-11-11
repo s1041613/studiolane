@@ -47,6 +47,13 @@ sources:
     title: Initial migration 0001_init.sql
 ---
 
+> **Current status**: `/settings/rules` renders a `PreparingWindow`
+> (`src/components/desktop/preparing-window.tsx`) — a spinner and 準備中 —
+> instead of the page described below. The code below is unchanged and
+> still accurate; it's just parked, unrouted, at
+> `src/app/_parked/settings-rules/` until this feature's own PR reconnects
+> it.
+
 # Overview
 
 The rental rules page lets staff block or open room time for rentals.[^rules-page]

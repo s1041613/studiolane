@@ -8,6 +8,7 @@
 
 @theme inline {
   --animate-skeleton-shimmer: skeleton-shimmer 1.3s linear infinite;
+  --animate-spinner-fade: spinner-fade 1s linear infinite;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-outfit), var(--font-noto-tc), system-ui, sans-serif;
@@ -153,4 +154,11 @@
 @keyframes skeleton-shimmer {
   from { background-position: 150% 0; }
   to { background-position: -50% 0; }
+}
+
+/* Spinner (ui/spinner.tsx): each of the 12 spokes fades out and back in,
+   staggered by animation-delay so the fade reads as travelling around. */
+@keyframes spinner-fade {
+  from { opacity: 1; }
+  to { opacity: .15; }
 }

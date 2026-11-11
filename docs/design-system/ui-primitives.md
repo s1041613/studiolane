@@ -69,6 +69,9 @@ sources:
   - id: read-only-notice
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/read-only-notice.tsx
     title: ReadOnlyNotice component
+  - id: spinner
+    resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/spinner.tsx
+    title: Spinner component
   - id: window
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/ui/window.tsx
     title: Window component
@@ -271,6 +274,16 @@ the only guard.
 An error shown as a toast always has a ✕ close button. An error does not go
 away on its own, so the user must be able to close it.
 
+# Spinner
+
+`Spinner` is a 12-spoke "busy" indicator, styled after a classic desktop
+wait cursor: each spoke fades in turn instead of the whole ring
+rotating.[^spinner] It's for a page-level wait with nothing else to show,
+such as `PreparingWindow`'s 準備中. A button's own pending state still uses
+`Loader2Icon` with `animate-spin` (`ActionButton`), a different shape for a
+different job — the button's label stays next to it, so the spinner only
+has to say "working", not "nothing is here yet".
+
 # Window, Traffic Lights, and Dock
 
 `Window` is a floating, draggable, resizable panel with file-browser-style
@@ -353,6 +366,7 @@ from the `--eb-desk-*`, `--eb-bevel*`, `--eb-gel*` and `--eb-window-*` tokens in
 [^alert-dialog]: AlertDialog component
 [^confirm-dialog]: ConfirmDialog component
 [^notice-dialog]: NoticeDialog component
+[^spinner]: Spinner component
 [^status-badge]: StatusBadge component
 [^row-action]: RowAction component
 [^segmented-control]: SegmentedControl component

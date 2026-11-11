@@ -34,14 +34,22 @@ read-only bookings list (`/bookings`); see `docs/booking/`. The home page
 待付款 / 下一個空檔), Dock, and the Kobeyee cat, with every window closed;
 `/bookings` shares that same desktop and additionally opens the 預約冊
 window: sidebar folders (period/room/status/clash), a row's `狀態` menu, a
-clash tooltip, and a 備註 column. The old icon-rail app shell is gone; the
-three routes above (`/settings/rules`, `/bookings/new`,
-`/bookings/batch/<batchId>`) render with no chrome for now, pending a
-desktop loading window to replace it. A corner cat on the desktop shell
-opens the Kobeyee window; sending a message widens it leftward into a
-預約教室 form filled from a fixture reader (no AI wiring yet, no submit),
-and the Dock's 預約教室 icon opens that form empty. There is no real auth
-yet. Other features land in later PRs.
+clash tooltip, and a 備註 column. The old icon-rail app shell is gone.
+Navigating to `/`, `/bookings`, or between them, never blocks on the
+rentals/rules/booking-form reads: the chrome (menu bar, wallpaper, Dock,
+cat) and the 預約冊 window's own chrome render immediately, and only the
+three widgets and the window's body show a ghost/skeleton with a light
+sweep (`DesktopWidgetsSkeleton`, `(desktop)/bookings/loading.tsx`) until
+their data resolves — never the generic "載入中…" text. The three routes
+above (`/settings/rules`, `/bookings/new`, `/bookings/batch/<batchId>`) are
+unfinished; each now shows a centered window in the same chrome as 預約冊,
+titled by page name, with a spinner and 準備中 that never resolves
+(`PreparingWindow`), instead of rendering with no chrome. Their real pages
+still exist, parked at `src/app/_parked/` until each is rebuilt. A corner
+cat on the desktop shell opens the Kobeyee window; sending a message widens
+it leftward into a 預約教室 form filled from a fixture reader (no AI
+wiring yet, no submit), and the Dock's 預約教室 icon opens that form empty.
+There is no real auth yet. Other features land in later PRs.
 
 ## Working here
 
@@ -68,3 +76,4 @@ is a candidate for a check.
 | Researching a tool: read the version pinned in `package.json`, cite that version's docs (`node_modules/<pkg>/dist/docs` or Context7); every comparison claim carries a source and version, unsourced claims are labeled "inference" | This file | Docs (candidate for a source-column check) |
 | Doc links point at `main`, not a feature branch | This file | Docs (candidate for a link check) |
 | Update "Current scope" above when a page lands | no-mistakes document step | Pipeline |
+| A route whose real page is parked (`src/app/_parked/`) keeps that page's code reachable from a real import, not deleted or exempted by a knip ignore | Each parked file's own header comment | Docs |
