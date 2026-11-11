@@ -7,7 +7,7 @@ status: draft
 generated: { by: claude-code/claude-sonnet-5, at: 2026-11-04T09:30:55Z }
 sources:
   - id: page
-    resource: https://github.com/s1041613/studiolane/blob/main/src/app/bookings/page.tsx
+    resource: https://github.com/s1041613/studiolane/blob/main/src/app/(desktop)/bookings/page.tsx
     title: Bookings list page
   - id: view
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/bookings/bookings-view.tsx
