@@ -8,7 +8,7 @@ I built it after working part-time at a dance studio. Bookings lived in a Google
 
 The demo database is on Supabase's free tier and pauses when idle, so the first load can be slow. Reload after a minute if it fails. Every name, price, and booking in this repo and in the demo is fictional.
 
-<!-- TODO: demo GIF of the desktop, the booking list, and Kobeyee filling a form -->
+https://github.com/user-attachments/assets/a9199893-4c21-4a2e-9f1a-b0fad26a679a
 
 ## How to run the project
 
