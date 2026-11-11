@@ -14,7 +14,7 @@ const PREPARING_WIDTH = 520;
 const PREPARING_HEIGHT = 340;
 
 // Centered with plain CSS so the server-rendered HTML is already in place.
-export const CENTERED_PREPARING_PLACEMENT: CSSProperties = {
+const CENTERED_PREPARING_PLACEMENT: CSSProperties = {
   left: `calc(50vw - ${PREPARING_WIDTH / 2}px)`,
   top: `calc(50vh - ${PREPARING_HEIGHT / 2}px)`,
   width: PREPARING_WIDTH,

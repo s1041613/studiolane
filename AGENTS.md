@@ -76,4 +76,4 @@ is a candidate for a check.
 | Researching a tool: read the version pinned in `package.json`, cite that version's docs (`node_modules/<pkg>/dist/docs` or Context7); every comparison claim carries a source and version, unsourced claims are labeled "inference" | This file | Docs (candidate for a source-column check) |
 | Doc links point at `main`, not a feature branch | This file | Docs (candidate for a link check) |
 | Update "Current scope" above when a page lands | no-mistakes document step | Pipeline |
-| A route whose real page is parked (`src/app/_parked/`) keeps that page's code reachable from a real import, not deleted or exempted by a knip ignore | Each parked file's own header comment | Docs |
+| A parked real page lives under the private `src/app/_parked/` folder (knip's Next.js plugin counts it as an app entry, so it is not dead code) and its header says how to restore it | knip (`pnpm knip`) plus each parked file's header comment | Check + Docs |
