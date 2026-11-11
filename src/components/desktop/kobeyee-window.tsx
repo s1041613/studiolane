@@ -26,7 +26,7 @@ import {
 import type { BookingDraft } from "@/server/logic/booking";
 import { DRAFT_FIELDS } from "@/server/logic/kobeyee";
 
-interface BookingFormSlotProps {
+export interface BookingFormSlotProps {
   draft: BookingDraft;
   // Rows at or past this index in DRAFT_FIELDS render as skeletons.
   revealed: number;

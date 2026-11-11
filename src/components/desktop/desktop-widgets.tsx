@@ -4,10 +4,10 @@ import * as React from "react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Widget, WidgetAddButton } from "@/components/ui/widget";
 import { WidgetGallery } from "@/components/ui/widget-gallery";
-import { WidgetGrid, widgetColumnsForWidth, widgetSlotSize } from "@/components/ui/widget-grid";
+import { WIDGET_CELL, WIDGET_COLUMN_GAP, WIDGET_ROW_GAP, WidgetGrid, widgetColumnsForWidth, widgetSlotSize } from "@/components/ui/widget-grid";
 import { MENU_BAR_HEIGHT } from "@/components/desktop/menu-bar";
 import { useDesktopStore } from "@/components/desktop/desktop-store";
-import { WIDGET_KINDS, WIDGET_NAME, WIDGET_SPAN, isWidgetKind } from "@/components/desktop/widget-kinds";
+import { DEFAULT_WIDGETS, WIDGET_KINDS, WIDGET_NAME, WIDGET_SPAN, isWidgetKind } from "@/components/desktop/widget-kinds";
 import type { WidgetKind } from "@/components/desktop/widget-kinds";
 import { TodayWidget } from "@/components/desktop/today-widget";
 import { UnpaidWidget } from "@/components/desktop/unpaid-widget";
@@ -60,10 +60,15 @@ function WidgetBody({ kind, rentals, rules, now }: WidgetBodyProps) {
   }
 }
 
-interface DesktopWidgetsProps {
-  hidden: boolean;
+// The widgets' data, resolved from DesktopShell's sectionsPromise. Each
+// field is null when that read failed; the widget itself then shows —.
+export interface DesktopSections {
   rentals: readonly RentalSummary[] | null;
   rules: readonly RentalRule[] | null;
+}
+
+interface DesktopWidgetsProps extends DesktopSections {
+  hidden: boolean;
 }
 
 // The widget layer on the desktop. Right-click opens the edit menu; in edit
@@ -190,4 +195,45 @@ function DesktopWidgets({ hidden, rentals, rules }: DesktopWidgetsProps) {
   );
 }
 
-export { DesktopWidgets };
+// One ghost widget frame: a translucent empty box with a slow light sweep,
+// at the exact size and position its real widget will take. Reuses the
+// skeleton-shimmer keyframe (ui/skeleton.tsx) rather than inventing a
+// second sweep animation, just lighter so it reads on the wallpaper instead
+// of on a card.
+function WidgetGhost({ left, top, width, height }: { left: number; top: number; width: number; height: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute overflow-hidden rounded-[26px] bg-white/10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]"
+      style={{ left, top, width, height }}
+    >
+      <div className="absolute inset-0 animate-skeleton-shimmer bg-[linear-gradient(100deg,transparent_30%,rgb(255_255_255/.22)_50%,transparent_70%)] bg-size-[200%_100%] motion-reduce:animate-none" />
+    </div>
+  );
+}
+
+// The Suspense fallback shown in place of DesktopWidgets while
+// sectionsPromise is still pending (scene 1 in
+// docs/desktop-home/mockup/loading-states.html): ghost frames at the
+// default layout's slots, so the real widgets never jump into a different
+// spot once their data resolves. Mirrors the real widgets' own `hidden`
+// fade behind an open window.
+function DesktopWidgetsSkeleton({ hidden }: { hidden: boolean }) {
+  return (
+    <div aria-hidden="true" className="absolute inset-0 transition-opacity duration-300" style={{ opacity: hidden ? 0 : 1 }}>
+      {DEFAULT_WIDGETS.map(({ kind, column, row }) => {
+        const size = widgetSlotSize(WIDGET_SPAN[kind]);
+        return (
+          <WidgetGhost
+            key={kind}
+            left={GRID_LEFT + column * (WIDGET_CELL + WIDGET_COLUMN_GAP)}
+            top={GRID_TOP + row * (WIDGET_CELL + WIDGET_ROW_GAP)}
+            {...size}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+export { DesktopWidgets, DesktopWidgetsSkeleton };

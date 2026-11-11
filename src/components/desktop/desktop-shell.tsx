@@ -1,16 +1,14 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Suspense, use, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { MenuBar } from "@/components/desktop/menu-bar";
 import { DockBar } from "@/components/desktop/dock-bar";
 import { BookingsWindow } from "@/components/desktop/bookings-window";
 import { KobeyeeWindow, type KobeyeeWindowProps } from "@/components/desktop/kobeyee-window";
 import { KobeyeeCat } from "@/components/desktop/kobeyee-cat";
-import { DesktopWidgets } from "@/components/desktop/desktop-widgets";
+import { DesktopWidgets, DesktopWidgetsSkeleton, type DesktopSections } from "@/components/desktop/desktop-widgets";
 import { isAnyWindowOpen, useDesktopStore } from "@/components/desktop/desktop-store";
-import type { RentalSummary } from "@/server/types/home";
-import type { RentalRule } from "@/server/logic/booking-rules";
 
 // Blue gradient wallpaper, inspired by classic desktop UIs.
 const WALLPAPER_GRADIENT = [
@@ -20,11 +18,18 @@ const WALLPAPER_GRADIENT = [
 ].join(", ");
 
 interface DesktopShellProps extends KobeyeeWindowProps {
-  // The widgets' data; null when that read failed.
-  rentals: readonly RentalSummary[] | null;
-  rules: readonly RentalRule[] | null;
+  // Not awaited by the layout, so the chrome below doesn't wait on it; only
+  // the widgets suspend on it, inside their own boundary.
+  sectionsPromise: Promise<DesktopSections>;
   // The 預約冊 window's content, shown only on /bookings.
   children: ReactNode;
+}
+
+// Resolves sectionsPromise with React's use(), suspending just this
+// subtree (see the Suspense boundary below) instead of the whole shell.
+function ResolvedDesktopWidgets({ hidden, sectionsPromise }: { hidden: boolean; sectionsPromise: Promise<DesktopSections> }) {
+  const { rentals, rules } = use(sectionsPromise);
+  return <DesktopWidgets hidden={hidden} rentals={rentals} rules={rules} />;
 }
 
 // The desktop itself: a full-viewport shell with a menu bar, wallpaper,
@@ -32,7 +37,7 @@ interface DesktopShellProps extends KobeyeeWindowProps {
 // `children` is BookingsView on /bookings, rendered unchanged inside the
 // window; null on `/`, where the window stays closed. The booking form
 // comes in as a render prop because desktop/ can't import booking/.
-function DesktopShell({ rentals, rules, children, reader, renderBookingForm }: DesktopShellProps) {
+function DesktopShell({ sectionsPromise, children, reader, renderBookingForm }: DesktopShellProps) {
   // A layout's `children` is never null (Next wraps every page in its own
   // boundary), so the pathname, not the page's output, is the open state.
   const bookingsOpen = usePathname() === "/bookings";
@@ -46,7 +51,9 @@ function DesktopShell({ rentals, rules, children, reader, renderBookingForm }: D
         className="absolute inset-0 transition-[filter] duration-300"
         style={{ background: WALLPAPER_GRADIENT, filter: windowOpen ? "blur(22px) brightness(0.75)" : "none" }}
       />
-      <DesktopWidgets hidden={windowOpen} rentals={rentals} rules={rules} />
+      <Suspense fallback={<DesktopWidgetsSkeleton hidden={windowOpen} />}>
+        <ResolvedDesktopWidgets hidden={windowOpen} sectionsPromise={sectionsPromise} />
+      </Suspense>
       <MenuBar />
       <BookingsWindow open={bookingsOpen}>{children}</BookingsWindow>
       <KobeyeeWindow reader={reader} renderBookingForm={renderBookingForm} />
