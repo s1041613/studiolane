@@ -7,7 +7,7 @@ status: draft
 generated: { by: claude-code/claude-sonnet-5, at: 2026-10-30T19:43:03Z }
 sources:
   - id: rules-page
-    resource: https://github.com/s1041613/studiolane/blob/main/src/app/settings/rules/page.tsx
+    resource: https://github.com/s1041613/studiolane/blob/main/src/app/_parked/settings-rules/page.tsx
     title: Rules page source
   - id: board
     resource: https://github.com/s1041613/studiolane/blob/main/src/components/rental-rules/rental-rules-board.tsx
