@@ -1,5 +1,7 @@
 "use client";
 
+// Parked alongside ./page.tsx (src/app/_parked is a private, unrouted
+// folder) — see that file's header for how to restore both.
 import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";

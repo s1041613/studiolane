@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { MenuBar } from "@/components/desktop/menu-bar";
 import { DockBar } from "@/components/desktop/dock-bar";
 import { BookingsWindow } from "@/components/desktop/bookings-window";
+import { PreparingWindow } from "@/components/desktop/preparing-window";
+import { preparingTitle } from "@/components/desktop/preparing";
 import { KobeyeeWindow, type KobeyeeWindowProps } from "@/components/desktop/kobeyee-window";
 import { KobeyeeCat } from "@/components/desktop/kobeyee-cat";
 import { DesktopWidgets, DesktopWidgetsSkeleton, type DesktopSections } from "@/components/desktop/desktop-widgets";
@@ -40,9 +42,11 @@ function ResolvedDesktopWidgets({ hidden, sectionsPromise }: { hidden: boolean; 
 function DesktopShell({ sectionsPromise, children, reader, renderBookingForm }: DesktopShellProps) {
   // A layout's `children` is never null (Next wraps every page in its own
   // boundary), so the pathname, not the page's output, is the open state.
-  const bookingsOpen = usePathname() === "/bookings";
+  const pathname = usePathname();
+  const bookingsOpen = pathname === "/bookings";
+  const preparing = preparingTitle(pathname);
   const kobeyeeOpen = useDesktopStore((state) => state.kobeyee.open);
-  const windowOpen = isAnyWindowOpen(kobeyeeOpen, bookingsOpen);
+  const windowOpen = isAnyWindowOpen(kobeyeeOpen, bookingsOpen || preparing !== null);
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: "#0b3a8c" }}>
@@ -56,6 +60,7 @@ function DesktopShell({ sectionsPromise, children, reader, renderBookingForm }: 
       </Suspense>
       <MenuBar />
       <BookingsWindow open={bookingsOpen}>{children}</BookingsWindow>
+      <PreparingWindow title={preparing} />
       <KobeyeeWindow reader={reader} renderBookingForm={renderBookingForm} />
       <KobeyeeCat />
       <DockBar bookingsOpen={bookingsOpen} />
