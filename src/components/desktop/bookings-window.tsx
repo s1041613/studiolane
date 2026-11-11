@@ -19,7 +19,7 @@ const SIDE_RATIO = 0.06;
 // same place the client would: 6% side margins, stopping short of the idle
 // Kobeyee cat's corner spot (bottom-right) — the cat renders below windows
 // in z-order, so an overlap there would cover it.
-export const DEFAULT_BOOKINGS_PLACEMENT: CSSProperties = {
+const DEFAULT_BOOKINGS_PLACEMENT: CSSProperties = {
   left: `${SIDE_RATIO * 100}vw`,
   top: MENU_BAR_HEIGHT + TOP_GAP,
   width: `max(640px, min(${100 - SIDE_RATIO * 200}vw, ${100 - SIDE_RATIO * 100}vw - ${CORNER_RIGHT + CORNER_RESERVE_WIDTH}px))`,
