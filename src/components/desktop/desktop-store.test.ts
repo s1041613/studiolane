@@ -11,29 +11,12 @@ beforeEach(() => {
 });
 
 describe("useDesktopStore", () => {
-  it("ensureRect creates a window's rect entry the first time it's open", () => {
-    useDesktopStore.getState().ensureRect("bookings", RECT);
-
-    expect(useDesktopStore.getState().windows.bookings).toEqual({ id: "bookings", rect: RECT });
-  });
-
-  it("ensureRect is a no-op once the window already has a rect", () => {
-    useDesktopStore.getState().ensureRect("bookings", RECT);
-    const moved = { x: 50, y: 60, width: 800, height: 600 };
-    useDesktopStore.getState().setRect("bookings", moved);
-
-    useDesktopStore.getState().ensureRect("bookings", RECT);
-
-    expect(useDesktopStore.getState().windows.bookings).toEqual({ id: "bookings", rect: moved });
-  });
-
-  it("setRect on an id that was never opened is a no-op", () => {
-    useDesktopStore.getState().setRect("bookings", RECT);
+  it("has no rect entry for a window that was never dragged or resized", () => {
     expect(useDesktopStore.getState().windows).toEqual({});
   });
 
-  it("setRect updates only the rect", () => {
-    useDesktopStore.getState().ensureRect("bookings", RECT);
+  it("setRect remembers a window's rect, replacing any earlier one", () => {
+    useDesktopStore.getState().setRect("bookings", RECT);
     const moved = { x: 50, y: 60, width: 800, height: 600 };
 
     useDesktopStore.getState().setRect("bookings", moved);
@@ -89,7 +72,7 @@ describe("desktop widgets", () => {
   });
 
   it("persists only the widget layout", () => {
-    useDesktopStore.getState().ensureRect("bookings", RECT);
+    useDesktopStore.getState().setRect("bookings", RECT);
     useDesktopStore.getState().moveWidget("free", { column: 3, row: 1 });
 
     const stored = JSON.parse(localStorage.getItem("studiolane-desktop") ?? "{}");

@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Window, type WindowRect } from "@/components/ui/window";
+import { Window } from "@/components/ui/window";
 import { useDesktopStore } from "@/components/desktop/desktop-store";
 import { MENU_BAR_HEIGHT } from "@/components/desktop/menu-bar";
 import { CORNER_RIGHT, CORNER_RESERVE_WIDTH } from "@/components/desktop/kobeyee";
@@ -16,22 +15,16 @@ const DOCK_CLEARANCE = 100;
 // Each side keeps 6% of the viewport free.
 const SIDE_RATIO = 0.06;
 
-// Sized against the current viewport; only meaningful once
-// mounted in a browser, so callers only reach for this on the client.
-export function defaultBookingsRect(): WindowRect {
-  const x = Math.round(window.innerWidth * SIDE_RATIO);
-  // Stop short of the idle Kobeyee cat's corner spot (bottom-right): the cat
-  // renders below windows in z-order, so an overlap here would cover it.
-  const cornerLeft = window.innerWidth - CORNER_RIGHT - CORNER_RESERVE_WIDTH;
-  const width = Math.max(640, Math.min(window.innerWidth - x * 2, cornerLeft - x));
-  const height = Math.max(360, window.innerHeight - MENU_BAR_HEIGHT - TOP_GAP - DOCK_CLEARANCE);
-  return {
-    x,
-    y: MENU_BAR_HEIGHT + TOP_GAP,
-    width,
-    height,
-  };
-}
+// Plain CSS against the viewport so the server-rendered HTML lands in the
+// same place the client would: 6% side margins, stopping short of the idle
+// Kobeyee cat's corner spot (bottom-right) — the cat renders below windows
+// in z-order, so an overlap there would cover it.
+export const DEFAULT_BOOKINGS_PLACEMENT: CSSProperties = {
+  left: `${SIDE_RATIO * 100}vw`,
+  top: MENU_BAR_HEIGHT + TOP_GAP,
+  width: `max(640px, min(${100 - SIDE_RATIO * 200}vw, ${100 - SIDE_RATIO * 100}vw - ${CORNER_RIGHT + CORNER_RESERVE_WIDTH}px))`,
+  height: `max(360px, 100vh - ${MENU_BAR_HEIGHT + TOP_GAP + DOCK_CLEARANCE}px)`,
+};
 
 interface BookingsWindowProps {
   // True on /bookings: the URL is the single source of truth.
@@ -47,24 +40,14 @@ interface BookingsWindowProps {
 function BookingsWindow({ open, children }: BookingsWindowProps) {
   const router = useRouter();
   const windowState = useDesktopStore((state) => state.windows[BOOKINGS_WINDOW_ID]);
-  const ensureRect = useDesktopStore((state) => state.ensureRect);
   const setRect = useDesktopStore((state) => state.setRect);
-
-  useEffect(() => {
-    if (!open) return;
-    ensureRect(BOOKINGS_WINDOW_ID, defaultBookingsRect());
-    // ensureRect is a no-op once the window already has a rect, so this
-    // running again on a future render (it won't, deps are stable) would
-    // be safe too.
-  }, [open, ensureRect]);
-
-  if (!windowState) return null;
 
   return (
     <Window
       title="預約冊"
       open={open}
-      rect={windowState.rect}
+      rect={windowState?.rect}
+      defaultPlacement={DEFAULT_BOOKINGS_PLACEMENT}
       onRectChange={(rect) => setRect(BOOKINGS_WINDOW_ID, rect)}
       onClose={() => router.push("/")}
       topInset={MENU_BAR_HEIGHT}

@@ -75,7 +75,7 @@ const WINDOW_MARGIN = 16;
 const DOCK_CLEARANCE = 96;
 
 // Bottom-right anchored, clear of the menu bar and the Dock. Unlike
-// defaultBookingsRect, this doesn't fill the viewport. The window keeps
+// DEFAULT_BOOKINGS_PLACEMENT, this doesn't fill the viewport. The window keeps
 // its chat-only proportions and just sits as high as the available height
 // allows.
 export function defaultKobeyeeRect(): WindowRect {

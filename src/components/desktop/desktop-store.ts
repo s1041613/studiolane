@@ -32,9 +32,8 @@ interface DesktopStore {
   // Keyed by window id so a later step can add more windows without
   // reshaping this record.
   windows: Record<string, WindowRectState>;
-  // Creates the rect entry the first time a window opens; a no-op once one
-  // already exists for that id.
-  ensureRect: (id: string, defaultRect: WindowRect) => void;
+  // A window has no entry until its first drag or resize; until then it
+  // renders at its own CSS default placement.
   setRect: (id: string, rect: WindowRect) => void;
 
   widgets: WidgetPlacement[];
@@ -58,14 +57,7 @@ export const useDesktopStore = create<DesktopStore>()(
   persist(
     (set, get) => ({
       windows: {},
-      ensureRect: (id, defaultRect) =>
-        set((state) => (state.windows[id] ? state : { windows: { ...state.windows, [id]: { id, rect: defaultRect } } })),
-      setRect: (id, rect) =>
-        set((state) => {
-          const existing = state.windows[id];
-          if (!existing) return state;
-          return { windows: { ...state.windows, [id]: { ...existing, rect } } };
-        }),
+      setRect: (id, rect) => set((state) => ({ windows: { ...state.windows, [id]: { id, rect } } })),
 
       widgets: DEFAULT_WIDGETS,
       editingWidgets: false,
