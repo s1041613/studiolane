@@ -55,10 +55,15 @@ test("?q= with no match shows 找不到符合的預約", async ({ page }) => {
 test("typing in the toolbar search box and pressing Enter updates the URL", async ({ page }) => {
   await page.goto("/bookings");
 
-  await page.getByRole("searchbox", { name: "搜尋" }).fill("林小雨");
-  await page.getByRole("searchbox", { name: "搜尋" }).press("Enter");
-
-  await expect(page).toHaveURL("/bookings?q=林小雨");
+  // The dev server streams the window's HTML before React hydrates it, and
+  // hydration can drop a value typed before it; retry the whole type+submit
+  // (same reasoning as booking-actions.write.spec.ts's openStatusMenu).
+  const search = page.getByRole("searchbox", { name: "搜尋" });
+  await expect(async () => {
+    await search.fill("林小雨");
+    await search.press("Enter");
+    await expect(page).toHaveURL("/bookings?q=林小雨", { timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
   await expect(grid(page).getByText("林小雨")).toBeVisible();
   await expect(grid(page).getByText("周小貓")).not.toBeVisible();
 });
